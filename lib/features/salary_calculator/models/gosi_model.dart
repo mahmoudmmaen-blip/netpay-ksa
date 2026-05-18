@@ -170,6 +170,28 @@ class GosiModel extends Equatable {
     );
   }
 
+  /// يعيد بناء [GosiModel] من JSON [SalaryRecord] (كامل أو مسطّح).
+  factory GosiModel.fromRecord(Map<String, dynamic> j) {
+    final nested = j['gosi'];
+    if (nested is Map<String, dynamic>) {
+      return GosiModel.fromJson(nested);
+    }
+
+    final allowances = SalaryAllowances(
+      basicSalary: (j['basicSalary'] as num).toDouble(),
+      housingAllowance: (j['housingAllowance'] as num).toDouble(),
+      otherAllowances: (j['otherAllowances'] as num?)?.toDouble() ?? 0,
+      includeOtherInGosiBase: j['includeOtherInGosiBase'] as bool? ?? false,
+    );
+
+    return GosiModel.fromSalaryForm(
+      allowances: allowances,
+      nationality: NationalityType.values.byName(j['nationality'] as String),
+      regime: GosiRegime.values.byName(j['regime'] as String),
+      calculationDate: DateTime.parse(j['savedAt'] as String),
+    );
+  }
+
   static double _round(double v) => double.parse(v.toStringAsFixed(2));
 
   @override

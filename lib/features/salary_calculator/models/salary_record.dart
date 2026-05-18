@@ -47,6 +47,7 @@ class SalaryRecord extends Equatable {
         'includeOtherInGosiBase': includeOtherInGosiBase,
         'nationality': nationality.name,
         'regime': regime.name,
+        'gosi': gosi.toJson(),
         'netSalary': gosi.netSalary,
         'totalGross': gosi.totalGross,
         'employeeGosi': gosi.employeeGosi,
