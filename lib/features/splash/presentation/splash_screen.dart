@@ -1,21 +1,23 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netpay_ksa/core/constants/app_constants.dart';
+import 'package:netpay_ksa/core/providers/app_state_provider.dart';
 import 'package:netpay_ksa/core/router/app_routes.dart';
 import 'package:netpay_ksa/core/theme/app_colors.dart';
 import 'package:netpay_ksa/core/widgets/app_logo.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
@@ -33,18 +35,26 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
     _controller.forward();
-    unawaited(_navigateToHome());
+    unawaited(_navigateNext());
   }
 
-  Future<void> _navigateToHome() async {
+  Future<void> _navigateNext() async {
     await Future<void>.delayed(AppConstants.splashDisplayDuration);
     if (!mounted) return;
 
-    final router = GoRouter.maybeOf(context);
-    if (router == null) return;
+    // انتظر تحميل prefs (onboardingCompleted).
+    while (!ref.read(appStateProvider).isReady && mounted) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (!mounted) return;
 
-    // replace = انتقال سلس بدون إبقاء Splash في المكدس
-    context.replaceNamed(AppRoutes.homeName);
+    final onboardingDone = ref.read(appStateProvider).onboardingCompleted;
+    final routeName = onboardingDone
+        ? AppRoutes.homeName
+        : AppRoutes.onboardingName;
+
+    if (GoRouter.maybeOf(context) == null) return;
+    context.replaceNamed(routeName);
   }
 
   @override

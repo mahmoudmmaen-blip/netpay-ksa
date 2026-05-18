@@ -9,7 +9,7 @@ class AppState extends Equatable {
   const AppState({
     required this.themeMode,
     required this.isReady,
-    this.onboardingCompleted = true,
+    this.onboardingCompleted = false,
   });
 
   final ThemeMode themeMode;
@@ -62,7 +62,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
           : ThemeMode.system;
 
       final onboardingDone =
-          prefs.getBool(AppConstants.prefOnboardingDone) ?? true;
+          prefs.getBool(AppConstants.prefOnboardingDone) ?? false;
 
       state = AppState(
         themeMode: themeMode,
@@ -73,6 +73,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
       state = const AppState(
         themeMode: ThemeMode.system,
         isReady: true,
+        onboardingCompleted: false,
       );
     }
   }

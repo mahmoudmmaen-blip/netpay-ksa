@@ -10,6 +10,7 @@ import 'package:netpay_ksa/core/theme/app_colors.dart';
 import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
 import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
 import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
+import 'package:netpay_ksa/features/admob/widgets/home_banner_ad.dart';
 import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
 
 /// الشاشة الرئيسية — حاسبة الراتب الصافي (Phase 1).
@@ -52,16 +53,19 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppColors.homeGradient(
-            Theme.of(context).brightness,
-          ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-            children: [
+      body: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.homeGradient(
+                  Theme.of(context).brightness,
+                ),
+              ),
+              child: SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  children: [
               if (salary.hasError) _ErrorBanner(message: salary.errorMessage!),
               if (gosi != null) ..._warningBanners(gosi),
               _NetSalaryCard(
@@ -162,9 +166,13 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 _GosiBreakdownCard(gosi: gosi, currency: currency),
               ],
-            ],
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          const HomeBannerAd(),
+        ],
       ),
     );
   }

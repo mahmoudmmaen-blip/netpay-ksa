@@ -1,18 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:netpay_ksa/core/providers/app_state_provider.dart';
 import 'package:netpay_ksa/core/router/app_routes.dart';
 import 'package:netpay_ksa/core/theme/app_colors.dart';
 
 /// شاشة التعريف — 3 صفحات قبل البدء.
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -50,10 +54,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       );
       return;
     }
-    _goHome();
+    unawaited(_finishOnboarding());
   }
 
-  void _goHome() => context.go(AppRoutes.home);
+  Future<void> _finishOnboarding() async {
+    await ref.read(appStateProvider.notifier).setOnboardingCompleted(true);
+    if (!mounted) return;
+    context.go(AppRoutes.home);
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -7,6 +7,7 @@ abstract final class AppRoutes {
   // ── مسارات أساسية ────────────────────────────────────────────────────────
 
   static const String splash = '/';
+  static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String history = '/history';
 
@@ -20,6 +21,7 @@ abstract final class AppRoutes {
   // ── أسماء GoRouter (للتنقل: context.goNamed) ───────────────────────────────
 
   static const String splashName = 'splash';
+  static const String onboardingName = 'onboarding';
   static const String homeName = 'home';
   static const String historyName = 'history';
   static const String settingsName = 'settings';
@@ -27,8 +29,9 @@ abstract final class AppRoutes {
   /// المسار الابتدائي عند فتح التطبيق.
   static const String initial = splash;
 
-  /// مسار ما بعد Splash.
-  static const String postSplash = home;
+  /// مسار ما بعد Splash حسب إكمال التعريف.
+  static String postSplash({required bool onboardingCompleted}) =>
+      onboardingCompleted ? home : onboarding;
 
   /// هل المسار يعرض شريط تنقل سفلي (لاحقاً).
   static bool showsBottomNav(String path) {

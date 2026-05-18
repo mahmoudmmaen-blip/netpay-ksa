@@ -7,8 +7,10 @@ import 'package:netpay_ksa/core/router/app_routes.dart';
 import 'package:netpay_ksa/core/theme/app_colors.dart';
 import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
 import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
+import 'package:netpay_ksa/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:netpay_ksa/features/settings/presentation/settings_screen.dart';
 import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
+import 'package:netpay_ksa/core/providers/app_state_provider.dart';
 
 /// مفتاح التنقل الجذر — للـ dialogs و deep links.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -19,6 +21,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.initial,
     debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final appState = ref.read(appStateProvider);
+      if (!appState.isReady) return null;
+
+      final location = state.matchedLocation;
+      if (!appState.onboardingCompleted &&
+          location != AppRoutes.onboarding &&
+          location != AppRoutes.splash) {
+        return AppRoutes.onboarding;
+      }
+      return null;
+    },
     routes: [
       // ── Splash (أول شاشة) ───────────────────────────────────────────────
       GoRoute(
@@ -27,6 +41,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.splash(
           key: state.pageKey,
           child: const SplashScreen(),
+        ),
+      ),
+
+      // ── التعريف (أول تشغيل) ─────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.onboarding,
+        name: AppRoutes.onboardingName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const OnboardingScreen(),
         ),
       ),
 
