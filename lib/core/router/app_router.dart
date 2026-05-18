@@ -7,6 +7,7 @@ import 'package:netpay_ksa/core/router/app_routes.dart';
 import 'package:netpay_ksa/core/theme/app_colors.dart';
 import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
 import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
+import 'package:netpay_ksa/features/settings/presentation/settings_screen.dart';
 import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
 
 /// مفتاح التنقل الجذر — للـ dialogs و deep links.
@@ -49,18 +50,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ── مسارات مستقبلية (placeholders) ─────────────────────────────────
+      // ── الإعدادات ───────────────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.settings,
         name: AppRoutes.settingsName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const _ComingSoonScreen(
-            title: 'الإعدادات',
-            icon: Icons.settings_outlined,
-          ),
+          child: const SettingsScreen(),
         ),
       ),
+
+      // ── مسارات مستقبلية (placeholders) ─────────────────────────────────
       GoRoute(
         path: AppRoutes.salaryCalculator,
         name: 'salary',
