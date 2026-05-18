@@ -1,0 +1,166 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:netpay_ksa/core/router/app_page_transitions.dart';
+import 'package:netpay_ksa/core/router/app_routes.dart';
+import 'package:netpay_ksa/core/theme/app_colors.dart';
+import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
+import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
+import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
+
+/// مفتاح التنقل الجذر — للـ dialogs و deep links.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
+/// GoRouter مركزي — Splash أولاً ثم Home وباقي المسارات.
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    navigatorKey: rootNavigatorKey,
+    initialLocation: AppRoutes.initial,
+    debugLogDiagnostics: true,
+    routes: [
+      // ── Splash (أول شاشة) ───────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.splash,
+        name: AppRoutes.splashName,
+        pageBuilder: (context, state) => AppPageTransitions.splash(
+          key: state.pageKey,
+          child: const SplashScreen(),
+        ),
+      ),
+
+      // ── الحاسبة الرئيسية ─────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.home,
+        name: AppRoutes.homeName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HomeScreen(),
+        ),
+      ),
+
+      // ── سجل الحسابات ─────────────────────────────────────────────────────
+      GoRoute(
+        path: AppRoutes.history,
+        name: AppRoutes.historyName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HistoryScreen(),
+        ),
+      ),
+
+      // ── مسارات مستقبلية (placeholders) ─────────────────────────────────
+      GoRoute(
+        path: AppRoutes.settings,
+        name: AppRoutes.settingsName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const _ComingSoonScreen(
+            title: 'الإعدادات',
+            icon: Icons.settings_outlined,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.salaryCalculator,
+        name: 'salary',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const _ComingSoonScreen(
+            title: 'حاسبة الراتب المتقدمة',
+            icon: Icons.calculate_outlined,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.gosi,
+        name: 'gosi',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const _ComingSoonScreen(
+            title: 'تفاصيل التأمينات (GOSI)',
+            icon: Icons.shield_outlined,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.eosb,
+        name: 'eosb',
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const _ComingSoonScreen(
+            title: 'مكافأة نهاية الخدمة',
+            icon: Icons.card_giftcard_outlined,
+          ),
+        ),
+      ),
+    ],
+    errorBuilder: (context, state) => _ComingSoonScreen(
+      title: 'الصفحة غير موجودة',
+      subtitle: state.uri.toString(),
+      icon: Icons.error_outline_rounded,
+    ),
+  );
+});
+
+/// شاشة مؤقتة للمسارات قيد التطوير.
+class _ComingSoonScreen extends StatelessWidget {
+  const _ComingSoonScreen({
+    required this.title,
+    required this.icon,
+    this.subtitle,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_forward_ios_rounded),
+          onPressed: () => context.canPop() ? context.pop() : context.go(AppRoutes.home),
+        ),
+        title: Text(title),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 64, color: AppColors.emerald.withValues(alpha: 0.6)),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style: GoogleFonts.cairo(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  subtitle!,
+                  style: GoogleFonts.cairo(color: AppColors.lightMuted),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 12),
+              Text(
+                'قريباً في تحديث قادم',
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

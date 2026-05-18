@@ -1,0 +1,28 @@
+# NetPay KSA - Project Rules
+
+## General
+- Flutter 3.24+ app for Saudi net salary calculator 2026 (Offline First)
+- Full RTL + Arabic support (Cairo font)
+- Use Riverpod 2.6+ (NotifierProvider + ConsumerWidget)
+- Clean Architecture (features/ folder)
+- Material 3 design, emerald + navy + gold theme
+- GOSI calculations must be 100% accurate
+
+## Key Files
+- GOSI logic: lib/features/salary_calculator/models/gosi_model.dart
+- Salary state: lib/features/salary_calculator/providers/salary_notifier.dart
+- Main screen: lib/features/salary_calculator/presentation/home_screen.dart
+
+## Style
+- Modern, clean, professional UI
+- Big net salary card with gradient
+- Use SegmentedButton for nationality and regime
+- Always use const where possible
+- Good comments in Arabic/English
+
+## Workflow
+- When I say "build HomeScreen", implement full UI + connect to SalaryNotifier
+- Always test after major changes
+- Follow existing structure
+
+أنا عايز تطبيق سريع، نظيف، ودقيق في الحسابات.
