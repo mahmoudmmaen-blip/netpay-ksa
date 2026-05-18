@@ -187,10 +187,7 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
             '+${gosi.upcomingWarnings.length - 1} زيادات مرحلية قادمة حتى 2028',
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              color: AppColors.warning,
-            ),
+            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.warning),
           ),
         ),
     ];
@@ -201,7 +198,6 @@ class HomeScreen extends ConsumerWidget {
 
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle({required this.title, this.icon});
-
   final String title;
   final IconData? icon;
 
@@ -284,19 +280,13 @@ class _NetSalaryCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _StatChip(
-                  label: 'الإجمالي',
-                  value: currency.format(gross),
-                ),
+                _StatChip(label: 'الإجمالي', value: currency.format(gross)),
                 Container(
                   width: 1,
                   height: 28,
                   color: Colors.white.withValues(alpha: 0.25),
                 ),
-                _StatChip(
-                  label: 'خصم GOSI',
-                  value: currency.format(employeeGosi),
-                ),
+                _StatChip(label: 'خصم GOSI', value: currency.format(employeeGosi)),
               ],
             ),
           ),
@@ -308,7 +298,6 @@ class _NetSalaryCard extends StatelessWidget {
 
 class _StatChip extends StatelessWidget {
   const _StatChip({required this.label, required this.value});
-
   final String label;
   final String value;
 
@@ -355,9 +344,7 @@ class _ErrorBanner extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, color: AppColors.error),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(message, style: GoogleFonts.cairo(fontSize: 13)),
-          ),
+          Expanded(child: Text(message, style: GoogleFonts.cairo(fontSize: 13))),
         ],
       ),
     );
@@ -396,18 +383,16 @@ class _WarningBanner extends StatelessWidget {
 }
 
 class _GosiBaseSwitch extends StatelessWidget {
-  const _GosiBaseSwitch({
-    required this.value,
-    required this.onChanged,
-  });
-
+  const _GosiBaseSwitch({required this.value, required this.onChanged});
   final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
           .withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(12),
       child: SwitchListTile(
@@ -431,7 +416,6 @@ class _GosiBaseSwitch extends StatelessWidget {
   }
 }
 
-/// حقل رقمي متزامن مع [SalaryState] — يُعاد بناؤه عند تغيير القيمة خارجياً.
 class _SalaryField extends StatefulWidget {
   const _SalaryField({
     super.key,
@@ -461,9 +445,7 @@ class _SalaryFieldState extends State<_SalaryField> {
   void didUpdateWidget(covariant _SalaryField oldWidget) {
     super.didUpdateWidget(oldWidget);
     final formatted = _format(widget.value);
-    if (_controller.text != formatted) {
-      _controller.text = formatted;
-    }
+    if (_controller.text != formatted) _controller.text = formatted;
   }
 
   @override
@@ -497,11 +479,7 @@ class _SalaryFieldState extends State<_SalaryField> {
 }
 
 class _GosiBreakdownCard extends StatelessWidget {
-  const _GosiBreakdownCard({
-    required this.gosi,
-    required this.currency,
-  });
-
+  const _GosiBreakdownCard({required this.gosi, required this.currency});
   final GosiModel gosi;
   final NumberFormat currency;
 
@@ -516,9 +494,7 @@ class _GosiBreakdownCard extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: AppColors.emerald.withValues(alpha: 0.2),
-        ),
+        side: BorderSide(color: AppColors.emerald.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -527,20 +503,15 @@ class _GosiBreakdownCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.analytics_outlined,
-                    size: 20, color: AppColors.emerald),
+                const Icon(Icons.analytics_outlined, size: 20, color: AppColors.emerald),
                 const SizedBox(width: 8),
                 Text(
                   'تفصيل GOSI',
-                  style: GoogleFonts.cairo(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.emerald.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -557,37 +528,22 @@ class _GosiBreakdownCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              'خصم الموظف (${gosi.employeeRatePercent}%)',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-            ),
+            Text('خصم الموظف (${gosi.employeeRatePercent}%)',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             _BreakdownRow('تقاعد', currency.format(gosi.employeePension)),
             _BreakdownRow('ساند (SANED)', currency.format(gosi.employeeSaned)),
-            _BreakdownRow(
-              'إجمالي خصم الموظف',
-              currency.format(gosi.employeeGosi),
-              bold: true,
-            ),
+            _BreakdownRow('إجمالي خصم الموظف', currency.format(gosi.employeeGosi), bold: true),
             const Divider(height: 24),
-            Text(
-              'اشتراك صاحب العمل (${gosi.employerRatePercent}%)',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-            ),
+            Text('اشتراك صاحب العمل (${gosi.employerRatePercent}%)',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             _BreakdownRow('تقاعد', currency.format(gosi.employerPension)),
             _BreakdownRow('أخطار مهنية', currency.format(gosi.employerHazard)),
             _BreakdownRow('ساند', currency.format(gosi.employerSaned)),
-            _BreakdownRow(
-              'إجمالي صاحب العمل',
-              currency.format(gosi.employerGosi),
-              bold: true,
-            ),
+            _BreakdownRow('إجمالي صاحب العمل', currency.format(gosi.employerGosi), bold: true),
             const Divider(height: 24),
-            _BreakdownRow(
-              'أجر الاشتراك',
-              currency.format(gosi.subscriptionWage),
-            ),
+            _BreakdownRow('أجر الاشتراك', currency.format(gosi.subscriptionWage)),
             _BreakdownRow(
               'بعد السقف (${GosiModel.wageCeiling.toInt()} ر.س)',
               currency.format(gosi.contributableWage),
@@ -598,16 +554,12 @@ class _GosiBreakdownCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 10),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline,
-                        size: 16, color: AppColors.warning),
+                    const Icon(Icons.info_outline, size: 16, color: AppColors.warning),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'تم تطبيق سقف 45,000 ر.س على أجر الاشتراك',
-                        style: GoogleFonts.cairo(
-                          fontSize: 12,
-                          color: AppColors.warning,
-                        ),
+                        style: GoogleFonts.cairo(fontSize: 12, color: AppColors.warning),
                       ),
                     ),
                   ],
@@ -622,7 +574,6 @@ class _GosiBreakdownCard extends StatelessWidget {
 
 class _BreakdownRow extends StatelessWidget {
   const _BreakdownRow(this.label, this.value, {this.bold = false});
-
   final String label;
   final String value;
   final bool bold;
