@@ -78,21 +78,21 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               _SectionTitle(title: 'تفاصيل الراتب', icon: Icons.payments_outlined),
               _SalaryField(
-                key: ValueKey('basic-${salary.basicSalary}'),
+                key: const ValueKey('salary-basic'),
                 label: 'الراتب الأساسي',
                 value: salary.basicSalary,
                 onChanged: (v) =>
                     ref.read(salaryNotifierProvider.notifier).setBasic(v),
               ),
               _SalaryField(
-                key: ValueKey('housing-${salary.housingAllowance}'),
+                key: const ValueKey('salary-housing'),
                 label: 'بدل السكن',
                 value: salary.housingAllowance,
                 onChanged: (v) =>
                     ref.read(salaryNotifierProvider.notifier).setHousing(v),
               ),
               _SalaryField(
-                key: ValueKey('other-${salary.otherAllowances}'),
+                key: const ValueKey('salary-other'),
                 label: 'بدلات أخرى',
                 value: salary.otherAllowances,
                 onChanged: (v) =>
@@ -442,22 +442,32 @@ class _SalaryField extends StatefulWidget {
 
 class _SalaryFieldState extends State<_SalaryField> {
   late final TextEditingController _controller;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: _format(widget.value));
+    _focusNode = FocusNode();
   }
 
   @override
   void didUpdateWidget(covariant _SalaryField oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.value == widget.value) return;
+
+    // لا تُعاد كتابة الحقل أثناء الكتابة — يمنع فقدان التركيز والقيمة.
+    if (_focusNode.hasFocus) return;
+
     final formatted = _format(widget.value);
-    if (_controller.text != formatted) _controller.text = formatted;
+    if (_controller.text != formatted) {
+      _controller.text = formatted;
+    }
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -470,6 +480,7 @@ class _SalaryFieldState extends State<_SalaryField> {
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: _controller,
+        focusNode: _focusNode,
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
