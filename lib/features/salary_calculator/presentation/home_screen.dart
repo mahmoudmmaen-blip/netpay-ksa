@@ -205,6 +205,14 @@ class HomeScreen extends ConsumerWidget {
                 icon: Icons.flag_circle_outlined,
                 onTap: () => context.push(AppRoutes.uae),
               ),
+              const SizedBox(height: 12),
+              _FeatureNavCard(
+                title: 'المساعد القانوني 🤖',
+                subtitle: 'أسئلة عن نظام العمل السعودي والإماراتي',
+                icon: Icons.smart_toy_outlined,
+                accentColor: AppColors.emerald,
+                onTap: () => context.push(AppRoutes.legal),
+              ),
                   ],
                 ),
               ),
@@ -435,12 +443,14 @@ class _FeatureNavCard extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.onTap,
+    this.accentColor = AppColors.emerald,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final VoidCallback onTap;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -456,7 +466,7 @@ class _FeatureNavCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.emerald.withValues(alpha: 0.35),
+              color: accentColor.withValues(alpha: 0.35),
             ),
           ),
           child: Row(
@@ -464,10 +474,10 @@ class _FeatureNavCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.emerald.withValues(alpha: 0.12),
+                  color: accentColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppColors.emerald),
+                child: Icon(icon, color: accentColor),
               ),
               const SizedBox(width: 14),
               Expanded(
