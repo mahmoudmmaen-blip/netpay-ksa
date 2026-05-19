@@ -52,7 +52,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('NetGulf'), findsOneWidget);
-    expect(find.text('نت جلف'), findsOneWidget);
+    expect(find.text('نت غلف'), findsOneWidget);
 
     await tester.pump(AppConstants.splashDisplayDuration);
     await tester.pumpAndSettle();

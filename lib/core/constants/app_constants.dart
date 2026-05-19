@@ -9,7 +9,7 @@
 abstract final class AppConstants {
   AppConstants._();
 
-  static const String appNameAr = 'نت جلف';
+  static const String appNameAr = 'نت غلف';
   static const String appNameEn = 'NetGulf';
   static const String appTaglineAr = 'حاسبة الراتب الصافي — السعودية والإمارات 2026';
   static const String appTaglineEn =
