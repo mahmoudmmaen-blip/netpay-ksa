@@ -13,6 +13,9 @@ import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 import 'package:netgulf/features/notifications/providers/notifications_provider.dart';
+import 'package:netgulf/features/share/providers/share_provider.dart';
+import 'package:netgulf/features/share/share_service.dart';
+import 'package:netgulf/features/share/widgets/salary_share_card.dart';
 
 /// الشاشة الرئيسية — حاسبة الراتب الصافي (Phase 1).
 class HomeScreen extends ConsumerWidget {
@@ -40,6 +43,11 @@ class HomeScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
+          IconButton(
+            tooltip: 'مشاركة النتيجة',
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () => _shareSalaryResult(context, ref, gosi),
+          ),
           IconButton(
             tooltip: 'التنبيهات',
             onPressed: () => context.push(AppRoutes.notifications),
@@ -222,6 +230,51 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static Future<void> _shareSalaryResult(
+    BuildContext context,
+    WidgetRef ref,
+    GosiModel? gosi,
+  ) async {
+    if (gosi == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'أدخل بيانات الراتب أولاً لمشاركة النتيجة',
+            style: GoogleFonts.cairo(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await ref.read(shareServiceProvider).shareSalaryResult(
+            context: context,
+            data: SalaryShareData(
+              netSalary: gosi.netSalary,
+              grossSalary: gosi.totalGross,
+              gosiDeduction: gosi.employeeGosi,
+              date: DateTime.now(),
+            ),
+          );
+    } on ShareException catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message, style: GoogleFonts.cairo())),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذرت المشاركة. حاول مرة أخرى.',
+            style: GoogleFonts.cairo(),
+          ),
+        ),
+      );
+    }
   }
 
   ButtonStyle _segmentStyle(BuildContext context) {
