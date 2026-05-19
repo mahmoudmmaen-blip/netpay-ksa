@@ -120,7 +120,7 @@ class SettingsScreen extends ConsumerWidget {
               _AboutRow(
                 icon: Icons.email_outlined,
                 label: 'التواصل',
-                value: 'support@netpay-ksa.app',
+                value: 'support@netgulf.app',
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),

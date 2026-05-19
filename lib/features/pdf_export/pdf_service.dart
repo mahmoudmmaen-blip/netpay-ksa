@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
 import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
@@ -60,7 +61,7 @@ class PdfService {
 
     final doc = pw.Document(
       title: 'تقرير الراتب — ${record.label}',
-      author: 'NetGulf',
+      author: AppConstants.appNameEn,
     );
 
     doc.addPage(
@@ -127,7 +128,7 @@ class PdfService {
           pw.Divider(color: PdfColors.grey300),
           pw.SizedBox(height: 8),
           pw.Text(
-            'تم الإنشاء بواسطة NetGulf — $date',
+            'تم الإنشاء بواسطة ${AppConstants.appNameEn} — $date',
             style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey),
             textAlign: pw.TextAlign.center,
           ),
@@ -147,7 +148,7 @@ class PdfService {
         child: pw.Column(
           children: [
             pw.Text(
-              'NetGulf',
+              AppConstants.appNameEn,
               style: pw.TextStyle(
                 fontSize: 22,
                 fontWeight: pw.FontWeight.bold,

@@ -22,7 +22,7 @@ class NotificationService {
 
   static const AndroidNotificationDetails _androidDetails =
       AndroidNotificationDetails(
-    'netpay_alerts',
+    'netgulf_alerts',
     'تنبيهات NetGulf',
     channelDescription: 'تذكيرات GOSI ومراجعة الراتب',
     importance: Importance.high,

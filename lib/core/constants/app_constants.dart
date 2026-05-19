@@ -11,9 +11,10 @@ abstract final class AppConstants {
 
   static const String appNameAr = 'نت غلف';
   static const String appNameEn = 'NetGulf';
-  static const String appTaglineAr = 'حاسبة الراتب الصافي — السعودية والإمارات 2026';
+  static const String appTaglineAr =
+      'حاسبة الراتب الصافي — السعودية والإمارات';
   static const String appTaglineEn =
-      'Gulf Net Salary Calculator 2026 — Offline First';
+      'Gulf Net Salary Calculator — KSA & UAE';
 
   static const String appVersion = '1.0.0';
   static const int appBuildNumber = 1;
@@ -30,8 +31,8 @@ abstract final class AppConstants {
 
   // ── Hive (Offline First) ───────────────────────────────────────────────────
 
-  static const String hiveBoxSettings = 'netpay_settings';
-  static const String hiveBoxHistory = 'netpay_salary_history';
+  static const String hiveBoxSettings = 'netgulf_settings';
+  static const String hiveBoxHistory = 'netgulf_salary_history';
 
   // ── SharedPreferences keys ─────────────────────────────────────────────────
 
