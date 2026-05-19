@@ -37,6 +37,7 @@ abstract final class AppConstants {
 
   static const String prefThemeMode = 'theme_mode';
   static const String prefOnboardingDone = 'onboarding_done';
+  static const String prefNotificationsEnabled = 'notifications_enabled';
 
   // ── Splash & انتقالات الشاشات ────────────────────────────────────────────
 

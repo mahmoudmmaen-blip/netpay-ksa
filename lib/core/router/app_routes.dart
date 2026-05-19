@@ -18,6 +18,7 @@ abstract final class AppRoutes {
   static const String eosb = '/eosb';
   static const String comparison = '/comparison';
   static const String increase = '/increase';
+  static const String notifications = '/notifications';
   static const String settings = '/settings';
 
   // ── أسماء GoRouter (للتنقل: context.goNamed) ───────────────────────────────
@@ -29,6 +30,7 @@ abstract final class AppRoutes {
   static const String eosbName = 'eosb';
   static const String comparisonName = 'comparison';
   static const String increaseName = 'increase';
+  static const String notificationsName = 'notifications';
   static const String settingsName = 'settings';
 
   /// المسار الابتدائي عند فتح التطبيق.

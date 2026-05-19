@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:netpay_ksa/core/constants/app_constants.dart';
 import 'package:netpay_ksa/features/admob/admob_service.dart';
+import 'package:netpay_ksa/features/notifications/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// تهيئة الخدمات المحلية قبل [runApp] — Offline First.
@@ -35,9 +36,9 @@ abstract final class AppInitializer {
     await _openHiveBoxes();
     await _initPreferences();
     await AdMobService.initialize();
+    await NotificationService.instance.initialize();
 
     // TODO: تسجيل Hive TypeAdapters عند إضافة موديلات History
-    // TODO: إشعارات محلية / Workmanager للمزامنة
 
     _initialized = true;
 

@@ -12,6 +12,7 @@ import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
 import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
 import 'package:netpay_ksa/features/admob/widgets/home_banner_ad.dart';
 import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netpay_ksa/features/notifications/providers/notifications_provider.dart';
 
 /// الشاشة الرئيسية — حاسبة الراتب الصافي (Phase 1).
 class HomeScreen extends ConsumerWidget {
@@ -21,6 +22,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final salary = ref.watch(salaryNotifierProvider);
     final gosi = ref.watch(gosiModelProvider);
+    final showGosiBadge = ref.watch(gosiAlertWithin30DaysProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currency = NumberFormat.currency(
       locale: 'ar_SA',
@@ -38,6 +40,15 @@ class HomeScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
+          IconButton(
+            tooltip: 'التنبيهات',
+            onPressed: () => context.push(AppRoutes.notifications),
+            icon: Badge(
+              isLabelVisible: showGosiBadge,
+              backgroundColor: AppColors.emerald,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+          ),
           IconButton(
             tooltip: 'تبديل الوضع',
             icon: Icon(
