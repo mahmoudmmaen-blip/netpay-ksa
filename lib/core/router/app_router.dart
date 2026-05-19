@@ -13,7 +13,7 @@ import 'package:netgulf/features/comparison/presentation/comparison_screen.dart'
 import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
 import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
 import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
-import 'package:netgulf/features/uae/presentation/uae_screen.dart';
+import 'package:netgulf/features/uae/presentation/uae_calculator_screen.dart';
 import 'package:netgulf/features/splash/presentation/splash_screen.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
 
@@ -149,7 +149,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.uaeName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const UaeScreen(),
+          child: const UaeCalculatorScreen(),
         ),
       ),
     ],

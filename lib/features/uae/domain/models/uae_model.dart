@@ -1,4 +1,4 @@
-// حاسبة الإمارات — GPSSA (مواطن) و DEWS (وافد).
+// حاسبة الإمارات — GPSSA (مواطن) و DEWS/WPS (وافد) — قانون العمل الإماراتي.
 
 /// جنسية الموظف في الإمارات.
 enum UAENationalityType {
@@ -14,14 +14,22 @@ abstract final class GpssaRates {
   static const double governmentPercent = 2.5;
 }
 
-/// نسب DEWS — وافد (من الراتب الأساسي شهرياً).
+/// نسب DEWS/WPS — وافد (% من الراتب الأساسي شهرياً).
 abstract final class DewsRates {
   DewsRates._();
   static const double underFiveYearsPercent = 5.83;
   static const double fivePlusYearsPercent = 8.33;
 }
 
-/// نموذج راتب الإمارات — خصم شهري وصافي ومستحق سنوي.
+/// إجازة سنوية بعد سنة خدمة كاملة.
+abstract final class UaeLaborConstants {
+  UaeLaborConstants._();
+  static const int vacationDaysPerYear = 30;
+  static const int gratuityDaysUnderFiveYears = 21;
+  static const int gratuityDaysFivePlusYears = 30;
+}
+
+/// نموذج راتب الإمارات.
 class UaeModel {
   const UaeModel({
     this.basicSalary = 0,
@@ -37,18 +45,16 @@ class UaeModel {
 
   double get totalGross => _round(basicSalary + housingAllowance);
 
-  /// أجر الاشتراك — GPSSA على الأساسي + السكن.
   double get pensionableSalary => totalGross;
 
   bool get isCitizen => nationality == UAENationalityType.citizen;
 
-  /// نسبة DEWS الشهرية من الأساسي.
   double get dewsMonthlyPercent => yearsOfService >= 5
       ? DewsRates.fivePlusYearsPercent
       : DewsRates.underFiveYearsPercent;
 
-  /// خصم الموظف الشهري.
-  double get monthlyDeduction {
+  /// اشتراك/خصم الموظف الشهري (GPSSA أو DEWS).
+  double get monthlyContribution {
     if (basicSalary <= 0 && housingAllowance <= 0) return 0;
     if (isCitizen) {
       return _round(pensionableSalary * (GpssaRates.employeePercent / 100));
@@ -56,30 +62,51 @@ class UaeModel {
     return _round(basicSalary * (dewsMonthlyPercent / 100));
   }
 
-  /// مساهمة صاحب العمل شهرياً (GPSSA فقط).
+  /// مستحق سنوي — وافد: تراكم DEWS | مواطن: استحقاق مكافأة سنوية تقريبية.
+  double get annualGratuity {
+    if (basicSalary <= 0) return 0;
+    if (!isCitizen) {
+      return _round(monthlyContribution * 12);
+    }
+    if (yearsOfService < 1) return 0;
+    final dailyBasic = basicSalary / 30;
+    final days = yearsOfService >= 5
+        ? UaeLaborConstants.gratuityDaysFivePlusYears
+        : UaeLaborConstants.gratuityDaysUnderFiveYears;
+    return _round(dailyBasic * days);
+  }
+
+  /// إجازة سنوية: 30 يوماً بعد سنة خدمة.
+  int get annualVacationDays =>
+      yearsOfService >= 1 ? UaeLaborConstants.vacationDaysPerYear : 0;
+
+  double get annualVacationValue =>
+      _round((basicSalary / 30) * annualVacationDays);
+
   double get employerMonthlyContribution {
     if (!isCitizen || pensionableSalary <= 0) return 0;
     return _round(pensionableSalary * (GpssaRates.employerPercent / 100));
   }
 
-  /// مساهمة الحكومة شهرياً (GPSSA فقط).
   double get governmentMonthlyContribution {
     if (!isCitizen || pensionableSalary <= 0) return 0;
     return _round(pensionableSalary * (GpssaRates.governmentPercent / 100));
   }
 
-  /// إجمالي اشتراك الموظف سنوياً (DEWS أو GPSSA).
-  double get annualEntitlement => _round(monthlyDeduction * 12);
+  double get netSalary => _round(totalGross - monthlyContribution);
 
-  /// صافي الراتب = الإجمالي − خصم الموظف.
-  double get netSalary => _round(totalGross - monthlyDeduction);
-
-  String get schemeLabel => isCitizen ? 'GPSSA (مواطن)' : 'DEWS (وافد)';
+  String get schemeLabel =>
+      isCitizen ? 'GPSSA (مواطن)' : 'DEWS / WPS (وافد)';
 
   String get nationalityLabel => switch (nationality) {
         UAENationalityType.citizen => 'مواطن',
         UAENationalityType.expat => 'وافد',
       };
+
+  /// للتوافق مع الإصدارات السابقة.
+  double get monthlyDeduction => monthlyContribution;
+
+  double get annualEntitlement => annualGratuity;
 
   UaeModel copyWith({
     double? basicSalary,
