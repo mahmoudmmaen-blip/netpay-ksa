@@ -166,6 +166,10 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 20),
                 _GosiBreakdownCard(gosi: gosi, currency: currency),
               ],
+              const SizedBox(height: 20),
+              _EosbNavCard(
+                onTap: () => context.push(AppRoutes.eosb),
+              ),
                   ],
                 ),
               ),
@@ -385,6 +389,77 @@ class _WarningBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EosbNavCard extends StatelessWidget {
+  const _EosbNavCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 0,
+      shadowColor: AppColors.emerald.withValues(alpha: 0.2),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.emerald.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.emerald.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.card_giftcard_outlined,
+                  color: AppColors.emerald,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'نهاية الخدمة والمستحقات',
+                      style: GoogleFonts.cairo(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'مكافأة · إجازة · تذكرة سفر (م. 84/85)',
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_left_rounded,
+                color: AppColors.emerald,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

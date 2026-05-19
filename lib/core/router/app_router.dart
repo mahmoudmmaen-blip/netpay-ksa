@@ -9,6 +9,7 @@ import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
 import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
 import 'package:netpay_ksa/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:netpay_ksa/features/settings/presentation/settings_screen.dart';
+import 'package:netpay_ksa/features/eosb/presentation/eosb_screen.dart';
 import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
 import 'package:netpay_ksa/core/providers/app_state_provider.dart';
 
@@ -109,13 +110,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.eosb,
-        name: 'eosb',
+        name: AppRoutes.eosbName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const _ComingSoonScreen(
-            title: 'مكافأة نهاية الخدمة',
-            icon: Icons.card_giftcard_outlined,
-          ),
+          child: const EosbScreen(),
         ),
       ),
     ],

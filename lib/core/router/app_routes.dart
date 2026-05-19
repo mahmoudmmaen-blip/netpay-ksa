@@ -24,6 +24,7 @@ abstract final class AppRoutes {
   static const String onboardingName = 'onboarding';
   static const String homeName = 'home';
   static const String historyName = 'history';
+  static const String eosbName = 'eosb';
   static const String settingsName = 'settings';
 
   /// المسار الابتدائي عند فتح التطبيق.
