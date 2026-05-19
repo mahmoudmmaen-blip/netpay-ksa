@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/salary_record.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 const _kHistoryKey = 'salary_history_v1';
 const _kMaxRecords = 50;

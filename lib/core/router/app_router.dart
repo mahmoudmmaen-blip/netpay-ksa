@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/router/app_page_transitions.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
-import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
-import 'package:netpay_ksa/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:netpay_ksa/features/settings/presentation/settings_screen.dart';
-import 'package:netpay_ksa/features/comparison/presentation/comparison_screen.dart';
-import 'package:netpay_ksa/features/eosb/presentation/eosb_screen.dart';
-import 'package:netpay_ksa/features/salary_calculator/presentation/increase_calculator_screen.dart';
-import 'package:netpay_ksa/features/notifications/presentation/notifications_screen.dart';
-import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/router/app_page_transitions.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/history/presentation/history_screen.dart';
+import 'package:netgulf/features/salary_calculator/presentation/home_screen.dart';
+import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart';
+import 'package:netgulf/features/settings/presentation/settings_screen.dart';
+import 'package:netgulf/features/comparison/presentation/comparison_screen.dart';
+import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
+import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
+import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
+import 'package:netgulf/features/uae/presentation/uae_screen.dart';
+import 'package:netgulf/features/splash/presentation/splash_screen.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
 
 /// مفتاح التنقل الجذر — للـ dialogs و deep links.
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -141,6 +142,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const NotificationsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.uae,
+        name: AppRoutes.uaeName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const UaeScreen(),
         ),
       ),
     ],

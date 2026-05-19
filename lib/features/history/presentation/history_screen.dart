@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});

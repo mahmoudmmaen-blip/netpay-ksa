@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_rate_breakdown.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_rate_breakdown.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
 
 /// Full GOSI calculation output for one pay period.
 class GosiContributionResult extends Equatable {

@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:netpay_ksa/core/bootstrap/app_initializer.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
+import 'package:netgulf/core/bootstrap/app_initializer.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 
 /// حالة التطبيق العامة — ثيم، جاهزية، إعدادات محفوظة.
 class AppState extends Equatable {

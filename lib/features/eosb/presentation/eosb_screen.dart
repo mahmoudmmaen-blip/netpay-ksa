@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/eosb/domain/models/eosb_model.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// حاسبة نهاية الخدمة والمستحقات — المادتان 84 و 85.
 class EosbScreen extends ConsumerStatefulWidget {
@@ -23,6 +23,7 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
   final _basicController = TextEditingController();
   final _housingController = TextEditingController();
   final _ticketController = TextEditingController(text: '0');
+  final _leaveDaysController = TextEditingController(text: '0');
 
   EosbContractType _contractType = EosbContractType.unlimited;
   LeavingReason _leavingReason = LeavingReason.termination;
@@ -36,6 +37,7 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
     _basicController.dispose();
     _housingController.dispose();
     _ticketController.dispose();
+    _leaveDaysController.dispose();
     super.dispose();
   }
 
@@ -57,6 +59,7 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
       leavingReason: _leavingReason,
       ticketCost: double.tryParse(_ticketController.text.trim()) ?? 0,
       ticketFrequency: _ticketFrequency,
+      accruedLeaveDays: int.tryParse(_leaveDaysController.text.trim()) ?? 0,
     );
   }
 
@@ -251,6 +254,16 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
                 },
                 style: _segmentStyle(),
               ),
+              const SizedBox(height: 20),
+              _SectionTitle(
+                title: 'الإجازة المتراكمة',
+                icon: Icons.beach_access_outlined,
+              ),
+              _IntField(
+                controller: _leaveDaysController,
+                label: 'أيام الإجازة المتراكمة',
+                onChanged: (_) => setState(() {}),
+              ),
               const SizedBox(height: 24),
               _SectionTitle(
                 title: 'تفاصيل المستحقات',
@@ -283,6 +296,13 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
                       model.ticketFrequency,
                     ),
                   ),
+                  if (model.cashLeaveAllowance > 0)
+                    _BreakdownRow(
+                      label:
+                          'بدل إجازة نقدي (${model.accruedLeaveDays} يوم)',
+                      value: model.cashLeaveAllowance,
+                      subtitle: 'الأساسي ÷ 30 × الأيام المتراكمة',
+                    ),
                 ],
               ),
             ],

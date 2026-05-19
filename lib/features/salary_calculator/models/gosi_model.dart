@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_calculation_input.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_contribution_result.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_rate_breakdown.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/gosi/domain/logic/gosi_calculator.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/salary_allowances.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_calculation_input.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_contribution_result.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_rate_breakdown.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/gosi/domain/logic/gosi_calculator.dart';
+import 'package:netgulf/features/salary_calculator/models/salary_allowances.dart';
 
-export 'package:netpay_ksa/features/salary_calculator/models/salary_allowances.dart';
+export 'package:netgulf/features/salary_calculator/models/salary_allowances.dart';
 
 /// الموديل المالي الرئيسي — مصدر واحد للأرقام (UI / History / PDF).
 ///

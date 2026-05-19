@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/gosi/providers/gosi_calculator_provider.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/gosi/providers/gosi_calculator_provider.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// حاسبة زيادة الراتب — أثر الزيادة على الصافي و GOSI.
 class IncreaseCalculatorScreen extends ConsumerStatefulWidget {

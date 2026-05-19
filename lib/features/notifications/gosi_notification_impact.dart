@@ -1,6 +1,6 @@
-import 'package:netpay_ksa/features/gosi/domain/logic/gosi_calculator.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/features/gosi/domain/logic/gosi_calculator.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// عرض تنبيه GOSI مع أثر شهري على صافي الراتب.
 class GosiNotificationItem {

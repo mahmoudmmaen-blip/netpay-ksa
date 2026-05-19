@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:netpay_ksa/features/gosi/gosi.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/gosi/gosi.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 
 void main() {
   group('GosiModel.wageCeiling', () {

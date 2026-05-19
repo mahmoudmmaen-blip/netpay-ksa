@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 
 /// انتقالات صفحات مخصّصة — Splash → Home بسلاسة.
 abstract final class AppPageTransitions {

@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/bootstrap/app_initializer.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
+import 'package:netgulf/core/bootstrap/app_initializer.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/features/splash/presentation/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,7 +21,7 @@ void main() {
     await AppInitializer.init();
   });
 
-  testWidgets('Splash screen shows NetPay branding', (tester) async {
+  testWidgets('Splash screen shows NetGulf branding', (tester) async {
     final router = GoRouter(
       initialLocation: AppRoutes.splash,
       routes: [
@@ -51,8 +51,8 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('NetPay KSA'), findsOneWidget);
-    expect(find.text('نت باي السعودية'), findsOneWidget);
+    expect(find.text('NetGulf'), findsOneWidget);
+    expect(find.text('نت جلف'), findsOneWidget);
 
     await tester.pump(AppConstants.splashDisplayDuration);
     await tester.pumpAndSettle();

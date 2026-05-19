@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
-import 'package:netpay_ksa/features/admob/widgets/home_banner_ad.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
-import 'package:netpay_ksa/features/notifications/providers/notifications_provider.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/features/notifications/providers/notifications_provider.dart';
 
 /// الشاشة الرئيسية — حاسبة الراتب الصافي (Phase 1).
 class HomeScreen extends ConsumerWidget {
@@ -197,6 +197,13 @@ class HomeScreen extends ConsumerWidget {
                 subtitle: 'أثر الزيادة على الصافي و GOSI',
                 icon: Icons.trending_up_rounded,
                 onTap: () => context.push(AppRoutes.increase),
+              ),
+              const SizedBox(height: 12),
+              _FeatureNavCard(
+                title: '🇦🇪 الإمارات — GPSSA / DEWS',
+                subtitle: 'حاسبة الراتب الإماراتية',
+                icon: Icons.flag_circle_outlined,
+                onTap: () => context.push(AppRoutes.uae),
               ),
                   ],
                 ),

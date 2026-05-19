@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 
 /// سجل راتب محفوظ — snapshot كامل من لحظة الحفظ.
 class SalaryRecord extends Equatable {

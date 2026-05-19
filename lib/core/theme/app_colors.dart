@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 
-/// ألوان NetPay KSA — زمردي + كحلي + ذهبي + تدرجات جاهزة.
+/// ألوان NetGulf — زمردي + كحلي + ذهبي + تدرجات جاهزة.
 class AppColors {
   AppColors._();
 

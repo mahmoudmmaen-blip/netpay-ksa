@@ -4,11 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:netpay_ksa/app.dart';
-import 'package:netpay_ksa/core/bootstrap/app_initializer.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
+import 'package:netgulf/app.dart';
+import 'package:netgulf/core/bootstrap/app_initializer.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 
-/// نقطة الدخول — NetPay KSA
+/// نقطة الدخول — NetGulf
 Future<void> main() async {
   await runZonedGuarded(
     () async {
@@ -30,7 +30,7 @@ Future<void> main() async {
       await AppInitializer.init();
 
       if (!AppInitializer.isInitialized) {
-        throw StateError('فشلت تهيئة NetPay KSA — راجع AppInitializer');
+        throw StateError('فشلت تهيئة NetGulf — راجع AppInitializer');
       }
 
       if (kDebugMode) {
@@ -41,12 +41,12 @@ Future<void> main() async {
 
       runApp(
         const ProviderScope(
-          child: NetPayApp(),
+          child: NetGulfApp(),
         ),
       );
     },
     (error, stack) {
-      debugPrint('═══ NetPay KSA — خطأ غير متوقع ═══');
+      debugPrint('═══ NetGulf — خطأ غير متوقع ═══');
       debugPrint('$error\n$stack');
     },
   );

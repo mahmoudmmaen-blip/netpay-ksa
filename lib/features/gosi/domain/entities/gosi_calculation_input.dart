@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
 
 class GosiCalculationInput extends Equatable {
   const GosiCalculationInput({

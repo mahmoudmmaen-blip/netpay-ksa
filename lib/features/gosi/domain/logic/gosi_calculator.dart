@@ -1,9 +1,9 @@
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_calculation_input.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_contribution_result.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/gosi/domain/logic/gosi_rates_resolver.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_calculation_input.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_contribution_result.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/gosi/domain/logic/gosi_rates_resolver.dart';
 
 /// محرك GOSI — دقة 2026 (قديم 9.75% | جديد 10.25%+ مرحلي يوليو).
 ///

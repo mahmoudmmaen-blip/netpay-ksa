@@ -1,4 +1,4 @@
-// ثوابت التطبيق — NetPay KSA 2026
+// ثوابت التطبيق — NetGulf 2026
 // الهوية، المسارات، الألوان (hex)، GOSI، والانتقالات.
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -9,11 +9,11 @@
 abstract final class AppConstants {
   AppConstants._();
 
-  static const String appNameAr = 'نت باي السعودية';
-  static const String appNameEn = 'NetPay KSA';
-  static const String appTaglineAr = 'حاسبة الراتب الصافي السعودية 2026';
+  static const String appNameAr = 'نت جلف';
+  static const String appNameEn = 'NetGulf';
+  static const String appTaglineAr = 'حاسبة الراتب الصافي — السعودية والإمارات 2026';
   static const String appTaglineEn =
-      'Saudi Net Salary Calculator 2026 — Offline First';
+      'Gulf Net Salary Calculator 2026 — Offline First';
 
   static const String appVersion = '1.0.0';
   static const int appBuildNumber = 1;

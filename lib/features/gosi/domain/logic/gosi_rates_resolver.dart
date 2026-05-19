@@ -1,7 +1,7 @@
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/features/gosi/domain/entities/gosi_rate_breakdown.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/features/gosi/domain/entities/gosi_rate_breakdown.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
 
 /// حلّ نسب GOSI الرسمية — مصدر واحد للحقيقة (2025–2028).
 ///

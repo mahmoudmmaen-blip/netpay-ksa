@@ -35,12 +35,14 @@ class EosbModel {
     this.leavingReason = LeavingReason.termination,
     this.ticketCost = 0,
     this.ticketFrequency = FlightTicketFrequency.yearly,
+    this.accruedLeaveDays = 0,
   });
 
   final int yearsOfService;
   final int monthsOfService;
   final double basicSalary;
   final double housingAllowance;
+  final int accruedLeaveDays;
   final EosbContractType contractType;
   final LeavingReason leavingReason;
   final double ticketCost;
@@ -91,8 +93,17 @@ class EosbModel {
     return ticketCost * multiplier * totalServiceYears;
   }
 
+  /// بدل إجازة نقدي — (الأساسي / 30) × أيام الإجازة المتراكمة.
+  double get cashLeaveAllowance {
+    if (basicSalary <= 0 || accruedLeaveDays <= 0) return 0;
+    return (basicSalary / 30) * accruedLeaveDays;
+  }
+
   double get totalEntitlements =>
-      endOfServiceAmount + vacationAllowance + flightTicketAllowance;
+      endOfServiceAmount +
+      vacationAllowance +
+      flightTicketAllowance +
+      cashLeaveAllowance;
 
   bool get isResignation => leavingReason == LeavingReason.resignation;
 
@@ -105,6 +116,7 @@ class EosbModel {
     LeavingReason? leavingReason,
     double? ticketCost,
     FlightTicketFrequency? ticketFrequency,
+    int? accruedLeaveDays,
   }) {
     return EosbModel(
       yearsOfService: yearsOfService ?? this.yearsOfService,
@@ -115,6 +127,7 @@ class EosbModel {
       leavingReason: leavingReason ?? this.leavingReason,
       ticketCost: ticketCost ?? this.ticketCost,
       ticketFrequency: ticketFrequency ?? this.ticketFrequency,
+      accruedLeaveDays: accruedLeaveDays ?? this.accruedLeaveDays,
     );
   }
 

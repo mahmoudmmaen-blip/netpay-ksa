@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
 
 /// Brand logo — uses [AppConstants.logoAsset] with vector fallback.
 class AppLogo extends StatelessWidget {

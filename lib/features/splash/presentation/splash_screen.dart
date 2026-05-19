@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/core/widgets/app_logo.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/app_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

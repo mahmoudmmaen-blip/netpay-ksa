@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/notifications/providers/notifications_provider.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/notifications/providers/notifications_provider.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// شاشة التنبيهات — زيادات GOSI القادمة وتفعيل الإشعارات.
 class NotificationsScreen extends ConsumerStatefulWidget {

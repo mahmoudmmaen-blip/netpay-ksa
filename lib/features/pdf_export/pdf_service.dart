@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/gosi_regime.dart';
-import 'package:netpay_ksa/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/gosi_model.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/salary_record.dart';
+import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
+import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
+import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
+import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -45,7 +45,7 @@ class PdfService {
   }
 
   static String _fileName(SalaryRecord record) =>
-      'netpay_salary_${record.id.substring(0, 8)}.pdf';
+      'netgulf_salary_${record.id.substring(0, 8)}.pdf';
 
   static Future<List<int>> _buildPdfBytes(SalaryRecord record) async {
     final doc = await _buildPdf(record);
@@ -60,7 +60,7 @@ class PdfService {
 
     final doc = pw.Document(
       title: 'تقرير الراتب — ${record.label}',
-      author: 'NetPay KSA',
+      author: 'NetGulf',
     );
 
     doc.addPage(
@@ -127,7 +127,7 @@ class PdfService {
           pw.Divider(color: PdfColors.grey300),
           pw.SizedBox(height: 8),
           pw.Text(
-            'تم الإنشاء بواسطة NetPay KSA — $date',
+            'تم الإنشاء بواسطة NetGulf — $date',
             style: pw.TextStyle(font: font, fontSize: 10, color: PdfColors.grey),
             textAlign: pw.TextAlign.center,
           ),
@@ -147,7 +147,7 @@ class PdfService {
         child: pw.Column(
           children: [
             pw.Text(
-              'NetPay KSA',
+              'NetGulf',
               style: pw.TextStyle(
                 fontSize: 22,
                 fontWeight: pw.FontWeight.bold,

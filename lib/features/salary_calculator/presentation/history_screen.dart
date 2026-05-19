@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/salary_calculator/models/salary_record.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/history_notifier.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
+import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});

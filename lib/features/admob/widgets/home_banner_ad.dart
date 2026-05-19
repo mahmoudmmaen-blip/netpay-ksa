@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:netpay_ksa/features/admob/admob_service.dart';
+import 'package:netgulf/features/admob/admob_service.dart';
 
 /// بانر AdMob أسفل الشاشة الرئيسية.
 class HomeBannerAd extends StatefulWidget {

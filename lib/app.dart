@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
-import 'package:netpay_ksa/core/router/app_router.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/core/theme/app_theme.dart';
-import 'package:netpay_ksa/core/widgets/app_logo.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/router/app_router.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/app_theme.dart';
+import 'package:netgulf/core/widgets/app_logo.dart';
 
 /// جذر التطبيق — Material 3، RTL، GoRouter، ثيم محفوظ.
-class NetPayApp extends ConsumerWidget {
-  const NetPayApp({super.key});
+class NetGulfApp extends ConsumerWidget {
+  const NetGulfApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

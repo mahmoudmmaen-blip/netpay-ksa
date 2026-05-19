@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/features/gosi/gosi.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/features/gosi/gosi.dart';
 
 void main() {
   const calculator = GosiCalculator();

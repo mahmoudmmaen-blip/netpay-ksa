@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/history_notifier.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
 
 /// شاشة الإعدادات — ثيم، لغة، عن التطبيق، مسح السجل.
 class SettingsScreen extends ConsumerWidget {
@@ -114,7 +114,7 @@ class SettingsScreen extends ConsumerWidget {
               _AboutRow(
                 icon: Icons.code_rounded,
                 label: 'المطوّر',
-                value: 'NetPay KSA Team',
+                value: 'NetGulf Team',
               ),
               const Divider(height: 1, indent: 56),
               _AboutRow(

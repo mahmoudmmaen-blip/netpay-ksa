@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:netpay_ksa/core/bootstrap/app_initializer.dart';
-import 'package:netpay_ksa/core/constants/app_constants.dart';
-import 'package:netpay_ksa/features/gosi/providers/gosi_calculator_provider.dart';
-import 'package:netpay_ksa/features/notifications/gosi_notification_impact.dart';
-import 'package:netpay_ksa/features/notifications/notification_service.dart';
-import 'package:netpay_ksa/features/salary_calculator/providers/salary_notifier.dart';
+import 'package:netgulf/core/bootstrap/app_initializer.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/features/gosi/providers/gosi_calculator_provider.dart';
+import 'package:netgulf/features/notifications/gosi_notification_impact.dart';
+import 'package:netgulf/features/notifications/notification_service.dart';
+import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// هل التنبيهات مفعّلة (محفوظة محلياً).
 final notificationsEnabledProvider =

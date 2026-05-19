@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/providers/app_state_provider.dart';
-import 'package:netpay_ksa/core/router/app_routes.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
+import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/router/app_routes.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
 
 /// شاشة التعريف — 3 صفحات قبل البدء.
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -23,7 +23,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _pages = [
     _OnboardingPageData(
       icon: Icons.calculate_rounded,
-      title: 'مرحباً بك في NetPay KSA',
+      title: 'مرحباً بك في NetGulf',
       subtitle: 'حاسبة الراتب الصافي السعودية 2026 — سريعة، دقيقة، بدون إنترنت',
     ),
     _OnboardingPageData(

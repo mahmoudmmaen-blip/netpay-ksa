@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netpay_ksa/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/app_colors.dart';
 
 /// Material 3 themes — Cairo font, emerald/navy/gold, full RTL-ready.
 class AppTheme {

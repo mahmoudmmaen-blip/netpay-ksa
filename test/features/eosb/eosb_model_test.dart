@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:netpay_ksa/features/eosb/domain/models/eosb_model.dart';
+import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
   test('termination — full salary per year', () {
@@ -92,9 +92,22 @@ void main() {
       closeTo(
         model.endOfServiceAmount +
             model.vacationAllowance +
-            model.flightTicketAllowance,
+            model.flightTicketAllowance +
+            model.cashLeaveAllowance,
         0.01,
       ),
+    );
+  });
+
+  test('cashLeaveAllowance — basic/30 × accrued days', () {
+    const model = EosbModel(
+      basicSalary: 15000,
+      accruedLeaveDays: 10,
+    );
+    expect(model.cashLeaveAllowance, closeTo(15000 / 30 * 10, 0.01));
+    expect(
+      model.totalEntitlements,
+      greaterThan(model.endOfServiceAmount),
     );
   });
 }

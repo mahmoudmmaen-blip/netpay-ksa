@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:netpay_ksa/features/gosi/domain/logic/gosi_calculator.dart';
+import 'package:netgulf/features/gosi/domain/logic/gosi_calculator.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -23,7 +23,7 @@ class NotificationService {
   static const AndroidNotificationDetails _androidDetails =
       AndroidNotificationDetails(
     'netpay_alerts',
-    'تنبيهات NetPay',
+    'تنبيهات NetGulf',
     channelDescription: 'تذكيرات GOSI ومراجعة الراتب',
     importance: Importance.high,
     priority: Priority.high,
@@ -80,7 +80,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       _idForDate(date),
-      'تنبيه GOSI — نت باي',
+      'تنبيه GOSI — NetGulf',
       message,
       scheduled,
       _details,
@@ -100,7 +100,7 @@ class NotificationService {
 
     await _plugin.zonedSchedule(
       _idYearlyReminder,
-      'نت باي — مراجعة سنوية',
+      'NetGulf — مراجعة سنوية',
       'راجع راتبك — GOSI تغيرت؟',
       _atNineAm(next),
       _details,
@@ -124,7 +124,7 @@ class NotificationService {
       if (dayOf.isAfter(tz.TZDateTime.now(tz.local))) {
         await scheduleGosiWarning(
           w.effectiveDate,
-          'اليوم: زيادة GOSI اعتباراً من $monthLabel. راجع راتبك في نت باي.',
+          'اليوم: زيادة GOSI اعتباراً من $monthLabel. راجع راتبك في NetGulf.',
         );
       }
 
