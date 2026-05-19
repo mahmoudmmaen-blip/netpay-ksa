@@ -167,8 +167,25 @@ class HomeScreen extends ConsumerWidget {
                 _GosiBreakdownCard(gosi: gosi, currency: currency),
               ],
               const SizedBox(height: 20),
-              _EosbNavCard(
+              _FeatureNavCard(
+                title: 'نهاية الخدمة والمستحقات',
+                subtitle: 'مكافأة · إجازة · تذكرة سفر (م. 84/85)',
+                icon: Icons.card_giftcard_outlined,
                 onTap: () => context.push(AppRoutes.eosb),
+              ),
+              const SizedBox(height: 12),
+              _FeatureNavCard(
+                title: 'مقارنة العروض',
+                subtitle: 'قارن صافي راتبين بعد GOSI',
+                icon: Icons.compare_arrows_rounded,
+                onTap: () => context.push(AppRoutes.comparison),
+              ),
+              const SizedBox(height: 12),
+              _FeatureNavCard(
+                title: 'حاسبة الزيادة',
+                subtitle: 'أثر الزيادة على الصافي و GOSI',
+                icon: Icons.trending_up_rounded,
+                onTap: () => context.push(AppRoutes.increase),
               ),
                   ],
                 ),
@@ -394,9 +411,17 @@ class _WarningBanner extends StatelessWidget {
   }
 }
 
-class _EosbNavCard extends StatelessWidget {
-  const _EosbNavCard({required this.onTap});
+class _FeatureNavCard extends StatelessWidget {
+  const _FeatureNavCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
 
+  final String title;
+  final String subtitle;
+  final IconData icon;
   final VoidCallback onTap;
 
   @override
@@ -404,7 +429,6 @@ class _EosbNavCard extends StatelessWidget {
     return Material(
       color: Theme.of(context).colorScheme.surface,
       elevation: 0,
-      shadowColor: AppColors.emerald.withValues(alpha: 0.2),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -425,10 +449,7 @@ class _EosbNavCard extends StatelessWidget {
                   color: AppColors.emerald.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.card_giftcard_outlined,
-                  color: AppColors.emerald,
-                ),
+                child: Icon(icon, color: AppColors.emerald),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -436,7 +457,7 @@ class _EosbNavCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'نهاية الخدمة والمستحقات',
+                      title,
                       style: GoogleFonts.cairo(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -444,7 +465,7 @@ class _EosbNavCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'مكافأة · إجازة · تذكرة سفر (م. 84/85)',
+                      subtitle,
                       style: GoogleFonts.cairo(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,

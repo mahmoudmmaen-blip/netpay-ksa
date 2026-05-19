@@ -1,20 +1,26 @@
 // نموذج مكافأة نهاية الخدمة والمستحقات — نظام العمل السعودي (المادتان 84 و 85).
 
+/// سبب انتهاء العلاقة العمالية.
+enum LeavingReason {
+  /// فصل من صاحب العمل — مكافأة كاملة (راتب عن كل سنة)
+  termination,
+
+  /// استقالة — نسب مخفّضة حسب مدة الخدمة (م. 85)
+  resignation,
+
+  /// انتهاء عقد محدد المدة — مثل الفصل (مكافأة كاملة)
+  contractEnd,
+}
+
 /// نوع العقد — محدد المدة / غير محدد.
 enum EosbContractType {
-  /// عقد محدد المدة
   fixed,
-
-  /// عقد غير محدد المدة
   unlimited,
 }
 
 /// تكرار تذكرة السفر في العقد.
 enum FlightTicketFrequency {
-  /// تذكرة واحدة سنوياً
   yearly,
-
-  /// تذكرتان سنوياً
   biannual,
 }
 
@@ -26,6 +32,7 @@ class EosbModel {
     this.basicSalary = 0,
     this.housingAllowance = 0,
     this.contractType = EosbContractType.unlimited,
+    this.leavingReason = LeavingReason.termination,
     this.ticketCost = 0,
     this.ticketFrequency = FlightTicketFrequency.yearly,
   });
@@ -35,53 +42,59 @@ class EosbModel {
   final double basicSalary;
   final double housingAllowance;
   final EosbContractType contractType;
+  final LeavingReason leavingReason;
   final double ticketCost;
   final FlightTicketFrequency ticketFrequency;
 
-  /// إجمالي سنوات الخدمة (كسور السنة محسوبة).
   double get totalServiceYears =>
       yearsOfService + (monthsOfService.clamp(0, 11) / 12.0);
 
-  /// الأجر الشهري لأغراض المكافأة (أساسي + سكن — وفق الممارسة الشائعة).
   double get monthlyWage => basicSalary + housingAllowance;
 
-  /// أجر اليوم (30 يوماً في الشهر).
   double get dailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
 
-  /// أيام الإجازة السنوية: 21 قبل 5 سنوات، 30 من 5 سنوات فأكثر.
   int get annualVacationDays => totalServiceYears >= 5 ? 30 : 21;
 
-  /// مكافأة نهاية الخدمة — المادة 84 (انتهاء عقد / إنهاء من صاحب العمل).
-  ///
-  /// أول 5 سنوات: نصف شهر عن كل سنة.
-  /// ما بعد 5 سنوات: شهر كامل عن كل سنة.
-  /// يُحتسب بالتناسب لكسور السنة.
+  /// مكافأة كاملة = راتب شهري × سنوات الخدمة (قبل تطبيق نسبة الاستقالة).
+  double get fullEndOfServiceBase {
+    if (totalServiceYears <= 0 || monthlyWage <= 0) return 0;
+    return monthlyWage * totalServiceYears;
+  }
+
+  /// نسبة مكافأة الاستقالة (م. 85) — 1.0 = كامل.
+  double get resignationAwardFactor {
+    final y = totalServiceYears;
+    if (y < 2) return 0;
+    if (y < 5) return 1 / 3;
+    if (y < 10) return 2 / 3;
+    return 1;
+  }
+
+  /// مكافأة نهاية الخدمة حسب سبب المغادرة.
   double get endOfServiceAmount {
     if (totalServiceYears <= 0 || monthlyWage <= 0) return 0;
 
-    final years = totalServiceYears;
-    final inFirstBracket = years.clamp(0.0, 5.0);
-    final inSecondBracket = (years - 5).clamp(0.0, double.infinity);
-
-    return (inFirstBracket * 0.5 * monthlyWage) +
-        (inSecondBracket * 1.0 * monthlyWage);
+    return switch (leavingReason) {
+      LeavingReason.termination || LeavingReason.contractEnd =>
+        fullEndOfServiceBase,
+      LeavingReason.resignation =>
+        fullEndOfServiceBase * resignationAwardFactor,
+    };
   }
 
-  /// بدل الإجازة — قيمة أيام الإجازة السنوية المستحقة (21 أو 30 يوماً).
   double get vacationAllowance => dailyWage * annualVacationDays;
 
-  /// بدل تذكرة السفر — مُوزَّع على سنوات الخدمة حسب التكرار.
   double get flightTicketAllowance {
     if (ticketCost <= 0 || totalServiceYears <= 0) return 0;
-    final multiplier = ticketFrequency == FlightTicketFrequency.biannual
-        ? 2.0
-        : 1.0;
+    final multiplier =
+        ticketFrequency == FlightTicketFrequency.biannual ? 2.0 : 1.0;
     return ticketCost * multiplier * totalServiceYears;
   }
 
-  /// إجمالي المستحقات.
   double get totalEntitlements =>
       endOfServiceAmount + vacationAllowance + flightTicketAllowance;
+
+  bool get isResignation => leavingReason == LeavingReason.resignation;
 
   EosbModel copyWith({
     int? yearsOfService,
@@ -89,6 +102,7 @@ class EosbModel {
     double? basicSalary,
     double? housingAllowance,
     EosbContractType? contractType,
+    LeavingReason? leavingReason,
     double? ticketCost,
     FlightTicketFrequency? ticketFrequency,
   }) {
@@ -98,18 +112,23 @@ class EosbModel {
       basicSalary: basicSalary ?? this.basicSalary,
       housingAllowance: housingAllowance ?? this.housingAllowance,
       contractType: contractType ?? this.contractType,
+      leavingReason: leavingReason ?? this.leavingReason,
       ticketCost: ticketCost ?? this.ticketCost,
       ticketFrequency: ticketFrequency ?? this.ticketFrequency,
     );
   }
 
-  /// تسمية نوع العقد بالعربية.
   static String contractTypeLabel(EosbContractType type) => switch (type) {
         EosbContractType.fixed => 'محدد المدة',
         EosbContractType.unlimited => 'غير محدد',
       };
 
-  /// تسمية تكرار التذكرة.
+  static String leavingReasonLabel(LeavingReason reason) => switch (reason) {
+        LeavingReason.termination => 'فصل',
+        LeavingReason.resignation => 'استقالة',
+        LeavingReason.contractEnd => 'انتهاء عقد',
+      };
+
   static String ticketFrequencyLabel(FlightTicketFrequency f) => switch (f) {
         FlightTicketFrequency.yearly => 'سنوي',
         FlightTicketFrequency.biannual => 'نصف سنوي (مرتين)',

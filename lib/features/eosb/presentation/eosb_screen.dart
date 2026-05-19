@@ -25,6 +25,7 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
   final _ticketController = TextEditingController(text: '0');
 
   EosbContractType _contractType = EosbContractType.unlimited;
+  LeavingReason _leavingReason = LeavingReason.termination;
   FlightTicketFrequency _ticketFrequency = FlightTicketFrequency.yearly;
   bool _salarySynced = false;
 
@@ -53,6 +54,7 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
       basicSalary: double.tryParse(_basicController.text.trim()) ?? 0,
       housingAllowance: double.tryParse(_housingController.text.trim()) ?? 0,
       contractType: _contractType,
+      leavingReason: _leavingReason,
       ticketCost: double.tryParse(_ticketController.text.trim()) ?? 0,
       ticketFrequency: _ticketFrequency,
     );
@@ -97,10 +99,21 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
             children: [
-              _DisclaimerBanner(contractType: model.contractType),
+              _DisclaimerBanner(
+                contractType: model.contractType,
+                leavingReason: model.leavingReason,
+              ),
+              if (model.isResignation) ...[
+                const SizedBox(height: 12),
+                _ResignationDisclaimer(),
+              ],
               const SizedBox(height: 16),
               _TotalCard(
                 total: model.totalEntitlements,
+                eosAmount: model.endOfServiceAmount,
+                accentColor: model.isResignation
+                    ? AppColors.warning
+                    : AppColors.success,
                 currency: currency,
                 isDark: isDark,
               ),
@@ -148,6 +161,32 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
                 selected: {_contractType},
                 onSelectionChanged: (s) {
                   setState(() => _contractType = s.first);
+                },
+                style: _segmentStyle(),
+              ),
+              const SizedBox(height: 20),
+              _SectionTitle(
+                title: 'سبب انتهاء الخدمة',
+                icon: Icons.logout_rounded,
+              ),
+              SegmentedButton<LeavingReason>(
+                segments: const [
+                  ButtonSegment(
+                    value: LeavingReason.termination,
+                    label: Text('فصل'),
+                  ),
+                  ButtonSegment(
+                    value: LeavingReason.resignation,
+                    label: Text('استقالة'),
+                  ),
+                  ButtonSegment(
+                    value: LeavingReason.contractEnd,
+                    label: Text('انتهاء عقد'),
+                  ),
+                ],
+                selected: {_leavingReason},
+                onSelectionChanged: (s) {
+                  setState(() => _leavingReason = s.first);
                 },
                 style: _segmentStyle(),
               ),
@@ -222,10 +261,13 @@ class _EosbScreenState extends ConsumerState<EosbScreen> {
                 isDark: isDark,
                 rows: [
                   _BreakdownRow(
-                    label: 'مكافأة نهاية الخدمة (م. 84)',
+                    label: 'مكافأة نهاية الخدمة',
                     value: model.endOfServiceAmount,
+                    valueColor: model.isResignation
+                        ? AppColors.warning
+                        : AppColors.success,
                     subtitle:
-                        '${model.totalServiceYears.toStringAsFixed(1)} سنة · ${EosbModel.contractTypeLabel(model.contractType)}',
+                        '${EosbModel.leavingReasonLabel(model.leavingReason)} · ${model.totalServiceYears.toStringAsFixed(1)} سنة',
                   ),
                   _BreakdownRow(
                     label: 'بدل الإجازة (${model.annualVacationDays} يوم)',
@@ -291,9 +333,13 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _DisclaimerBanner extends StatelessWidget {
-  const _DisclaimerBanner({required this.contractType});
+  const _DisclaimerBanner({
+    required this.contractType,
+    required this.leavingReason,
+  });
 
   final EosbContractType contractType;
+  final LeavingReason leavingReason;
 
   @override
   Widget build(BuildContext context) {
@@ -311,10 +357,41 @@ class _DisclaimerBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'الحساب وفق المادة 84 (انتهاء العقد أو إنهاء من صاحب العمل). '
-              'عقد ${EosbModel.contractTypeLabel(contractType)}. '
-              'حالات الاستقالة تخضع لنسب مختلفة بموجب المادة 85.',
+              'عقد ${EosbModel.contractTypeLabel(contractType)} · '
+              '${EosbModel.leavingReasonLabel(leavingReason)}. '
+              'الفصل وانتهاء العقد: راتب كامل عن كل سنة. '
+              'الاستقالة: نسب مخفّضة (م. 85).',
               style: GoogleFonts.cairo(fontSize: 12, height: 1.45),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResignationDisclaimer extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'الاستقالة قد تقلل مكافأتك حسب مدة الخدمة.',
+              style: GoogleFonts.cairo(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.warning,
+              ),
             ),
           ),
         ],
@@ -326,11 +403,15 @@ class _DisclaimerBanner extends StatelessWidget {
 class _TotalCard extends StatelessWidget {
   const _TotalCard({
     required this.total,
+    required this.eosAmount,
+    required this.accentColor,
     required this.currency,
     required this.isDark,
   });
 
   final double total;
+  final double eosAmount;
+  final Color accentColor;
   final NumberFormat currency;
   final bool isDark;
 
@@ -364,7 +445,16 @@ class _TotalCard extends StatelessWidget {
               height: 1.1,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Text(
+            'مكافأة: ${currency.format(eosAmount)}',
+            style: GoogleFonts.cairo(
+              color: accentColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
           Text(
             'مكافأة + إجازة + تذكرة سفر',
             style: GoogleFonts.cairo(
@@ -425,11 +515,13 @@ class _BreakdownRow {
     required this.label,
     required this.value,
     this.subtitle,
+    this.valueColor,
   });
 
   final String label;
   final double value;
   final String? subtitle;
+  final Color? valueColor;
 
   Widget build(BuildContext context, NumberFormat currency) {
     return Row(
@@ -464,7 +556,7 @@ class _BreakdownRow {
           style: GoogleFonts.cairo(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.emerald,
+            color: valueColor ?? AppColors.emerald,
           ),
         ),
       ],

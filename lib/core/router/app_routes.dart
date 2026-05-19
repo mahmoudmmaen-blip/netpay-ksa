@@ -16,6 +16,8 @@ abstract final class AppRoutes {
   static const String salaryCalculator = '/salary';
   static const String gosi = '/gosi';
   static const String eosb = '/eosb';
+  static const String comparison = '/comparison';
+  static const String increase = '/increase';
   static const String settings = '/settings';
 
   // ── أسماء GoRouter (للتنقل: context.goNamed) ───────────────────────────────
@@ -25,6 +27,8 @@ abstract final class AppRoutes {
   static const String homeName = 'home';
   static const String historyName = 'history';
   static const String eosbName = 'eosb';
+  static const String comparisonName = 'comparison';
+  static const String increaseName = 'increase';
   static const String settingsName = 'settings';
 
   /// المسار الابتدائي عند فتح التطبيق.

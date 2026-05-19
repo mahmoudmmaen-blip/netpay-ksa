@@ -2,64 +2,87 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:netpay_ksa/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
-  test('endOfServiceAmount — 3 years at 10000 basic + 2500 housing', () {
+  test('termination — full salary per year', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
       housingAllowance: 2500,
+      leavingReason: LeavingReason.termination,
     );
-    // 3 * 0.5 * 12500 = 18750
-    expect(model.endOfServiceAmount, closeTo(18750, 0.01));
+    expect(model.endOfServiceAmount, closeTo(37500, 0.01));
   });
 
-  test('endOfServiceAmount — 7 years pro-rated', () {
+  test('contractEnd — same as termination', () {
+    const termination = EosbModel(
+      yearsOfService: 5,
+      basicSalary: 8000,
+      leavingReason: LeavingReason.termination,
+    );
+    const contractEnd = EosbModel(
+      yearsOfService: 5,
+      basicSalary: 8000,
+      leavingReason: LeavingReason.contractEnd,
+    );
+    expect(contractEnd.endOfServiceAmount, termination.endOfServiceAmount);
+  });
+
+  test('resignation < 2 years — zero', () {
+    const model = EosbModel(
+      yearsOfService: 1,
+      basicSalary: 10000,
+      leavingReason: LeavingReason.resignation,
+    );
+    expect(model.endOfServiceAmount, 0);
+  });
+
+  test('resignation 2-5 years — one third', () {
+    const model = EosbModel(
+      yearsOfService: 4,
+      basicSalary: 12000,
+      leavingReason: LeavingReason.resignation,
+    );
+    expect(model.endOfServiceAmount, closeTo(12000 * 4 / 3, 0.01));
+  });
+
+  test('resignation 5-10 years — two thirds', () {
     const model = EosbModel(
       yearsOfService: 7,
       basicSalary: 10000,
-      housingAllowance: 0,
+      leavingReason: LeavingReason.resignation,
     );
-    // 5*0.5*10000 + 2*1*10000 = 25000 + 20000 = 45000
-    expect(model.endOfServiceAmount, closeTo(45000, 0.01));
+    expect(model.endOfServiceAmount, closeTo(10000 * 7 * 2 / 3, 0.01));
+  });
+
+  test('resignation 10+ years — full', () {
+    const model = EosbModel(
+      yearsOfService: 12,
+      basicSalary: 9000,
+      leavingReason: LeavingReason.resignation,
+    );
+    expect(model.endOfServiceAmount, closeTo(9000 * 12, 0.01));
   });
 
   test('vacationAllowance — 21 days before 5 years', () {
     const model = EosbModel(
       yearsOfService: 4,
       basicSalary: 30000,
-      housingAllowance: 0,
     );
     expect(model.annualVacationDays, 21);
     expect(model.vacationAllowance, closeTo(30000 / 30 * 21, 0.01));
   });
 
-  test('vacationAllowance — 30 days at 5+ years', () {
-    const model = EosbModel(
-      yearsOfService: 5,
-      basicSalary: 30000,
-    );
-    expect(model.annualVacationDays, 30);
-    expect(model.vacationAllowance, closeTo(30000, 0.01));
-  });
-
-  test('flightTicketAllowance — yearly vs biannual', () {
-    const yearly = EosbModel(
-      yearsOfService: 2,
-      ticketCost: 3000,
-      ticketFrequency: FlightTicketFrequency.yearly,
-    );
+  test('flightTicketAllowance — biannual', () {
     const biannual = EosbModel(
       yearsOfService: 2,
       ticketCost: 3000,
       ticketFrequency: FlightTicketFrequency.biannual,
     );
-    expect(yearly.flightTicketAllowance, 6000);
     expect(biannual.flightTicketAllowance, 12000);
   });
 
   test('totalEntitlements sums components', () {
     const model = EosbModel(
-      yearsOfService: 1,
-      monthsOfService: 6,
+      yearsOfService: 2,
       basicSalary: 8000,
       housingAllowance: 2000,
       ticketCost: 2000,

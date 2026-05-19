@@ -9,7 +9,9 @@ import 'package:netpay_ksa/features/history/presentation/history_screen.dart';
 import 'package:netpay_ksa/features/salary_calculator/presentation/home_screen.dart';
 import 'package:netpay_ksa/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:netpay_ksa/features/settings/presentation/settings_screen.dart';
+import 'package:netpay_ksa/features/comparison/presentation/comparison_screen.dart';
 import 'package:netpay_ksa/features/eosb/presentation/eosb_screen.dart';
+import 'package:netpay_ksa/features/salary_calculator/presentation/increase_calculator_screen.dart';
 import 'package:netpay_ksa/features/splash/presentation/splash_screen.dart';
 import 'package:netpay_ksa/core/providers/app_state_provider.dart';
 
@@ -114,6 +116,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const EosbScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.comparison,
+        name: AppRoutes.comparisonName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const ComparisonScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.increase,
+        name: AppRoutes.increaseName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const IncreaseCalculatorScreen(),
         ),
       ),
     ],
