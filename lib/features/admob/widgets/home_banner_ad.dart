@@ -1,10 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:netgulf/core/services/admob_service.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 
-/// ارتفاع البانر القياسي — يُحجز مسبقاً لتجنّب قفز التخطيط.
+/// ارتفاع البانر القياسي — يُحجز مسبقاً أثناء التحميل فقط.
 const _kBannerHeight = 50.0;
 
 /// بانر AdMob أسفل الشاشة الرئيسية — للنسخة المجانية فقط.
@@ -19,6 +20,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
   bool _isLoading = false;
+  bool _loadFailed = false;
 
   @override
   void initState() {
@@ -27,7 +29,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
   }
 
   Future<void> _loadAd() async {
-    if (_isLoading || _bannerAd != null) return;
+    if (_isLoading || _bannerAd != null || _loadFailed) return;
     if (!AdMobService.isSupported || !ref.read(showAdsProvider)) return;
 
     setState(() => _isLoading = true);
@@ -47,19 +49,32 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
               _bannerAd = ad as BannerAd;
               _isLoaded = true;
               _isLoading = false;
+              _loadFailed = false;
             });
           },
           onAdFailedToLoad: (ad, error) {
             ad.dispose();
-            debugPrint('HomeBannerAd failed: ${error.message}');
-            if (mounted) setState(() => _isLoading = false);
+            if (kDebugMode) {
+              debugPrint('HomeBannerAd: ${error.message}');
+            }
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _loadFailed = true;
+              });
+            }
           },
         ),
       );
 
       await banner.load();
     } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadFailed = true;
+        });
+      }
     }
   }
 
@@ -68,6 +83,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
     _bannerAd = null;
     _isLoaded = false;
     _isLoading = false;
+    _loadFailed = false;
   }
 
   @override
@@ -82,7 +98,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
       if (!showAds) {
         _disposeBanner();
         if (mounted) setState(() {});
-      } else if (_bannerAd == null && !_isLoading) {
+      } else if (_bannerAd == null && !_isLoading && !_loadFailed) {
         _loadAd();
       }
     });
@@ -93,12 +109,22 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
       return const SizedBox.shrink();
     }
 
+    if (_loadFailed) {
+      return const SizedBox.shrink();
+    }
+
+    if (!_isLoaded && !_isLoading) {
+      return const SizedBox.shrink();
+    }
+
     final height = _bannerAd?.size.height.toDouble() ?? _kBannerHeight;
 
     return SafeArea(
       top: false,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 280),
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
         child: _isLoaded && _bannerAd != null
             ? SizedBox(
                 key: const ValueKey('banner-loaded'),
@@ -108,7 +134,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
               )
             : SizedBox(
                 key: const ValueKey('banner-slot'),
-                height: height,
+                height: _isLoading ? height : 0,
               ),
       ),
     );

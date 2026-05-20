@@ -6,7 +6,7 @@ import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شارة Premium — AppBar أو بطاقات مختصرة.
+/// شارة Premium — تاج + خلفية emerald (AppBar / الإعدادات).
 class PremiumBadge extends ConsumerWidget {
   const PremiumBadge({super.key, this.compact = true});
 
@@ -20,61 +20,139 @@ class PremiumBadge extends ConsumerWidget {
     }
 
     if (compact) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              AppColors.emerald.withValues(alpha: 0.28),
-              AppColors.gold.withValues(alpha: 0.18),
-            ],
-          ),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.verified_rounded, size: 16, color: AppColors.goldBright),
-            const SizedBox(width: 4),
-            Text(
-              'Premium',
-              style: GoogleFonts.cairo(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: AppColors.goldBright,
-              ),
-            ),
-          ],
-        ),
-      );
+      return _CompactBadge();
     }
 
+    return _FullBadge();
+  }
+}
+
+class _CompactBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.emerald, AppColors.emeraldDark],
+        ),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.emerald.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.workspace_premium_rounded,
+            size: 15,
+            color: AppColors.goldBright,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Premium',
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.all(1.5),
+            decoration: const BoxDecoration(
+              color: AppColors.goldBright,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              size: 9,
+              color: AppColors.emeraldDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FullBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [
-            AppColors.emerald.withValues(alpha: 0.2),
-            AppColors.gold.withValues(alpha: 0.12),
-          ],
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+          colors: [AppColors.emerald, AppColors.emeraldDark, Color(0xFF064E3B)],
         ),
-        border: Border.all(color: AppColors.emerald.withValues(alpha: 0.4)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.emerald.withValues(alpha: 0.3),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_rounded, color: AppColors.goldBright, size: 22),
-          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.15),
+              border: Border.all(color: AppColors.goldBright.withValues(alpha: 0.6)),
+            ),
+            child: const Icon(
+              Icons.workspace_premium_rounded,
+              color: AppColors.goldBright,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              '✅ ${PremiumConstants.statusActive} — ${PremiumConstants.statusActiveSubtitle}',
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.emeraldLight,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      PremiumConstants.statusActive,
+                      style: GoogleFonts.cairo(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: AppColors.goldBright,
+                    ),
+                  ],
+                ),
+                Text(
+                  PremiumConstants.statusActiveSubtitle,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

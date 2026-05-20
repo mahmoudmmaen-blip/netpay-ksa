@@ -10,6 +10,7 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/services/premium_access.dart';
+import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/core/widgets/premium_mesh_background.dart';
@@ -78,17 +79,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (b) => AppColors.goldGradient.createShader(b),
-          child: Text(
-            'NetGulf',
-            style: GoogleFonts.cairo(
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
-              color: Colors.white,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ShaderMask(
+              blendMode: BlendMode.srcIn,
+              shaderCallback: (b) => AppColors.goldGradient.createShader(b),
+              child: Text(
+                'NetGulf',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  color: Colors.white,
+                ),
+              ),
             ),
-          ),
+            if (isPremium) ...[
+              const SizedBox(width: 10),
+              const PremiumBadge(),
+            ],
+          ],
         ),
         actions: [
           _GlassIconButton(
@@ -122,10 +132,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.history_rounded,
             onPressed: () => context.push(AppRoutes.history),
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 4),
-            child: PremiumUpgradeButton(compact: true),
-          ),
+          if (!isPremium)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 4),
+              child: PremiumUpgradeButton(compact: true),
+            ),
           const SizedBox(width: 8),
         ],
       ),
