@@ -1,6 +1,6 @@
 {
-    "name": "netpay_ksa",
-    "short_name": "netpay_ksa",
+    "name": "netgulf",
+    "short_name": "netgulf",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

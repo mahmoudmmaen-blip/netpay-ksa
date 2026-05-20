@@ -1,4 +1,4 @@
-package com.example.netpay_ksa
+package com.example.netgulf
 
 import io.flutter.embedding.android.FlutterActivity
 
