@@ -10,7 +10,7 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
-import 'package:netgulf/core/services/admob_service.dart';
+import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/core/widgets/premium_mesh_background.dart';
@@ -71,6 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deduction =
         isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
 
+    final showAds = ref.watch(showAdsProvider);
     final isPremium = ref.watch(isPremiumProvider);
 
     return Scaffold(
@@ -148,7 +149,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 24),
                     HomeScreenHeader(country: country),
                     const SizedBox(height: 16),
-                    if (!isPremium) const PremiumUpgradeButton(),
+                    const PremiumUpgradeButton(),
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 320),
@@ -202,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          if (!isPremium) const HomeBannerAd(),
+          if (showAds) const HomeBannerAd(),
         ],
       ),
     );
@@ -282,9 +283,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) async {
     if (!isPremium) {
       await showPremiumGate(context, feature: PremiumFeature.pdfExport);
-      await AdMobService.tryShowInterstitial(
-        isPremium: ref.read(isPremiumProvider),
-      );
+      await PremiumAccess.showInterstitialIfFree(ref);
       return;
     }
 

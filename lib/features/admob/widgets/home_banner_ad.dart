@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/services/admob_service.dart';
 
 /// بانر AdMob أسفل الشاشة الرئيسية — للنسخة المجانية فقط.
@@ -25,25 +25,25 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
   @override
   void didUpdateWidget(covariant HomeBannerAd oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final isPremium = ref.read(isPremiumProvider);
-    if (isPremium && _bannerAd != null) {
+    final showAds = ref.read(showAdsProvider);
+    if (!showAds && _bannerAd != null) {
       _bannerAd?.dispose();
       _bannerAd = null;
       _isLoaded = false;
-    } else if (!isPremium && _bannerAd == null) {
+    } else if (showAds && _bannerAd == null) {
       _loadAd();
     }
   }
 
   Future<void> _loadAd() async {
-    if (!AdMobService.isSupported || ref.read(isPremiumProvider)) return;
+    if (!AdMobService.isSupported || !ref.read(showAdsProvider)) return;
 
     await AdMobService.initialize();
 
     final banner = AdMobService.createBannerAd(
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          if (!mounted || ref.read(isPremiumProvider)) {
+          if (!mounted || !ref.read(showAdsProvider)) {
             ad.dispose();
             return;
           }
@@ -70,8 +70,8 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(isPremiumProvider, (previous, isPremium) {
-      if (isPremium) {
+    ref.listen(showAdsProvider, (previous, showAds) {
+      if (!showAds) {
         _bannerAd?.dispose();
         _bannerAd = null;
         if (_isLoaded) {
@@ -82,9 +82,9 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
       }
     });
 
-    final isPremium = ref.watch(isPremiumProvider);
+    final showAds = ref.watch(showAdsProvider);
 
-    if (isPremium ||
+    if (!showAds ||
         !AdMobService.isSupported ||
         !_isLoaded ||
         _bannerAd == null) {

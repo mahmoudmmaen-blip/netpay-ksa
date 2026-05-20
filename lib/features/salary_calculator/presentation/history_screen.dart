@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
-import 'package:netgulf/core/services/admob_service.dart';
+import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
@@ -148,9 +148,7 @@ class HistoryScreen extends ConsumerWidget {
           .saveCurrentSalary(controller.text);
       if (!context.mounted) return;
       if (saved) {
-        await AdMobService.tryShowInterstitial(
-          isPremium: ref.read(isPremiumProvider),
-        );
+        await PremiumAccess.showInterstitialIfFree(ref);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -167,12 +165,10 @@ class HistoryScreen extends ConsumerWidget {
     WidgetRef ref,
     SalaryRecord record,
   ) async {
-    if (!ref.read(isPremiumProvider)) {
+    if (PremiumAccess.isFeatureLocked(ref)) {
       await showPremiumGate(context, feature: PremiumFeature.pdfExport);
-      await AdMobService.tryShowInterstitial(
-        isPremium: ref.read(isPremiumProvider),
-      );
-      if (!ref.read(isPremiumProvider) || !context.mounted) return;
+      await PremiumAccess.showInterstitialIfFree(ref);
+      if (PremiumAccess.isFeatureLocked(ref) || !context.mounted) return;
     }
 
     try {

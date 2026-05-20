@@ -25,11 +25,7 @@ class PremiumNotifier extends StateNotifier<PremiumStatus> {
         expiresAt: expiresAt,
       );
 
-      if (status.premiumStatus && !status.isValid) {
-        await _persist(PremiumStatus(premiumStatus: false, expiresAt: expiresAt));
-        status = const PremiumStatus(premiumStatus: false);
-      }
-
+      // احتفظ بحالة "منتهٍ" للعرض — لا تمسح السجل تلقائياً.
       state = status;
     } catch (_) {
       state = const PremiumStatus();

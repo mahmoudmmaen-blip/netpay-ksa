@@ -3,102 +3,158 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/premium_constants.dart';
+import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 
-/// بطاقة حالة Premium — أعلى شاشة الإعدادات.
+/// بطاقة حالة Premium — أعلى شاشة الإعدادات (Active / Expired / Not Subscribed).
 class PremiumStatusCard extends ConsumerWidget {
   const PremiumStatusCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(premiumStatusProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (status.isValid) {
-      return _ActiveCard(expiresAt: status.expiresAt, isDark: isDark);
-    }
-
-    return _UpgradeCard(isDark: isDark);
+    return switch (status.subscriptionState) {
+      PremiumSubscriptionState.active => _ActiveCard(status: status),
+      PremiumSubscriptionState.expired => _ExpiredCard(expiresAt: status.expiresAt),
+      PremiumSubscriptionState.notSubscribed => const _UpgradeCard(),
+    };
   }
 }
 
 class _ActiveCard extends StatelessWidget {
-  const _ActiveCard({required this.expiresAt, required this.isDark});
+  const _ActiveCard({required this.status});
 
-  final DateTime? expiresAt;
-  final bool isDark;
+  final PremiumStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final expiryText = expiresAt != null
-        ? DateFormat('dd MMMM yyyy', 'ar').format(expiresAt!)
+    final expiryText = status.expiresAt != null
+        ? DateFormat('dd MMMM yyyy', 'ar').format(status.expiresAt!)
         : '—';
+    final days = status.daysRemaining;
 
     return GlassSurface(
       highlighted: true,
       borderRadius: 22,
       padding: const EdgeInsets.all(20),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.emerald.withValues(alpha: 0.35),
-                  AppColors.gold.withValues(alpha: 0.25),
-                ],
+          Row(
+            children: [
+              _StatusIcon(
+                icon: Icons.verified_rounded,
+                colors: [AppColors.emerald, AppColors.emeraldDark],
+                borderColor: AppColors.emerald,
               ),
-              border: Border.all(color: AppColors.emerald.withValues(alpha: 0.6)),
-            ),
-            child: const Icon(
-              Icons.verified_rounded,
-              color: AppColors.emeraldLight,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.emerald.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: AppColors.emerald.withValues(alpha: 0.5),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _StatusChip(
+                      label: '✅ ${PremiumConstants.statusActive}',
+                      color: AppColors.emerald,
+                      textColor: AppColors.emeraldLight,
                     ),
-                  ),
-                  child: Text(
-                    '✅ Premium مفعّل',
-                    style: GoogleFonts.cairo(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.emeraldLight,
+                    const SizedBox(height: 6),
+                    Text(
+                      PremiumConstants.statusActiveSubtitle,
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.72),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'ينتهي في: $expiryText',
-                  style: GoogleFonts.cairo(
-                    fontSize: 13,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.72),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 14),
+          _InfoRow(
+            icon: Icons.event_rounded,
+            label: 'ينتهي في',
+            value: expiryText,
+          ),
+          if (days != null) ...[
+            const SizedBox(height: 6),
+            _InfoRow(
+              icon: Icons.timelapse_rounded,
+              label: 'متبقي',
+              value: '$days يوم',
+              valueColor: AppColors.emeraldLight,
+            ),
+          ],
+          const SizedBox(height: 14),
+          const _BenefitsPreview(maxItems: 3),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpiredCard extends StatelessWidget {
+  const _ExpiredCard({required this.expiresAt});
+
+  final DateTime? expiresAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final expiredText = expiresAt != null
+        ? DateFormat('dd MMMM yyyy', 'ar').format(expiresAt!)
+        : '—';
+
+    return GlassSurface(
+      borderRadius: 22,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _StatusIcon(
+                icon: Icons.history_toggle_off_rounded,
+                colors: [
+                  AppColors.warning.withValues(alpha: 0.35),
+                  AppColors.gold.withValues(alpha: 0.2),
+                ],
+                borderColor: AppColors.warning,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _StatusChip(
+                      label: PremiumConstants.statusExpired,
+                      color: AppColors.warning,
+                      textColor: AppColors.warning,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      PremiumConstants.statusExpiredSubtitle,
+                      style: GoogleFonts.cairo(fontSize: 13, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.event_busy_rounded,
+            label: 'انتهى في',
+            value: expiredText,
+            valueColor: AppColors.warning,
+          ),
+          const SizedBox(height: 16),
+          _PremiumCtaButton(label: PremiumConstants.renewCta),
         ],
       ),
     );
@@ -106,9 +162,7 @@ class _ActiveCard extends StatelessWidget {
 }
 
 class _UpgradeCard extends StatelessWidget {
-  const _UpgradeCard({required this.isDark});
-
-  final bool isDark;
+  const _UpgradeCard();
 
   @override
   Widget build(BuildContext context) {
@@ -120,22 +174,13 @@ class _UpgradeCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.gold.withValues(alpha: 0.3),
-                      AppColors.emerald.withValues(alpha: 0.25),
-                    ],
-                  ),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: AppColors.goldBright,
-                  size: 30,
-                ),
+              _StatusIcon(
+                icon: Icons.workspace_premium_rounded,
+                colors: [
+                  AppColors.gold.withValues(alpha: 0.35),
+                  AppColors.emerald.withValues(alpha: 0.25),
+                ],
+                borderColor: AppColors.gold,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -143,9 +188,9 @@ class _UpgradeCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ترقية إلى Premium',
+                      PremiumConstants.statusNotSubscribed,
                       style: GoogleFonts.cairo(
-                        fontSize: 18,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -162,14 +207,139 @@ class _UpgradeCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          Text(
+            PremiumConstants.statusNotSubscribedSubtitle,
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const _BenefitsPreview(),
           const SizedBox(height: 16),
-          ...PremiumConstants.benefits.map(
+          _PremiumCtaButton(label: PremiumConstants.activateCta),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusIcon extends StatelessWidget {
+  const _StatusIcon({
+    required this.icon,
+    required this.colors,
+    required this.borderColor,
+  });
+
+  final IconData icon;
+  final List<Color> colors;
+  final Color borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(colors: colors),
+        border: Border.all(color: borderColor.withValues(alpha: 0.55)),
+      ),
+      child: Icon(icon, color: AppColors.goldBright, size: 28),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    required this.textColor,
+  });
+
+  final String label;
+  final Color color;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.cairo(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.emerald.withValues(alpha: 0.8)),
+        const SizedBox(width: 8),
+        Text(label, style: GoogleFonts.cairo(fontSize: 13)),
+        const Spacer(),
+        Text(
+          value,
+          style: GoogleFonts.cairo(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BenefitsPreview extends StatelessWidget {
+  const _BenefitsPreview({this.maxItems});
+
+  final int? maxItems;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = maxItems != null
+        ? PremiumConstants.benefits.take(maxItems!).toList()
+        : PremiumConstants.benefits;
+
+    return Column(
+      children: items
+          .map(
             (b) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  Icon(b.$1, size: 18, color: AppColors.emeraldLight),
-                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: AppColors.emerald,
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       b.$2,
@@ -182,41 +352,57 @@ class _UpgradeCard extends StatelessWidget {
                 ],
               ),
             ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class _PremiumCtaButton extends StatelessWidget {
+  const _PremiumCtaButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: const LinearGradient(
+            colors: [AppColors.goldBright, AppColors.gold, AppColors.emerald],
+            stops: [0.0, 0.4, 1.0],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 50,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
-                  colors: [AppColors.goldBright, AppColors.emerald],
-                ),
-              ),
-              child: ElevatedButton(
-                onPressed: () => showPremiumGate(
-                  context,
-                  feature: PremiumFeature.pdfExport,
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: Text(
-                  PremiumConstants.activateCta,
-                  style: GoogleFonts.cairo(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.navy,
-                  ),
-                ),
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.gold.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: () => showPremiumGate(
+            context,
+            feature: PremiumFeature.pdfExport,
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
-        ],
+          child: Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
+            ),
+          ),
+        ),
       ),
     );
   }

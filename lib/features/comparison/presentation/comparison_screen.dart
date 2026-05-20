@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
@@ -35,11 +35,11 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
     if (_gateChecked || !mounted) return;
     _gateChecked = true;
 
-    if (ref.read(isPremiumProvider)) return;
+    if (PremiumAccess.isPremium(ref)) return;
 
     await showPremiumGate(context, feature: PremiumFeature.fullComparison);
     if (!mounted) return;
-    if (!ref.read(isPremiumProvider)) {
+    if (PremiumAccess.isFeatureLocked(ref)) {
       context.canPop() ? context.pop() : context.go(AppRoutes.home);
     }
   }

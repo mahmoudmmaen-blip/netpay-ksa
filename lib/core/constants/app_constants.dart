@@ -42,14 +42,20 @@ abstract final class AppConstants {
   static const String prefLegalAiQuestionsDate = 'legal_ai_questions_date';
   static const String prefLegalAiQuestionsCount = 'legal_ai_questions_count';
   static const String prefGulfCountry = 'gulf_country';
+
+  // ── Premium (SharedPreferences — استبدل بـ IAP/RevenueCat لاحقاً) ─────────
+
+  /// مفتاح: هل اشترك المستخدم سابقاً (true حتى بعد انتهاء الصلاحية).
   static const String prefPremiumActive = 'premium_active';
+
+  /// مفتاح: تاريخ انتهاء الاشتراك ISO8601.
   static const String prefPremiumExpiresAt = 'premium_expires_at';
 
-  /// سعر Premium — 29 ريال سنوياً.
+  /// سعر Premium السنوي بالريال.
   static const int premiumPriceSar = 29;
   static const String premiumPriceLabel = '$premiumPriceSar ريال';
 
-  /// حد سجل الرواتب للنسخة المجانية.
+  /// حد سجل الرواتب للنسخة المجانية — Premium = غير محدود.
   static const int freeHistoryLimit = 5;
 
   /// @deprecated Use [freeHistoryLimit]
