@@ -206,7 +206,7 @@ class _UpgradeCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  'فعّل Premium',
+                  PremiumConstants.activateCta,
                   style: GoogleFonts.cairo(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,

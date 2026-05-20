@@ -105,9 +105,9 @@ class AdMobService {
     );
   }
 
-  /// يعرض interstitial مرة واحدة لكل جلسة (بعد حفظ راتب أو تصدير PDF).
-  static Future<void> tryShowInterstitial() async {
-    if (!isSupported || _interstitialShownThisSession) return;
+  /// يعرض interstitial للمستخدم المجاني — مرة واحدة لكل جلسة.
+  static Future<void> tryShowInterstitial({bool isPremium = false}) async {
+    if (isPremium || !isSupported || _interstitialShownThisSession) return;
 
     final ad = _interstitialAd;
     if (ad == null) {

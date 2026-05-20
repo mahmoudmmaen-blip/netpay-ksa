@@ -282,9 +282,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) async {
     if (!isPremium) {
       await showPremiumGate(context, feature: PremiumFeature.pdfExport);
-      if (!ref.read(isPremiumProvider)) {
-        await AdMobService.tryShowInterstitial();
-      }
+      await AdMobService.tryShowInterstitial(
+        isPremium: ref.read(isPremiumProvider),
+      );
       return;
     }
 

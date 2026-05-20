@@ -296,7 +296,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                             ),
                           )
                         : Text(
-                            'فعّل Premium',
+                            PremiumConstants.activateCta,
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,

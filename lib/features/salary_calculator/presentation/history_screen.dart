@@ -148,9 +148,9 @@ class HistoryScreen extends ConsumerWidget {
           .saveCurrentSalary(controller.text);
       if (!context.mounted) return;
       if (saved) {
-        if (!ref.read(isPremiumProvider)) {
-          await AdMobService.tryShowInterstitial();
-        }
+        await AdMobService.tryShowInterstitial(
+          isPremium: ref.read(isPremiumProvider),
+        );
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -169,7 +169,9 @@ class HistoryScreen extends ConsumerWidget {
   ) async {
     if (!ref.read(isPremiumProvider)) {
       await showPremiumGate(context, feature: PremiumFeature.pdfExport);
-      await AdMobService.tryShowInterstitial();
+      await AdMobService.tryShowInterstitial(
+        isPremium: ref.read(isPremiumProvider),
+      );
       if (!ref.read(isPremiumProvider) || !context.mounted) return;
     }
 

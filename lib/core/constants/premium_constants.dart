@@ -9,6 +9,8 @@ abstract final class PremiumConstants {
   static const String premiumPriceLabel = '$premiumPriceSar ريال';
   static const String premiumPriceFull = '$premiumPriceSar ريال / سنة';
 
+  static const String activateCta = 'فعّل Premium الآن';
+
   static const List<(IconData, String)> benefits = [
     (Icons.block_rounded, 'بدون إعلانات نهائياً'),
     (Icons.history_rounded, 'سجل رواتب غير محدود'),
