@@ -26,23 +26,23 @@ class PremiumMeshBackground extends StatelessWidget {
                 : AppColors.luxuryLightMesh,
           ),
         ),
-        if (dark) ...[
-          Positioned(
-            top: -80,
-            right: -60,
-            child: _GlowOrb(
-              size: 220,
-              color: AppColors.emerald.withValues(alpha: 0.22),
-            ),
+        Positioned(
+          top: -80,
+          right: -60,
+          child: _GlowOrb(
+            size: 220,
+            color: AppColors.emerald.withValues(alpha: dark ? 0.22 : 0.14),
           ),
-          Positioned(
-            top: 120,
-            left: -90,
-            child: _GlowOrb(
-              size: 180,
-              color: AppColors.gold.withValues(alpha: 0.12),
-            ),
+        ),
+        Positioned(
+          top: 120,
+          left: -90,
+          child: _GlowOrb(
+            size: 180,
+            color: AppColors.gold.withValues(alpha: dark ? 0.12 : 0.08),
           ),
+        ),
+        if (dark)
           Positioned(
             bottom: 80,
             right: -40,
@@ -51,7 +51,6 @@ class PremiumMeshBackground extends StatelessWidget {
               color: AppColors.emeraldLight.withValues(alpha: 0.1),
             ),
           ),
-        ],
         child,
       ],
     );

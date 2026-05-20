@@ -41,6 +41,8 @@ abstract final class AppTheme {
       surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       onSurface:
           isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface,
+      onSurfaceVariant:
+          isDark ? AppColors.darkMuted : AppColors.lightMuted,
       surfaceContainerHighest: isDark
           ? AppColors.darkSurfaceElevated
           : const Color(0xFFECFDF5),
@@ -234,6 +236,23 @@ abstract final class AppTheme {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.emerald,
+        linearTrackColor: Color(0xFF334155),
+        circularTrackColor: Color(0xFF334155),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: colorScheme.onSurface,
+        ),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+        selectedItemColor: AppColors.emerald,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
+        type: BottomNavigationBarType.fixed,
+        elevation: isDark ? 0 : 8,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(

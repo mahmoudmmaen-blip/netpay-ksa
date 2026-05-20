@@ -49,6 +49,11 @@ final themeModeProvider =
   return ThemeModeNotifier();
 });
 
+/// هل الوضع الداكن مفعّل صراحةً (ليس system).
+final isExplicitDarkProvider = Provider<bool>((ref) {
+  return ref.watch(themeModeProvider) == ThemeMode.dark;
+});
+
 /// تسمية عربية لوضع الثيم الحالي.
 String themeModeLabel(ThemeMode mode) => switch (mode) {
       ThemeMode.system => 'يتبع إعدادات الجهاز',

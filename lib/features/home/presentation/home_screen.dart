@@ -80,23 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ShaderMask(
-              blendMode: BlendMode.srcIn,
-              shaderCallback: (b) => AppColors.goldGradient.createShader(b),
-              child: Text(
-                'NetGulf',
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
+        title: _HomeAppBarTitle(isDark: isDark),
         actions: [
           _GlassIconButton(
             tooltip: 'مشاركة النتيجة',
@@ -161,12 +145,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           .read(gulfCountryProvider.notifier)
                           .setCountry(c),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     HomeScreenHeader(country: country),
-                    const SizedBox(height: 16),
-                    const PremiumUpgradeButton(),
-                    const SizedBox(height: 16),
-                    const BrainRotScoreCard(),
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 320),
@@ -192,6 +172,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         formatValue: currency.format,
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    const BrainRotScoreCard(),
+                    const SizedBox(height: 16),
+                    const PremiumUpgradeButton(),
                     const SizedBox(height: 24),
                     HomeQuickActionsRow(
                       country: country,
@@ -444,6 +428,32 @@ class _ErrorBanner extends StatelessWidget {
           Expanded(child: Text(message, style: GoogleFonts.cairo(fontSize: 13))),
         ],
       ),
+    );
+  }
+}
+
+/// عنوان AppBar — ذهبي في الداكن، زمردي في الفاتح.
+class _HomeAppBarTitle extends StatelessWidget {
+  const _HomeAppBarTitle({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = GoogleFonts.cairo(
+      fontWeight: FontWeight.w800,
+      fontSize: 20,
+      color: isDark ? Colors.white : AppColors.emeraldDark,
+    );
+
+    if (!isDark) {
+      return Text('NetGulf', style: style);
+    }
+
+    return ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (b) => AppColors.goldGradient.createShader(b),
+      child: Text('NetGulf', style: style.copyWith(color: Colors.white)),
     );
   }
 }

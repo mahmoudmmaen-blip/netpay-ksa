@@ -38,6 +38,7 @@ Future<void> main() async {
         );
       }
 
+      // الثيم: AppTheme.light/dark + themeModeProvider (افتراضي ThemeMode.system)
       runApp(
         const ProviderScope(
           child: NetGulfApp(),

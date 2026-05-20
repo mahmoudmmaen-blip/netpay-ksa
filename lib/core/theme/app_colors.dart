@@ -58,6 +58,23 @@ class AppColors {
     stops: [0.0, 0.55, 1.0],
   );
 
+  /// بطاقة الراتب الرئيسية — يتكيّف مع الوضع الفاتح/الداكن.
+  static LinearGradient heroSalaryGradient({required bool isDark}) =>
+      isDark ? premiumCardGradient : heroSalaryLightGradient;
+
+  /// بطاقة الراتب — وضع فاتح (زمردي غني).
+  static const LinearGradient heroSalaryLightGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF047857),
+      Color(0xFF059669),
+      Color(0xFF10B981),
+      Color(0xFF064E3B),
+    ],
+    stops: [0.0, 0.35, 0.7, 1.0],
+  );
+
   /// بطاقة الراتب الفاخرة — كحلي عميق + زمردي + لمسة ذهبية.
   static const LinearGradient premiumCardGradient = LinearGradient(
     begin: Alignment.topLeft,

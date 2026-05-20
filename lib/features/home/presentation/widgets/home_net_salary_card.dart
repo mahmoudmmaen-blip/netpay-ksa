@@ -39,24 +39,25 @@ class HomeNetSalaryCard extends StatelessWidget {
       builder: (context, scale, child) =>
           Transform.scale(scale: scale, child: child),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 220),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(32),
           boxShadow: AppColors.premiumCardGlow(isDark: isDark),
         ),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(32),
             gradient: AppColors.premiumCardBorder,
           ),
-          padding: const EdgeInsets.all(1.4),
+          padding: const EdgeInsets.all(2),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(28.5),
+            borderRadius: BorderRadius.circular(30),
             child: Stack(
               children: [
                 Positioned.fill(
                   child: DecoratedBox(
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.premiumCardGradient,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.heroSalaryGradient(isDark: isDark),
                     ),
                   ),
                 ),
@@ -75,7 +76,7 @@ class HomeNetSalaryCard extends StatelessWidget {
                   child: _FlagBadge(country: country),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 52, 24, 24),
+                  padding: const EdgeInsets.fromLTRB(28, 56, 28, 28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -83,19 +84,19 @@ class HomeNetSalaryCard extends StatelessWidget {
                         'الراتب الصافي',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.cairo(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.4,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       AnimatedCurrencyText(
                         key: ValueKey('${country.nameEn}-$net'),
                         value: net,
                         formatter: formatValue,
                         duration: const Duration(milliseconds: 750),
-                        style: AppTypography.displayNumber(size: 56),
+                        style: AppTypography.displayNumber(size: 68),
                       ),
                       const SizedBox(height: 22),
                       ClipRRect(

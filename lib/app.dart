@@ -30,7 +30,9 @@ class NetGulfApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
-      themeMode: themeMode,
+      themeMode: themeMode, // system | light | dark — من themeModeProvider
+      themeAnimationDuration: const Duration(milliseconds: 350),
+      themeAnimationCurve: Curves.easeInOut,
       locale: const Locale(
         AppConstants.defaultLocaleCode,
         AppConstants.defaultCountryCode,

@@ -15,12 +15,16 @@ class BrainRotScoreCard extends ConsumerWidget {
     final color = _colorForScore(data);
     final progress = data.score / 100;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+        color: isDark
+            ? AppColors.darkSurfaceElevated
+            : Theme.of(context).colorScheme.surface,
+        border: Border.all(color: color.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.12),
@@ -85,6 +89,26 @@ class BrainRotScoreCard extends ConsumerWidget {
                       style: GoogleFonts.cairo(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: color.withValues(alpha: 0.35)),
+                      ),
+                      child: Text(
+                        'تجريبي',
+                        style: GoogleFonts.cairo(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
                       ),
                     ),
                   ],
