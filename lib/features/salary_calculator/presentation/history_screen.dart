@@ -29,17 +29,20 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
-            if (isPremium) const PremiumBadge(compact: true),
-            if (!isPremium)
-              IconButton(
-                tooltip: 'ترقية Premium',
-                icon: const Icon(Icons.workspace_premium_rounded),
-                color: AppColors.goldBright,
-                onPressed: () => showPremiumGate(
-                  context,
-                  feature: PremiumFeature.unlimitedHistory,
-                ),
+          if (!isPremium)
+            IconButton(
+              tooltip: 'ترقية Premium',
+              icon: const Icon(Icons.workspace_premium_rounded),
+              color: AppColors.goldBright,
+              onPressed: () => showPremiumGate(
+                context,
+                feature: PremiumFeature.unlimitedHistory,
               ),
+            ),
+          const Padding(
+            padding: EdgeInsetsDirectional.only(end: 12),
+            child: Center(child: PremiumBadge(compact: true)),
+          ),
           historyAsync.whenOrNull(
                 data: (list) => list.isEmpty
                     ? null

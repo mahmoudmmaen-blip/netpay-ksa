@@ -69,11 +69,14 @@ class PremiumNotifier extends StateNotifier<PremiumStatus> {
   /// هل Premium ساري الآن؟
   bool isPremium() => state.isValid;
 
-  /// يعيد تحميل الحالة من التخزين ويُرجع النتيجة.
-  Future<bool> checkPremiumStatus() async {
+  /// يعيد تحميل الحالة من Hive/Prefs ويُرجع هل الاشتراك ساري.
+  Future<bool> loadPremiumStatus() async {
     await _load();
     return isPremium();
   }
+
+  /// @deprecated استخدم [loadPremiumStatus].
+  Future<bool> checkPremiumStatus() => loadPremiumStatus();
 
   /// ترقية إلى Premium (محاكاة IAP).
   Future<bool> upgradeToPremium() async {

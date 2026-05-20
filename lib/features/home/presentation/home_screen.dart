@@ -95,10 +95,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
             ),
-            if (isPremium) ...[
-              const SizedBox(width: 8),
-              const PremiumBadge(compact: true),
-            ],
           ],
         ),
         actions: [
@@ -142,6 +138,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 feature: PremiumFeature.pdfExport,
               ),
             ),
+          const Padding(
+            padding: EdgeInsetsDirectional.only(end: 4),
+            child: Center(child: PremiumBadge(compact: true)),
+          ),
           const SizedBox(width: 8),
         ],
       ),
