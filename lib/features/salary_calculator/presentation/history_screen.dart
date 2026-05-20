@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/admob_service.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
+import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
+import 'package:netgulf/features/pdf_export/pdf_service.dart';
 import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
 import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
@@ -13,6 +19,9 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(historyNotifierProvider);
+    final isPremium = ref.watch(isPremiumProvider);
+    final recordCount = historyAsync.valueOrNull?.length ?? 0;
+    final limit = isPremium ? null : AppConstants.freeHistoryRecordLimit;
 
     return Scaffold(
       appBar: AppBar(
@@ -21,15 +30,20 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
+          const Padding(
+            padding: EdgeInsetsDirectional.only(end: 8),
+            child: PremiumUpgradeButton(compact: true),
+          ),
           historyAsync.whenOrNull(
-            data: (list) => list.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: 'مسح الكل',
-                    icon: const Icon(Icons.delete_sweep_rounded),
-                    onPressed: () => _confirmClearAll(context, ref),
-                  ),
-          ) ?? const SizedBox.shrink(),
+                data: (list) => list.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'مسح الكل',
+                        icon: const Icon(Icons.delete_sweep_rounded),
+                        onPressed: () => _confirmClearAll(context, ref),
+                      ),
+              ) ??
+              const SizedBox.shrink(),
         ],
       ),
       body: historyAsync.when(
@@ -37,22 +51,35 @@ class HistoryScreen extends ConsumerWidget {
         error: (e, _) => Center(
           child: Text('حدث خطأ: $e', style: GoogleFonts.cairo()),
         ),
-        data: (records) => records.isEmpty
-            ? _EmptyState()
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                itemCount: records.length,
-                itemBuilder: (_, i) => _RecordCard(
-                  record: records[i],
-                  onDelete: () => ref
-                      .read(historyNotifierProvider.notifier)
-                      .delete(records[i].id),
-                  onRestore: () => _restore(ref, records[i]),
-                ),
+        data: (records) => Column(
+          children: [
+            if (!isPremium && limit != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: _LimitBanner(used: recordCount, limit: limit),
               ),
+            Expanded(
+              child: records.isEmpty
+                  ? const _EmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      itemCount: records.length,
+                      itemBuilder: (_, i) => _RecordCard(
+                        record: records[i],
+                        onDelete: () => ref
+                            .read(historyNotifierProvider.notifier)
+                            .delete(records[i].id),
+                        onRestore: () => _restore(ref, records[i]),
+                        onExportPdf: () =>
+                            _exportPdf(context, ref, records[i]),
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showSaveDialog(context, ref),
+        onPressed: () => _trySave(context, ref),
         icon: const Icon(Icons.save_rounded),
         label: Text('حفظ الراتب الحالي', style: GoogleFonts.cairo()),
         backgroundColor: AppColors.emerald,
@@ -70,12 +97,29 @@ class HistoryScreen extends ConsumerWidget {
     n.setRegime(r.regime);
   }
 
+  Future<void> _trySave(BuildContext context, WidgetRef ref) async {
+    final notifier = ref.read(historyNotifierProvider.notifier);
+    if (!await notifier.canSaveMore()) {
+      if (!context.mounted) return;
+      await showPremiumGate(
+        context,
+        feature: PremiumFeature.unlimitedHistory,
+      );
+      return;
+    }
+    if (!context.mounted) return;
+    await _showSaveDialog(context, ref);
+  }
+
   Future<void> _showSaveDialog(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('حفظ الراتب', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+        title: Text(
+          'حفظ الراتب',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+        ),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
@@ -99,9 +143,52 @@ class HistoryScreen extends ConsumerWidget {
       ),
     );
     if (confirmed == true) {
-      await ref
+      final saved = await ref
           .read(historyNotifierProvider.notifier)
           .saveCurrentSalary(controller.text);
+      if (!context.mounted) return;
+      if (saved) {
+        if (!ref.read(isPremiumProvider)) {
+          await AdMobService.tryShowInterstitial();
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم حفظ الراتب', style: GoogleFonts.cairo()),
+            backgroundColor: AppColors.emerald,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportPdf(
+    BuildContext context,
+    WidgetRef ref,
+    SalaryRecord record,
+  ) async {
+    final allowed = await requirePremium(
+      context,
+      ref,
+      feature: PremiumFeature.pdfExport,
+    );
+    if (!allowed || !context.mounted) return;
+
+    try {
+      await PdfService.exportAndShare(record);
+      if (!ref.read(isPremiumProvider)) {
+        await AdMobService.tryShowInterstitial();
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذّر تصدير PDF. حاول مرة أخرى.',
+            style: GoogleFonts.cairo(),
+          ),
+        ),
+      );
     }
   }
 
@@ -109,8 +196,14 @@ class HistoryScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('مسح الكل', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
-        content: Text('هل أنت متأكد من مسح جميع السجلات؟', style: GoogleFonts.cairo()),
+        title: Text(
+          'مسح الكل',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'هل أنت متأكد من مسح جميع السجلات؟',
+          style: GoogleFonts.cairo(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -130,27 +223,67 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
+class _LimitBanner extends StatelessWidget {
+  const _LimitBanner({required this.used, required this.limit});
+
+  final int used;
+  final int limit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: AppColors.gold, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'النسخة المجانية: $used / $limit سجلات — Premium للسجل الكامل',
+              style: GoogleFonts.cairo(fontSize: 12, height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.history_rounded, size: 64,
-              color: Theme.of(context).colorScheme.outlineVariant),
+          Icon(
+            Icons.history_rounded,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
           const SizedBox(height: 16),
-          Text('لا توجد سجلات محفوظة',
-              style: GoogleFonts.cairo(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              )),
+          Text(
+            'لا توجد سجلات محفوظة',
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('اضغط على "حفظ الراتب الحالي" للبدء',
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                color: Theme.of(context).colorScheme.outlineVariant,
-              )),
+          Text(
+            'اضغط على "حفظ الراتب الحالي" للبدء',
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -162,16 +295,21 @@ class _RecordCard extends StatelessWidget {
     required this.record,
     required this.onDelete,
     required this.onRestore,
+    required this.onExportPdf,
   });
 
   final SalaryRecord record;
   final VoidCallback onDelete;
   final VoidCallback onRestore;
+  final VoidCallback onExportPdf;
 
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.currency(
-      locale: 'ar_SA', symbol: 'ر.س', decimalDigits: 0);
+      locale: 'ar_SA',
+      symbol: 'ر.س',
+      decimalDigits: 0,
+    );
     final dateFormat = DateFormat('dd/MM/yyyy', 'ar');
 
     return Card(
@@ -212,9 +350,19 @@ class _RecordCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _InfoChip(label: 'صافي', value: currency.format(record.netSalary), highlight: true),
-                _InfoChip(label: 'إجمالي', value: currency.format(record.totalGross)),
-                _InfoChip(label: 'GOSI', value: currency.format(record.employeeGosi)),
+                _InfoChip(
+                  label: 'صافي',
+                  value: currency.format(record.netSalary),
+                  highlight: true,
+                ),
+                _InfoChip(
+                  label: 'إجمالي',
+                  value: currency.format(record.totalGross),
+                ),
+                _InfoChip(
+                  label: 'GOSI',
+                  value: currency.format(record.employeeGosi),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -222,12 +370,17 @@ class _RecordCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
+                  onPressed: onExportPdf,
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                  label: Text('PDF', style: GoogleFonts.cairo(fontSize: 13)),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+                ),
+                TextButton.icon(
                   onPressed: onRestore,
                   icon: const Icon(Icons.restore_rounded, size: 16),
                   label: Text('استعادة', style: GoogleFonts.cairo(fontSize: 13)),
                   style: TextButton.styleFrom(foregroundColor: AppColors.emerald),
                 ),
-                const SizedBox(width: 8),
                 TextButton.icon(
                   onPressed: onDelete,
                   icon: const Icon(Icons.delete_outline_rounded, size: 16),
