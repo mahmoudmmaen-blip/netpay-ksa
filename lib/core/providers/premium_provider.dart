@@ -2,50 +2,118 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/bootstrap/app_initializer.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/models/premium_status.dart';
 
-/// حالة Premium — SharedPreferences الآن، RevenueCat لاحقاً.
-class PremiumNotifier extends StateNotifier<bool> {
-  PremiumNotifier() : super(false) {
+/// إدارة Premium — SharedPreferences الآن، RevenueCat / IAP لاحقاً.
+class PremiumNotifier extends StateNotifier<PremiumStatus> {
+  PremiumNotifier() : super(const PremiumStatus()) {
     _load();
   }
 
+  static const _subscriptionDays = 365;
+
   Future<void> _load() async {
     try {
-      final active =
-          AppInitializer.prefs.getBool(AppConstants.prefPremiumActive) ?? false;
-      state = active;
+      final prefs = AppInitializer.prefs;
+      final active = prefs.getBool(AppConstants.prefPremiumActive) ?? false;
+      final expiryRaw = prefs.getString(AppConstants.prefPremiumExpiresAt);
+      final expiresAt =
+          expiryRaw != null ? DateTime.tryParse(expiryRaw) : null;
+
+      var status = PremiumStatus(
+        premiumStatus: active,
+        expiresAt: expiresAt,
+      );
+
+      if (status.premiumStatus && !status.isValid) {
+        await _persist(PremiumStatus(premiumStatus: false, expiresAt: expiresAt));
+        status = const PremiumStatus(premiumStatus: false);
+      }
+
+      state = status;
     } catch (_) {
-      state = false;
+      state = const PremiumStatus();
     }
   }
 
-  /// تفعيل Premium (محاكاة شراء — استبدل بـ in_app_purchase لاحقاً).
-  Future<bool> activatePremium() async {
+  /// هل المستخدم Premium حالياً؟
+  bool isPremium() => state.isValid;
+
+  /// شراء Premium (محاكاة — استبدل بـ in_app_purchase).
+  Future<bool> purchasePremium() async {
     try {
-      final ok = await AppInitializer.prefs
-          .setBool(AppConstants.prefPremiumActive, true);
-      if (!ok) return false;
-      final verified =
-          AppInitializer.prefs.getBool(AppConstants.prefPremiumActive) ?? false;
-      if (!verified) return false;
-      state = true;
-      return true;
+      final expiresAt = DateTime.now().add(const Duration(days: _subscriptionDays));
+      final next = PremiumStatus(premiumStatus: true, expiresAt: expiresAt);
+      final ok = await _persist(next);
+      if (ok) state = next;
+      return ok;
     } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('activatePremium failed: $e\n$st');
-      }
+      if (kDebugMode) debugPrint('purchasePremium: $e\n$st');
       return false;
     }
   }
 
-  /// للاختبار — إلغاء Premium.
-  Future<void> deactivatePremium() async {
-    await AppInitializer.prefs.setBool(AppConstants.prefPremiumActive, false);
-    state = false;
+  /// استعادة المشتريات من التخزين المحلي.
+  Future<bool> restorePurchases() async {
+    try {
+      final prefs = AppInitializer.prefs;
+      final active = prefs.getBool(AppConstants.prefPremiumActive) ?? false;
+      if (!active) return false;
+
+      final expiryRaw = prefs.getString(AppConstants.prefPremiumExpiresAt);
+      final expiresAt =
+          expiryRaw != null ? DateTime.tryParse(expiryRaw) : null;
+
+      final restored = PremiumStatus(
+        premiumStatus: true,
+        expiresAt: expiresAt,
+      );
+
+      if (!restored.isValid) return false;
+
+      state = restored;
+      return true;
+    } catch (e, st) {
+      if (kDebugMode) debugPrint('restorePurchases: $e\n$st');
+      return false;
+    }
+  }
+
+  Future<bool> _persist(PremiumStatus status) async {
+    final prefs = AppInitializer.prefs;
+    final okActive =
+        await prefs.setBool(AppConstants.prefPremiumActive, status.premiumStatus);
+    if (!okActive) return false;
+
+    if (status.expiresAt != null) {
+      final okExpiry = await prefs.setString(
+        AppConstants.prefPremiumExpiresAt,
+        status.expiresAt!.toIso8601String(),
+      );
+      if (!okExpiry) return false;
+    } else {
+      await prefs.remove(AppConstants.prefPremiumExpiresAt);
+    }
+
+    return prefs.getBool(AppConstants.prefPremiumActive) == status.premiumStatus;
   }
 }
 
-final premiumProvider =
-    StateNotifierProvider<PremiumNotifier, bool>((ref) => PremiumNotifier());
+final premiumNotifierProvider =
+    StateNotifierProvider<PremiumNotifier, PremiumStatus>((ref) {
+  return PremiumNotifier();
+});
 
-final isPremiumProvider = Provider<bool>((ref) => ref.watch(premiumProvider));
+/// حالة Premium الكاملة.
+final premiumStatusProvider = Provider<PremiumStatus>((ref) {
+  return ref.watch(premiumNotifierProvider);
+});
+
+/// اختصار — هل Premium مفعّل؟
+final isPremiumProvider = Provider<bool>((ref) {
+  return ref.watch(premiumStatusProvider).isValid;
+});
+
+/// للتوافق مع الكود السابق.
+@Deprecated('Use premiumNotifierProvider')
+final premiumProvider = premiumNotifierProvider;

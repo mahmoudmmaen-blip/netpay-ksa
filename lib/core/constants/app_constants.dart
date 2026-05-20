@@ -43,12 +43,17 @@ abstract final class AppConstants {
   static const String prefLegalAiQuestionsCount = 'legal_ai_questions_count';
   static const String prefGulfCountry = 'gulf_country';
   static const String prefPremiumActive = 'premium_active';
+  static const String prefPremiumExpiresAt = 'premium_expires_at';
 
   /// سعر Premium — 29 ريال سنوياً.
-  static const String premiumPriceLabel = '29 ريال';
+  static const int premiumPriceSar = 29;
+  static const String premiumPriceLabel = '$premiumPriceSar ريال';
 
   /// حد سجل الرواتب للنسخة المجانية.
-  static const int freeHistoryRecordLimit = 3;
+  static const int freeHistoryLimit = 5;
+
+  /// @deprecated Use [freeHistoryLimit]
+  static const int freeHistoryRecordLimit = freeHistoryLimit;
 
   /// حد الأسئلة اليومية للمساعد القانوني (النسخة المجانية).
   static const int legalAiDailyQuestionLimit = 5;

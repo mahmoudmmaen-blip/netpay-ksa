@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:netgulf/core/constants/app_constants.dart';
+import 'package:netgulf/core/constants/premium_constants.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
@@ -10,7 +10,8 @@ import 'package:netgulf/core/widgets/glass_surface.dart';
 enum PremiumFeature {
   pdfExport('تصدير PDF'),
   unlimitedHistory('سجل غير محدود'),
-  comparison('مقارنة العروض');
+  fullComparison('مقارنة العروض الكاملة'),
+  legalPriority('أولوية المساعد القانوني');
 
   const PremiumFeature(this.labelAr);
   final String labelAr;
@@ -36,9 +37,10 @@ Future<bool> requirePremium(
   WidgetRef ref, {
   required PremiumFeature feature,
 }) async {
-  if (ref.read(isPremiumProvider)) return true;
+  if (ref.read(premiumNotifierProvider.notifier).isPremium()) return true;
   final upgraded = await showPremiumGate(context, feature: feature);
-  return upgraded || ref.read(isPremiumProvider);
+  return upgraded ||
+      ref.read(premiumNotifierProvider.notifier).isPremium();
 }
 
 class _PremiumGateSheet extends ConsumerStatefulWidget {
@@ -52,18 +54,13 @@ class _PremiumGateSheet extends ConsumerStatefulWidget {
 
 class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
   bool _loading = false;
+  bool _restoring = false;
 
-  static const _benefits = [
-    (Icons.block_rounded, 'بدون إعلانات'),
-    (Icons.picture_as_pdf_rounded, 'تصدير PDF غير محدود'),
-    (Icons.history_rounded, 'سجل رواتب كامل'),
-    (Icons.auto_awesome_rounded, 'ميزات مستقبلية حصرية'),
-  ];
-
-  Future<void> _activate() async {
+  Future<void> _purchase() async {
     setState(() => _loading = true);
     try {
-      final ok = await ref.read(premiumProvider.notifier).activatePremium();
+      final ok =
+          await ref.read(premiumNotifierProvider.notifier).purchasePremium();
       if (!mounted) return;
       if (ok) {
         Navigator.pop(context, true);
@@ -77,24 +74,49 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
           ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'تعذّر التفعيل. حاول مرة أخرى.',
-              style: GoogleFonts.cairo(),
-            ),
-          ),
-        );
+        _showError('تعذّر الشراء. حاول مرة أخرى.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  Future<void> _restore() async {
+    setState(() => _restoring = true);
+    try {
+      final ok =
+          await ref.read(premiumNotifierProvider.notifier).restorePurchases();
+      if (!mounted) return;
+      if (ok) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم استعادة Premium بنجاح',
+              style: GoogleFonts.cairo(),
+            ),
+            backgroundColor: AppColors.emerald,
+          ),
+        );
+      } else {
+        _showError('لم يُعثر على اشتراك سابق.');
+      }
+    } finally {
+      if (mounted) setState(() => _restoring = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message, style: GoogleFonts.cairo())),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final busy = _loading || _restoring;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -111,10 +133,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                     AppColors.navyDeepGreen,
                     const Color(0xFF0F172A),
                   ]
-                : [
-                    Colors.white,
-                    AppColors.emeraldMuted.withValues(alpha: 0.4),
-                  ],
+                : [Colors.white, AppColors.emeraldMuted.withValues(alpha: 0.4)],
           ),
           border: Border.all(
             color: AppColors.gold.withValues(alpha: 0.45),
@@ -152,7 +171,8 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                       AppColors.emerald.withValues(alpha: 0.35),
                     ],
                   ),
-                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.6)),
+                  border:
+                      Border.all(color: AppColors.gold.withValues(alpha: 0.6)),
                 ),
                 child: const Icon(
                   Icons.workspace_premium_rounded,
@@ -188,35 +208,20 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
               const SizedBox(height: 20),
               GlassSurface(
                 borderRadius: 18,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      AppConstants.premiumPriceLabel,
-                      style: GoogleFonts.cairo(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.emeraldLight,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        '/ سنة',
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Text(
+                  PremiumConstants.premiumPriceFull,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.emeraldLight,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              ..._benefits.map(
+              ...PremiumConstants.benefits.map(
                 (b) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
@@ -227,7 +232,8 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                           color: AppColors.emerald.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(b.$1, size: 20, color: AppColors.emeraldLight),
+                        child:
+                            Icon(b.$1, size: 20, color: AppColors.emeraldLight),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -256,7 +262,11 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     gradient: const LinearGradient(
-                      colors: [AppColors.goldBright, AppColors.gold, AppColors.emerald],
+                      colors: [
+                        AppColors.goldBright,
+                        AppColors.gold,
+                        AppColors.emerald,
+                      ],
                       stops: [0.0, 0.45, 1.0],
                     ),
                     boxShadow: [
@@ -268,7 +278,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _activate,
+                    onPressed: busy ? null : _purchase,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
@@ -296,9 +306,25 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               TextButton(
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: busy ? null : _restore,
+                child: _restoring
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        'استعادة المشتريات',
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.emerald,
+                        ),
+                      ),
+              ),
+              TextButton(
+                onPressed: busy ? null : () => Navigator.pop(context, false),
                 child: Text(
                   'لاحقاً',
                   style: GoogleFonts.cairo(

@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/gosi/providers/gosi_calculator_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
@@ -21,6 +23,26 @@ class ComparisonScreen extends ConsumerStatefulWidget {
 class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
   final _offer1 = _OfferInputs();
   final _offer2 = _OfferInputs();
+  bool _gateChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkPremiumAccess());
+  }
+
+  Future<void> _checkPremiumAccess() async {
+    if (_gateChecked || !mounted) return;
+    _gateChecked = true;
+
+    if (ref.read(isPremiumProvider)) return;
+
+    await showPremiumGate(context, feature: PremiumFeature.fullComparison);
+    if (!mounted) return;
+    if (!ref.read(isPremiumProvider)) {
+      context.canPop() ? context.pop() : context.go(AppRoutes.home);
+    }
+  }
 
   @override
   void dispose() {

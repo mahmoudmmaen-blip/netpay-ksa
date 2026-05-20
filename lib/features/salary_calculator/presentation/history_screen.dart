@@ -21,7 +21,7 @@ class HistoryScreen extends ConsumerWidget {
     final historyAsync = ref.watch(historyNotifierProvider);
     final isPremium = ref.watch(isPremiumProvider);
     final recordCount = historyAsync.valueOrNull?.length ?? 0;
-    final limit = isPremium ? null : AppConstants.freeHistoryRecordLimit;
+    final limit = isPremium ? null : AppConstants.freeHistoryLimit;
 
     return Scaffold(
       appBar: AppBar(
@@ -167,18 +167,14 @@ class HistoryScreen extends ConsumerWidget {
     WidgetRef ref,
     SalaryRecord record,
   ) async {
-    final allowed = await requirePremium(
-      context,
-      ref,
-      feature: PremiumFeature.pdfExport,
-    );
-    if (!allowed || !context.mounted) return;
+    if (!ref.read(isPremiumProvider)) {
+      await showPremiumGate(context, feature: PremiumFeature.pdfExport);
+      await AdMobService.tryShowInterstitial();
+      if (!ref.read(isPremiumProvider) || !context.mounted) return;
+    }
 
     try {
       await PdfService.exportAndShare(record);
-      if (!ref.read(isPremiumProvider)) {
-        await AdMobService.tryShowInterstitial();
-      }
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

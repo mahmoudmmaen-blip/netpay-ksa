@@ -10,12 +10,14 @@ class HomeQuickActionItem {
     required this.icon,
     required this.onTap,
     this.highlighted = false,
+    this.locked = false,
   });
 
   final String title;
   final IconData icon;
   final VoidCallback onTap;
   final bool highlighted;
+  final bool locked;
 }
 
 /// شريط أدوات سريعة — تمرير أفقي.
@@ -68,7 +70,8 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final highlighted = item.highlighted;
+    final highlighted = item.highlighted && !item.locked;
+    final locked = item.locked;
 
     return Material(
       color: Colors.transparent,
@@ -92,15 +95,19 @@ class _ActionChip extends StatelessWidget {
                 : null,
             color: highlighted
                 ? null
-                : Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withValues(alpha: 0.6),
+                : locked
+                    ? AppColors.navyMid.withValues(alpha: 0.55)
+                    : Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.6),
             border: Border.all(
-              color: highlighted
-                  ? AppColors.gold.withValues(alpha: 0.55)
-                  : AppColors.glassBorder,
-              width: highlighted ? 1.5 : 1,
+              color: locked
+                  ? AppColors.gold.withValues(alpha: 0.4)
+                  : highlighted
+                      ? AppColors.gold.withValues(alpha: 0.55)
+                      : AppColors.glassBorder,
+              width: highlighted || locked ? 1.5 : 1,
             ),
             boxShadow: highlighted
                 ? [
@@ -112,33 +119,64 @@ class _ActionChip extends StatelessWidget {
                   ]
                 : null,
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  item.icon,
-                  size: 28,
-                  color: highlighted ? AppColors.goldBright : AppColors.emerald,
+          child: Stack(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      item.icon,
+                      size: 28,
+                      color: locked
+                          ? AppColors.gold.withValues(alpha: 0.7)
+                          : highlighted
+                              ? AppColors.goldBright
+                              : AppColors.emerald,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      item.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                        color: locked
+                            ? Colors.white.withValues(alpha: 0.65)
+                            : highlighted
+                                ? Colors.white
+                                : Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  item.title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.cairo(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                    color: highlighted
-                        ? Colors.white
-                        : Theme.of(context).colorScheme.onSurface,
+              ),
+              if (locked)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.lock_rounded,
+                      size: 14,
+                      color: AppColors.goldBright,
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

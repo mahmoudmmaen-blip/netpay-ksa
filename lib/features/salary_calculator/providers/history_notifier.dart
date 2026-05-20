@@ -16,13 +16,13 @@ class HistoryNotifier extends AsyncNotifier<List<SalaryRecord>> {
   bool get _isPremium => ref.read(isPremiumProvider);
 
   int get maxRecords =>
-      _isPremium ? 9999 : AppConstants.freeHistoryRecordLimit;
+      _isPremium ? 9999 : AppConstants.freeHistoryLimit;
 
   /// هل يمكن إضافة سجل جديد (حسب حد Premium).
   Future<bool> canSaveMore() async {
     if (_isPremium) return true;
     final current = await future;
-    return current.length < AppConstants.freeHistoryRecordLimit;
+    return current.length < AppConstants.freeHistoryLimit;
   }
 
   /// يحفظ الحالة الحالية كسجل جديد.

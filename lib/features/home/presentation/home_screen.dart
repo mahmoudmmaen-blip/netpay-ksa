@@ -10,9 +10,13 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/admob_service.dart';
+import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
+import 'package:netgulf/features/pdf_export/pdf_export_helper.dart';
+import 'package:netgulf/features/pdf_export/pdf_service.dart';
 import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
@@ -143,6 +147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: 24),
                     HomeScreenHeader(country: country),
+                    const SizedBox(height: 16),
+                    if (!isPremium) const PremiumUpgradeButton(),
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 320),
@@ -171,10 +177,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 24),
                     HomeQuickActionsRow(
                       country: country,
-                      items: _quickActionItems(context, country),
+                      items: _quickActionItems(context, ref, country, isPremium),
                     ),
-                    const SizedBox(height: 20),
-                    if (!isPremium) const PremiumUpgradeButton(),
                     const SizedBox(height: 28),
                     if (isSaudi && salary.hasError)
                       _ErrorBanner(message: salary.errorMessage!),
@@ -206,7 +210,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   List<HomeQuickActionItem> _quickActionItems(
     BuildContext context,
+    WidgetRef ref,
     GulfCountry country,
+    bool isPremium,
   ) {
     final isSaudi = country == GulfCountry.saudiArabia;
 
@@ -225,7 +231,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       HomeQuickActionItem(
         title: 'مقارنة العروض',
         icon: Icons.compare_arrows_rounded,
-        onTap: () => context.push(AppRoutes.comparison),
+        locked: !isPremium,
+        onTap: () => _openComparison(context, ref, isPremium),
+      ),
+      HomeQuickActionItem(
+        title: 'تصدير PDF',
+        icon: Icons.picture_as_pdf_outlined,
+        locked: !isPremium,
+        onTap: () => _exportPdfFromHome(context, ref, isPremium),
       ),
     ];
 
@@ -248,6 +261,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return items;
+  }
+
+  Future<void> _openComparison(
+    BuildContext context,
+    WidgetRef ref,
+    bool isPremium,
+  ) async {
+    if (isPremium) {
+      context.push(AppRoutes.comparison);
+      return;
+    }
+    await showPremiumGate(context, feature: PremiumFeature.fullComparison);
+  }
+
+  Future<void> _exportPdfFromHome(
+    BuildContext context,
+    WidgetRef ref,
+    bool isPremium,
+  ) async {
+    if (!isPremium) {
+      await showPremiumGate(context, feature: PremiumFeature.pdfExport);
+      if (!ref.read(isPremiumProvider)) {
+        await AdMobService.tryShowInterstitial();
+      }
+      return;
+    }
+
+    final record = buildCurrentSalaryRecord(ref);
+    if (record == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'أدخل بيانات الراتب أولاً',
+            style: GoogleFonts.cairo(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await PdfService.exportAndShare(record);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذّر تصدير PDF',
+            style: GoogleFonts.cairo(),
+          ),
+        ),
+      );
+    }
   }
 
   static Future<void> _shareResult(
