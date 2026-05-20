@@ -1,9 +1,19 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:netgulf/core/constants/api_keys.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:netgulf/features/legal_assistant/models/chat_message.dart';
+import 'package:netgulf/features/legal_assistant/services/legal_ai_placeholder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// نتيجة سؤال للمساعد القانوني.
+class LegalAiReply {
+  const LegalAiReply({required this.text, required this.isDemo});
+
+  final String text;
+  final bool isDemo;
+}
 
 /// استثناءات المساعد القانوني.
 class LegalAiException implements Exception {
@@ -34,7 +44,8 @@ class LegalAiService {
 
   final http.Client _http;
 
-  bool get hasApiKey => AppConstants.anthropicApiKey.isNotEmpty;
+  /// مفتاح Anthropic مضبوط — اتصال حقيقي بـ Claude.
+  bool get isLiveMode => ApiKeys.hasAnthropicApiKey;
 
   /// الأسئلة المتبقية اليوم.
   Future<int> getRemainingQuestionsToday() async {
@@ -43,22 +54,14 @@ class LegalAiService {
         .clamp(0, AppConstants.legalAiDailyQuestionLimit);
   }
 
-  Future<bool> canAskQuestion() async {
-    if (!hasApiKey) return false;
-    return await getRemainingQuestionsToday() > 0;
-  }
+  Future<bool> canAskQuestion() async =>
+      await getRemainingQuestionsToday() > 0;
 
-  /// يرسل سؤالاً ويعيد رد المساعد.
-  Future<String> ask({
+  /// يرسل سؤالاً — Claude إن وُجد المفتاح، وإلا رد تجريبي.
+  Future<LegalAiReply> ask({
     required String question,
     required List<ChatMessage> history,
   }) async {
-    if (!hasApiKey) {
-      throw LegalAiException(
-        'مفتاح Anthropic غير مضبوط. أضف ANTHROPIC_API_KEY عند التشغيل.',
-      );
-    }
-
     final remaining = await getRemainingQuestionsToday();
     if (remaining <= 0) {
       throw LegalAiException(
@@ -72,13 +75,22 @@ class LegalAiService {
       throw LegalAiException('اكتب سؤالك أولاً.');
     }
 
+    if (!isLiveMode) {
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      await _recordQuestionUsed();
+      return LegalAiReply(
+        text: buildLegalAiPlaceholderReply(trimmed),
+        isDemo: true,
+      );
+    }
+
     try {
       final reply = await _callAnthropic(trimmed, history);
       await _recordQuestionUsed();
-      return reply;
+      return LegalAiReply(text: reply, isDemo: false);
     } on LegalAiException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       throw LegalAiException(
         'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
       );
@@ -112,7 +124,7 @@ class LegalAiService {
           Uri.parse(_apiUrl),
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': AppConstants.anthropicApiKey,
+            'x-api-key': ApiKeys.anthropicApiKey,
             'anthropic-version': _apiVersion,
           },
           body: body,

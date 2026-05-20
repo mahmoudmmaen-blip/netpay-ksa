@@ -9,6 +9,7 @@ import 'package:netgulf/core/providers/app_state_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/app_logo.dart';
+import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -69,10 +70,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final isDark = brightness == Brightness.dark;
 
     return Scaffold(
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppColors.splashGradient(brightness),
-        ),
+      body: PremiumMeshBackground(
+        isDark: isDark,
         child: SafeArea(
           child: FadeTransition(
             opacity: _fade,

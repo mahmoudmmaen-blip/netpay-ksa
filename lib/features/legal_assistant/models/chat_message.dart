@@ -6,6 +6,7 @@ class ChatMessage {
     required this.isUser,
     required this.timestamp,
     this.isError = false,
+    this.isDemo = false,
   });
 
   final String id;
@@ -13,6 +14,7 @@ class ChatMessage {
   final bool isUser;
   final DateTime timestamp;
   final bool isError;
+  final bool isDemo;
 
   ChatMessage copyWith({
     String? id,
@@ -20,6 +22,7 @@ class ChatMessage {
     bool? isUser,
     DateTime? timestamp,
     bool? isError,
+    bool? isDemo,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -27,6 +30,7 @@ class ChatMessage {
       isUser: isUser ?? this.isUser,
       timestamp: timestamp ?? this.timestamp,
       isError: isError ?? this.isError,
+      isDemo: isDemo ?? this.isDemo,
     );
   }
 }

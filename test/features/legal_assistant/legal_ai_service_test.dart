@@ -16,5 +16,18 @@ void main() {
       final remaining = await service.getRemainingQuestionsToday();
       expect(remaining, AppConstants.legalAiDailyQuestionLimit);
     });
+
+    test('demo mode returns placeholder without API key', () async {
+      final service = LegalAiService();
+      expect(service.isLiveMode, isFalse);
+
+      final reply = await service.ask(
+        question: 'كم يوم إجازة؟',
+        history: const [],
+      );
+
+      expect(reply.isDemo, isTrue);
+      expect(reply.text, contains('109'));
+    });
   });
 }

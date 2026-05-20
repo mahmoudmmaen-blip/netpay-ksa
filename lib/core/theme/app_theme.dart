@@ -40,7 +40,7 @@ class AppTheme {
       onSurface:
           isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface,
       surfaceContainerHighest: isDark
-          ? AppColors.navyLight
+          ? AppColors.darkSurfaceElevated
           : const Color(0xFFE2E8F0),
       error: AppColors.error,
       onError: Colors.white,
@@ -76,15 +76,17 @@ class AppTheme {
         iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
       cardTheme: CardThemeData(
-        elevation: isDark ? 0 : 1,
-        shadowColor: AppColors.navy.withValues(alpha: 0.08),
-        color: colorScheme.surface,
-        surfaceTintColor: AppColors.emerald.withValues(alpha: 0.05),
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        color: isDark
+            ? AppColors.darkSurfaceElevated
+            : colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           side: BorderSide(
             color: isDark
-                ? AppColors.navyLight.withValues(alpha: 0.6)
+                ? AppColors.glassBorder
                 : const Color(0xFFE2E8F0),
           ),
         ),
@@ -93,8 +95,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
-            ? AppColors.navyLight.withValues(alpha: 0.5)
-            : Colors.white,
+            ? AppColors.glassFillDark
+            : Colors.white.withValues(alpha: 0.9),
         labelStyle: GoogleFonts.cairo(
           color: isDark ? AppColors.darkMuted : AppColors.lightMuted,
         ),
@@ -103,20 +105,20 @@ class AppTheme {
         ),
         prefixIconColor: AppColors.emerald,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
             color: isDark
-                ? AppColors.navyLight
+                ? AppColors.glassBorder
                 : const Color(0xFFE2E8F0),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.emerald, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.emeraldLight, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

@@ -35,10 +35,13 @@ class AppColors {
   static const Color lightOnSurface = Color(AppPalette.lightOnSurface);
   static const Color lightMuted = Color(AppPalette.lightMuted);
 
-  static const Color darkBackground = navy;
-  static const Color darkSurface = navyMid;
-  static const Color darkOnSurface = Color(0xFFE2E8F0);
+  static const Color darkBackground = Color(0xFF060B18);
+  static const Color darkSurface = Color(0xFF0F172A);
+  static const Color darkSurfaceElevated = Color(0xFF1A2332);
+  static const Color darkOnSurface = Color(0xFFF1F5F9);
   static const Color darkMuted = Color(0xFF94A3B8);
+  static const Color glassBorder = Color(0x33FFFFFF);
+  static const Color glassFillDark = Color(0x1AFFFFFF);
 
   static const Color success = Color(AppPalette.success);
   static const Color error = Color(AppPalette.error);
@@ -53,6 +56,47 @@ class AppColors {
     end: Alignment.bottomLeft,
     colors: [emerald, emeraldDark, navyMid],
     stops: [0.0, 0.55, 1.0],
+  );
+
+  /// بطاقة الراتب الفاخرة — كحلي عميق + زمردي + لمسة ذهبية.
+  static const LinearGradient premiumCardGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0B1120),
+      Color(0xFF064E3B),
+      Color(0xFF059669),
+      Color(0xFF131C31),
+    ],
+    stops: [0.0, 0.35, 0.65, 1.0],
+  );
+
+  /// حدود متوهجة للبطاقة الرئيسية.
+  static const LinearGradient premiumCardBorder = LinearGradient(
+    colors: [goldBright, emeraldLight, gold],
+    stops: [0.0, 0.5, 1.0],
+  );
+
+  /// خلفية mesh — داكن.
+  static const LinearGradient luxuryDarkMesh = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF060B18),
+      Color(0xFF0B1120),
+      Color(0xFF0F172A),
+    ],
+  );
+
+  /// خلفية mesh — فاتح.
+  static const LinearGradient luxuryLightMesh = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFF0FDF9),
+      Color(0xFFECFDF5),
+      Color(0xFFE2E8F0),
+    ],
   );
 
   /// ذهبي — أرقام الراتب والعناوين المميزة.
@@ -86,11 +130,7 @@ class AppColors {
   );
 
   /// خلفية الشاشة الرئيسية — داكن.
-  static const LinearGradient homeDarkGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [navy, navyMid],
-  );
+  static const LinearGradient homeDarkGradient = luxuryDarkMesh;
 
   /// تدرج خفيف لانتقال الصفحات (overlay).
   static LinearGradient routeFadeOverlay({required bool isDark}) {
@@ -107,9 +147,26 @@ class AppColors {
   /// ظل البطاقات.
   static List<BoxShadow> cardShadow({bool isDark = false}) => [
         BoxShadow(
-          color: (isDark ? Colors.black : navy).withValues(alpha: 0.08),
-          blurRadius: isDark ? 8 : 16,
-          offset: const Offset(0, 4),
+          color: (isDark ? Colors.black : navy).withValues(alpha: isDark ? 0.45 : 0.08),
+          blurRadius: isDark ? 24 : 16,
+          offset: const Offset(0, 8),
+        ),
+        if (isDark)
+          BoxShadow(
+            color: emerald.withValues(alpha: 0.12),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
+          ),
+      ];
+
+  /// توهج البطاقة الرئيسية.
+  static List<BoxShadow> premiumCardGlow({bool isDark = true}) => [
+        ...cardShadow(isDark: isDark),
+        BoxShadow(
+          color: gold.withValues(alpha: 0.15),
+          blurRadius: 40,
+          spreadRadius: -4,
+          offset: const Offset(0, 16),
         ),
       ];
 

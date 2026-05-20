@@ -11,3 +11,7 @@ final legalAiRemainingProvider = FutureProvider<int>((ref) async {
   final service = ref.watch(legalAiServiceProvider);
   return service.getRemainingQuestionsToday();
 });
+
+final legalAiLiveModeProvider = Provider<bool>((ref) {
+  return ref.watch(legalAiServiceProvider).isLiveMode;
+});

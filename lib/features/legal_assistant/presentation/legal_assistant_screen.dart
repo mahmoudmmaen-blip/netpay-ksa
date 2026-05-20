@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:netgulf/core/constants/api_keys.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/glass_surface.dart';
+import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/legal_assistant/models/chat_message.dart';
 import 'package:netgulf/features/legal_assistant/providers/legal_assistant_provider.dart';
 import 'package:netgulf/features/legal_assistant/services/legal_ai_service.dart';
 import 'package:uuid/uuid.dart';
 
-/// محادثة المساعد القانوني — Claude (RTL).
+/// محادثة المساعد القانوني — Claude أو وضع تجريبي (RTL).
 class LegalAssistantScreen extends ConsumerStatefulWidget {
   const LegalAssistantScreen({super.key});
 
@@ -27,20 +30,12 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
 
   bool _isLoading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _messages.add(
-      ChatMessage(
-        id: _uuid.v4(),
-        text:
-            'مرحباً، أنا مساعدك القانوني في نظام العمل السعودي والإماراتي. '
-            'اسأل عن حقوقك، الإجازات، مكافأة نهاية الخدمة، أو GOSI/GPSSA.',
-        isUser: false,
-        timestamp: DateTime.now(),
-      ),
-    );
-  }
+  static const _exampleQuestions = [
+    'عقدي ستين وهمشي بعد سنه',
+    'كم نهاية خدمتي بعد 7 سنين؟',
+    'إيه حقوقي في الإجازة السنوية والتذكرة؟',
+    'الفرق بين GOSI القديم والجديد',
+  ];
 
   @override
   void dispose() {
@@ -49,8 +44,8 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
     super.dispose();
   }
 
-  Future<void> _sendMessage() async {
-    final text = _inputController.text.trim();
+  Future<void> _sendMessage([String? preset]) async {
+    final text = (preset ?? _inputController.text).trim();
     if (text.isEmpty || _isLoading) return;
 
     setState(() {
@@ -77,8 +72,9 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         _messages.add(
           ChatMessage(
             id: _uuid.v4(),
-            text: reply,
+            text: reply.text.trim(),
             isUser: false,
+            isDemo: reply.isDemo,
             timestamp: DateTime.now(),
           ),
         );
@@ -132,12 +128,14 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
   @override
   Widget build(BuildContext context) {
     final remainingAsync = ref.watch(legalAiRemainingProvider);
-    final hasKey = ref.read(legalAiServiceProvider).hasApiKey;
+    final isLive = ref.watch(legalAiLiveModeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasUserMessages = _messages.any((m) => m.isUser);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'المساعد القانوني 🤖',
+          'المساعد القانوني',
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         leading: IconButton(
@@ -151,52 +149,282 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
               child: Padding(
                 padding: const EdgeInsetsDirectional.only(end: 12),
                 child: Chip(
-                  label: Text(
-                    'متبقي: $n/${AppConstants.legalAiDailyQuestionLimit}',
-                    style: GoogleFonts.cairo(fontSize: 12),
+                  avatar: Icon(
+                    isLive ? Icons.bolt_rounded : Icons.science_outlined,
+                    size: 16,
+                    color: isLive ? AppColors.emerald : AppColors.gold,
                   ),
-                  backgroundColor: AppColors.emerald.withValues(alpha: 0.15),
-                  side: BorderSide(color: AppColors.emerald.withValues(alpha: 0.4)),
+                  label: Text(
+                    isLive
+                        ? 'متبقي: $n/${AppConstants.legalAiDailyQuestionLimit}'
+                        : 'تجريبي · $n/${AppConstants.legalAiDailyQuestionLimit}',
+                    style: GoogleFonts.cairo(fontSize: 11),
+                  ),
+                  backgroundColor: AppColors.emerald.withValues(alpha: 0.12),
+                  side: BorderSide(
+                    color: AppColors.emerald.withValues(alpha: 0.35),
+                  ),
                 ),
               ),
             ),
             loading: () => const SizedBox.shrink(),
-            error: (e, st) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          if (!hasKey)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              color: AppColors.warning.withValues(alpha: 0.15),
-              child: Text(
-                'لتفعيل المساعد: flutter run --dart-define=ANTHROPIC_API_KEY=...',
-                style: GoogleFonts.cairo(fontSize: 12),
-                textAlign: TextAlign.center,
+      body: PremiumMeshBackground(
+        isDark: isDark,
+        child: Column(
+          children: [
+            if (!isLive) const _ActivateAiCard(),
+            Expanded(
+              child: Stack(
+                children: [
+                  ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (_isLoading && index == _messages.length) {
+                        return const _TypingIndicator();
+                      }
+                      return _MessageBubble(message: _messages[index]);
+                    },
+                  ),
+                  if (!hasUserMessages && !_isLoading)
+                    const _EmptyChatState(),
+                ],
               ),
             ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              itemCount: _messages.length + (_isLoading ? 1 : 0),
-              itemBuilder: (context, index) {
-                if (_isLoading && index == _messages.length) {
-                  return const _TypingIndicator();
-                }
-                return _MessageBubble(message: _messages[index]);
-              },
+            _ExampleQuestionsBar(
+              examples: _exampleQuestions,
+              enabled: !_isLoading,
+              onTap: _sendMessage,
             ),
+            _InputBar(
+              controller: _inputController,
+              isLoading: _isLoading,
+              onSend: () => _sendMessage(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// حالة فارغة قبل أول سؤال من المستخدم.
+class _EmptyChatState extends StatelessWidget {
+  const _EmptyChatState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        child: GlassSurface(
+          borderRadius: 24,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.emerald.withValues(alpha: 0.28),
+                      AppColors.navyMid.withValues(alpha: 0.5),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: AppColors.emerald.withValues(alpha: 0.45),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.balance_rounded,
+                  size: 48,
+                  color: AppColors.emerald,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'المساعد القانوني',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'اكتب سؤالك عن حقوقك، نهاية الخدمة، الإجازات، '
+                'أو أي موضوع قانوني في السعودية أو الإمارات',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.72),
+                ),
+              ),
+            ],
           ),
-          _InputBar(
-            controller: _inputController,
-            isLoading: _isLoading,
-            onSend: _sendMessage,
+        ),
+      ),
+    );
+  }
+}
+
+/// أسئلة مقترحة فوق شريط الإدخال.
+class _ExampleQuestionsBar extends StatelessWidget {
+  const _ExampleQuestionsBar({
+    required this.examples,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final List<String> examples;
+  final bool enabled;
+  final void Function(String question) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 8),
+        itemCount: examples.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final q = examples[index];
+          return ActionChip(
+            label: Text(
+              q,
+              style: GoogleFonts.cairo(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            avatar: Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 16,
+              color: AppColors.emerald.withValues(alpha: enabled ? 1 : 0.4),
+            ),
+            backgroundColor: AppColors.emerald.withValues(alpha: 0.1),
+            side: BorderSide(
+              color: AppColors.emerald.withValues(alpha: enabled ? 0.45 : 0.2),
+            ),
+            onPressed: enabled ? () => onTap(q) : null,
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// بطاقة تفعيل المساعد الذكي عند غياب مفتاح API.
+class _ActivateAiCard extends StatelessWidget {
+  const _ActivateAiCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [
+              AppColors.emerald.withValues(alpha: 0.18),
+              AppColors.gold.withValues(alpha: 0.12),
+            ],
           ),
-        ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.emerald.withValues(alpha: 0.4)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.emerald.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppColors.emerald,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'فعّل المساعد الذكي',
+                            style: GoogleFonts.cairo(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.emerald,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'وضع تجريبي',
+                            style: GoogleFonts.cairo(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.goldBright,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      ApiKeys.anthropicKeyMissingMessage,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        height: 1.45,
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.75),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'يمكنك المحادثة الآن — الردود تجريبية حتى إضافة المفتاح.',
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.emerald,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -210,61 +438,207 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.isUser;
-    final alignment =
-        isUser ? AlignmentDirectional.centerStart : AlignmentDirectional.centerEnd;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final bg = message.isError
-        ? AppColors.error.withValues(alpha: 0.12)
+        ? AppColors.error.withValues(alpha: 0.14)
         : isUser
-            ? AppColors.emerald.withValues(alpha: 0.14)
-            : Theme.of(context).colorScheme.surfaceContainerHighest;
+            ? AppColors.emerald.withValues(alpha: isDark ? 0.22 : 0.16)
+            : AppColors.navyMid.withValues(alpha: isDark ? 0.92 : 0.88);
     final borderColor = message.isError
-        ? AppColors.error.withValues(alpha: 0.4)
+        ? AppColors.error.withValues(alpha: 0.45)
         : isUser
-            ? AppColors.emerald.withValues(alpha: 0.45)
-            : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3);
+            ? AppColors.emerald.withValues(alpha: 0.5)
+            : AppColors.navyLight.withValues(alpha: 0.55);
+    final textColor = message.isError
+        ? AppColors.error
+        : isUser
+            ? Theme.of(context).colorScheme.onSurface
+            : Colors.white.withValues(alpha: 0.95);
 
     return Align(
-      alignment: alignment,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.82,
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: 12,
+          right: isUser ? 6 : 0,
+          left: isUser ? 0 : 6,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 4 : 16),
-            bottomRight: Radius.circular(isUser ? 16 : 4),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.sizeOf(context).width * 0.82,
           ),
-          border: Border.all(color: borderColor),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!isUser && !message.isError)
-              Text(
-                'المساعد القانوني',
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.emerald,
+          child: _BubbleWithTail(
+            isUser: isUser,
+            color: bg,
+            borderColor: borderColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isUser && !message.isError)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.smart_toy_outlined,
+                          size: 14,
+                          color: AppColors.emeraldLight,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'المساعد القانوني',
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.emeraldLight,
+                          ),
+                        ),
+                        if (message.isDemo) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'تجريبي',
+                              style: GoogleFonts.cairo(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.goldBright,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                Text(
+                  message.text,
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                  style: GoogleFonts.cairo(
+                    fontSize: 14,
+                    height: 1.55,
+                    color: textColor,
+                  ),
                 ),
-              ),
-            Text(
-              message.text,
-              style: GoogleFonts.cairo(
-                fontSize: 14,
-                height: 1.5,
-                color: message.isError ? AppColors.error : null,
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+/// فقاعة محادثة مع ذيل سفلي — المستخدم يمين، المساعد يسار.
+class _BubbleWithTail extends StatelessWidget {
+  const _BubbleWithTail({
+    required this.isUser,
+    required this.color,
+    required this.borderColor,
+    required this.child,
+  });
+
+  final bool isUser;
+  final Color color;
+  final Color borderColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _ChatBubblePainter(
+        fillColor: color,
+        borderColor: borderColor,
+        tailOnRight: isUser,
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(14, 10, 14, isUser ? 14 : 12),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ChatBubblePainter extends CustomPainter {
+  _ChatBubblePainter({
+    required this.fillColor,
+    required this.borderColor,
+    required this.tailOnRight,
+  });
+
+  final Color fillColor;
+  final Color borderColor;
+  final bool tailOnRight;
+
+  static const _radius = 16.0;
+  static const _tailW = 10.0;
+  static const _tailH = 8.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()..color = fillColor;
+    final stroke = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final path = _bubblePath(size);
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
+  }
+
+  Path _bubblePath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    final bodyBottom = h - _tailH;
+    final r = _radius;
+    final path = Path();
+
+    if (tailOnRight) {
+      path.moveTo(r, 0);
+      path.lineTo(w - r, 0);
+      path.quadraticBezierTo(w, 0, w, r);
+      path.lineTo(w, bodyBottom - r);
+      path.quadraticBezierTo(w, bodyBottom, w - r, bodyBottom);
+      path.lineTo(w - 4, bodyBottom);
+      path.lineTo(w + _tailW - 4, h);
+      path.lineTo(w - 10, bodyBottom);
+      path.lineTo(r, bodyBottom);
+      path.quadraticBezierTo(0, bodyBottom, 0, bodyBottom - r);
+      path.lineTo(0, r);
+      path.quadraticBezierTo(0, 0, r, 0);
+    } else {
+      path.moveTo(r, 0);
+      path.lineTo(w - r, 0);
+      path.quadraticBezierTo(w, 0, w, r);
+      path.lineTo(w, bodyBottom - r);
+      path.quadraticBezierTo(w, bodyBottom, w - r, bodyBottom);
+      path.lineTo(10, bodyBottom);
+      path.lineTo(4 - _tailW, h);
+      path.lineTo(4, bodyBottom);
+      path.lineTo(r, bodyBottom);
+      path.quadraticBezierTo(0, bodyBottom, 0, bodyBottom - r);
+      path.lineTo(0, r);
+      path.quadraticBezierTo(0, 0, r, 0);
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChatBubblePainter oldDelegate) {
+    return oldDelegate.fillColor != fillColor ||
+        oldDelegate.borderColor != borderColor ||
+        oldDelegate.tailOnRight != tailOnRight;
   }
 }
 
@@ -273,35 +647,37 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = AppColors.navyMid.withValues(alpha: 0.9);
     return Align(
-      alignment: AlignmentDirectional.centerEnd,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5,
-                color: AppColors.emerald,
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _BubbleWithTail(
+          isUser: false,
+          color: bg,
+          borderColor: AppColors.navyLight.withValues(alpha: 0.5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: AppColors.emeraldLight,
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'جاري الكتابة...',
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                color: AppColors.emerald,
+              const SizedBox(width: 10),
+              Text(
+                'المساعد بيفكر...',
+                style: GoogleFonts.cairo(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.92),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -321,57 +697,91 @@ class _InputBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
-      elevation: 8,
+      color: Colors.transparent,
+      elevation: 0,
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => onSend(),
-                  style: GoogleFonts.cairo(),
-                  decoration: InputDecoration(
-                    hintText: 'اكتب سؤالك القانوني...',
-                    hintStyle: GoogleFonts.cairo(),
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+          padding: const EdgeInsetsDirectional.fromSTEB(12, 4, 12, 12),
+          child: GlassSurface(
+            borderRadius: 28,
+            padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 6, 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 4,
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.right,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSend(),
+                    style: GoogleFonts.cairo(fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: 'اكتب سؤالك القانوني...',
+                      hintStyle: GoogleFonts.cairo(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.45),
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? AppColors.navyMid.withValues(alpha: 0.5)
+                          : Colors.white.withValues(alpha: 0.85),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(22),
+                        borderSide: BorderSide(
+                          color: AppColors.emerald.withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        12,
+                        16,
+                        12,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: isLoading ? null : onSend,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.emerald,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.all(14),
-                  shape: const CircleBorder(),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: isLoading ? null : onSend,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor:
+                        AppColors.emerald.withValues(alpha: 0.35),
+                    padding: const EdgeInsets.all(14),
+                    shape: const CircleBorder(),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded),
                 ),
-                child: isLoading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.send_rounded),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

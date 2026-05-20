@@ -11,7 +11,7 @@
 ## Key Files
 - GOSI logic: lib/features/salary_calculator/models/gosi_model.dart
 - Salary state: lib/features/salary_calculator/providers/salary_notifier.dart
-- Main screen: lib/features/salary_calculator/presentation/home_screen.dart
+- Main screen: lib/features/home/presentation/home_screen.dart
 
 ## Style
 - Modern, clean, professional UI

@@ -55,7 +55,16 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.4.15
   riverpod_generator: ^2.6.4
+  flutter_launcher_icons: ^0.14.3
   # hive_generator: temporarily removed due to conflict with riverpod_generator
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/logo.png
+  min_sdk_android: 21
+  adaptive_icon_background: "#0F766E"
+  adaptive_icon_foreground: assets/images/logo.png
 
 flutter:
   uses-material-design: true
