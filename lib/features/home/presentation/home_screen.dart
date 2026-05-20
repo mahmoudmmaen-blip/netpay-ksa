@@ -17,9 +17,10 @@ import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/pdf_export/pdf_export_helper.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
-import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
+import 'package:netgulf/features/brain_rot/presentation/widgets/brain_rot_score_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
+import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
@@ -95,8 +96,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             if (isPremium) ...[
-              const SizedBox(width: 10),
-              const PremiumBadge(),
+              const SizedBox(width: 8),
+              const PremiumBadge(compact: true),
             ],
           ],
         ),
@@ -164,6 +165,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     HomeScreenHeader(country: country),
                     const SizedBox(height: 16),
                     const PremiumUpgradeButton(),
+                    const SizedBox(height: 16),
+                    const BrainRotScoreCard(),
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 320),

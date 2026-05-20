@@ -58,7 +58,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
     setState(() => _loading = true);
     try {
       final ok =
-          await ref.read(premiumNotifierProvider.notifier).purchasePremium();
+          await ref.read(premiumNotifierProvider.notifier).upgradeToPremium();
       if (!mounted) return;
       if (ok) {
         Navigator.pop(context, true);
@@ -187,7 +187,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                 blendMode: BlendMode.srcIn,
                 shaderCallback: (b) => AppColors.goldGradient.createShader(b),
                 child: Text(
-                  PremiumConstants.upgradeTitle,
+                  PremiumConstants.premiumUpgradeTitle,
                   style: GoogleFonts.cairo(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,

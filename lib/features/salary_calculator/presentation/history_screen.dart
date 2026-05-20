@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
-import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
 import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
 import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
@@ -29,16 +29,17 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
-          if (!isPremium)
-            IconButton(
-              tooltip: 'ترقية Premium',
-              icon: const Icon(Icons.workspace_premium_rounded),
-              color: AppColors.goldBright,
-              onPressed: () => showPremiumGate(
-                context,
-                feature: PremiumFeature.unlimitedHistory,
+            if (isPremium) const PremiumBadge(compact: true),
+            if (!isPremium)
+              IconButton(
+                tooltip: 'ترقية Premium',
+                icon: const Icon(Icons.workspace_premium_rounded),
+                color: AppColors.goldBright,
+                onPressed: () => showPremiumGate(
+                  context,
+                  feature: PremiumFeature.unlimitedHistory,
+                ),
               ),
-            ),
           historyAsync.whenOrNull(
                 data: (list) => list.isEmpty
                     ? null

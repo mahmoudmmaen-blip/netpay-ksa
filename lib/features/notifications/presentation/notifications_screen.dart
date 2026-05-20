@@ -105,9 +105,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             enabled: enabled,
           ),
           _DailyTile(
-            icon: Icons.self_improvement_outlined,
-            title: NotificationConstants.dailyHabitsTitle,
-            time: '1:00 م',
+            icon: Icons.phone_android_rounded,
+            title: NotificationConstants.dailySocialTitle,
+            time: '12:30 م',
             enabled: enabled,
           ),
           _DailyTile(
@@ -120,8 +120,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             const SizedBox(height: 8),
             _DailyTile(
               icon: Icons.workspace_premium_rounded,
-              title: NotificationConstants.premiumInsightsTitle,
+              title: NotificationConstants.premiumSalaryTitle,
               time: '7:30 ص',
+              enabled: enabled,
+              premium: true,
+            ),
+            _DailyTile(
+              icon: Icons.timer_outlined,
+              title: NotificationConstants.premiumSocialTitle,
+              time: '3:00 م',
               enabled: enabled,
               premium: true,
             ),

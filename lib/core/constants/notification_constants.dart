@@ -21,14 +21,14 @@ abstract final class NotificationConstants {
   static const int idYearlyReminder = 9001;
   static const int idGosiBase = 9100;
 
-  /// تذكيرات يومية — مجاني.
   static const int idDailySalary = 8001;
-  static const int idDailyHabits = 8002;
+  static const int idDailySocial = 8002;
   static const int idDailyBrainRot = 8003;
 
   /// تذكيرات يومية — Premium فقط.
   static const int idPremiumInsights = 8101;
-  static const int idPremiumBrainRot = 8102;
+  static const int idPremiumSocial = 8102;
+  static const int idPremiumBrainRot = 8103;
 
   // ── Daily messages (free) ────────────────────────────────────────────────────
 
@@ -36,21 +36,34 @@ abstract final class NotificationConstants {
   static const String dailySalaryBody =
       'افتح NetGulf واحسب صافي راتبك بعد GOSI في ثوانٍ.';
 
-  static const String dailyHabitsTitle = 'حافظ على عاداتك';
-  static const String dailyHabitsBody =
-      'دقيقة واحدة لمراجعة عاداتك المالية — استمر على المسار الصحيح.';
+  static const String dailySocialTitle = 'قلّل وقت السوشيال';
+  static const String dailySocialBody =
+      'ساعة أقل على السوشيال اليوم = تركيز أفضل على راتبك الحقيقي.';
 
-  static const String dailyBrainRotTitle = 'Brain Rot Score';
+  static const String dailyBrainRotTitle = 'Brain Rot Tip';
   static const String dailyBrainRotBody =
-      'هل تعرف صافي راتبك الحقيقي؟ حدّث Brain Rot Score الآن.';
+      'حدّث Brain Rot Score — هل وقت السوشيال يؤثر على قراراتك المالية؟';
 
   // ── Daily messages (Premium) ─────────────────────────────────────────────────
 
-  static const String premiumInsightsTitle = 'Premium — رؤى راتبك';
-  static const String premiumInsightsBody =
+  static const String premiumSalaryTitle = 'Premium — راتبك اليوم';
+  static const String premiumSalaryBody =
       'راجع تحليلاتك المتقدمة والسجل الكامل بدون إعلانات.';
 
-  static const String premiumBrainRotTitle = 'Premium — Brain Rot Score';
+  static const String premiumSocialTitle = 'Premium — وازن وقتك';
+  static const String premiumSocialBody =
+      'تذكير ذكي: قلّل السوشيال وافتح مقارنة العروض الكاملة.';
+
+  static const String premiumBrainRotTitle = 'Premium — Brain Rot Pro';
   static const String premiumBrainRotBody =
-      'كم وفّرت هذا الأسبوع؟ افتح NetGulf Premium وقارن عروضك.';
+      'تحليل أعمق لعاداتك — حدّث Brain Rot Score وتابع تقدمك أسبوعياً.';
+
+  // ── Legacy aliases ─────────────────────────────────────────────────────────
+
+  static const String dailyHabitsTitle = dailySocialTitle;
+  static const String dailyHabitsBody = dailySocialBody;
+  static const String premiumInsightsTitle = premiumSalaryTitle;
+  static const String premiumInsightsBody = premiumSalaryBody;
+  static const String premiumBrainRotTitleLegacy = premiumBrainRotTitle;
+  static const String premiumBrainRotBodyLegacy = premiumBrainRotBody;
 }

@@ -132,11 +132,11 @@ class NotificationService {
       details: _dailyDetails,
     );
     await _scheduleDaily(
-      id: NotificationConstants.idDailyHabits,
-      title: NotificationConstants.dailyHabitsTitle,
-      body: NotificationConstants.dailyHabitsBody,
-      hour: 13,
-      minute: 0,
+      id: NotificationConstants.idDailySocial,
+      title: NotificationConstants.dailySocialTitle,
+      body: NotificationConstants.dailySocialBody,
+      hour: 12,
+      minute: 30,
       details: _dailyDetails,
     );
     await _scheduleDaily(
@@ -153,10 +153,18 @@ class NotificationService {
   Future<void> _scheduleDailyPremium() async {
     await _scheduleDaily(
       id: NotificationConstants.idPremiumInsights,
-      title: NotificationConstants.premiumInsightsTitle,
-      body: NotificationConstants.premiumInsightsBody,
+      title: NotificationConstants.premiumSalaryTitle,
+      body: NotificationConstants.premiumSalaryBody,
       hour: 7,
       minute: 30,
+      details: _premiumDetails,
+    );
+    await _scheduleDaily(
+      id: NotificationConstants.idPremiumSocial,
+      title: NotificationConstants.premiumSocialTitle,
+      body: NotificationConstants.premiumSocialBody,
+      hour: 15,
+      minute: 0,
       details: _premiumDetails,
     );
     await _scheduleDaily(
