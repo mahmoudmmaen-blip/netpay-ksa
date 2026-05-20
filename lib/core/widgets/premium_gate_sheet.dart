@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/premium_constants.dart';
+import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 
@@ -36,12 +38,8 @@ Future<bool> requirePremium(
   BuildContext context,
   WidgetRef ref, {
   required PremiumFeature feature,
-}) async {
-  if (ref.read(premiumNotifierProvider.notifier).isPremium()) return true;
-  final upgraded = await showPremiumGate(context, feature: feature);
-  return upgraded ||
-      ref.read(premiumNotifierProvider.notifier).isPremium();
-}
+}) =>
+    PremiumAccess.requirePremium(context, ref, feature: feature);
 
 class _PremiumGateSheet extends ConsumerStatefulWidget {
   const _PremiumGateSheet({required this.feature});
@@ -117,6 +115,10 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final busy = _loading || _restoring;
+    final subState = ref.watch(premiumSubscriptionStateProvider);
+    final ctaLabel = subState == PremiumSubscriptionState.expired
+        ? PremiumConstants.renewCta
+        : PremiumConstants.activateCta;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -296,7 +298,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                             ),
                           )
                         : Text(
-                            PremiumConstants.activateCta,
+                            ctaLabel,
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.w800,

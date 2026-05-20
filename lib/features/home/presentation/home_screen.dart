@@ -9,7 +9,6 @@ import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
-import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
@@ -72,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
 
     final showAds = ref.watch(showAdsProvider);
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = PremiumAccess.watchIsPremium(ref);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -273,7 +272,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context.push(AppRoutes.comparison);
       return;
     }
-    await showPremiumGate(context, feature: PremiumFeature.fullComparison);
+    await PremiumAccess.requirePremium(
+      context,
+      ref,
+      feature: PremiumFeature.fullComparison,
+    );
   }
 
   Future<void> _exportPdfFromHome(
@@ -282,8 +285,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     bool isPremium,
   ) async {
     if (!isPremium) {
-      await showPremiumGate(context, feature: PremiumFeature.pdfExport);
+      await PremiumAccess.requirePremium(
+        context,
+        ref,
+        feature: PremiumFeature.pdfExport,
+      );
       await PremiumAccess.showInterstitialIfFree(ref);
+      if (!context.mounted) return;
+      if (PremiumAccess.isPremium(ref)) {
+        await _exportPdfFromHome(context, ref, true);
+      }
       return;
     }
 

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_status_card.dart';
 import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
 
@@ -23,6 +24,12 @@ class SettingsScreen extends ConsumerWidget {
           'الإعدادات',
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsetsDirectional.only(end: 12),
+            child: Center(child: PremiumBadge()),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),

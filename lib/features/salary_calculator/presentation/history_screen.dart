@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
-import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
@@ -19,7 +18,7 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(historyNotifierProvider);
-    final isPremium = ref.watch(isPremiumProvider);
+    final isPremium = PremiumAccess.watchIsPremium(ref);
     final recordCount = historyAsync.valueOrNull?.length ?? 0;
     final limit = isPremium ? null : AppConstants.freeHistoryLimit;
 
@@ -101,8 +100,9 @@ class HistoryScreen extends ConsumerWidget {
     final notifier = ref.read(historyNotifierProvider.notifier);
     if (!await notifier.canSaveMore()) {
       if (!context.mounted) return;
-      await showPremiumGate(
+      await PremiumAccess.requirePremium(
         context,
+        ref,
         feature: PremiumFeature.unlimitedHistory,
       );
       return;
@@ -166,9 +166,13 @@ class HistoryScreen extends ConsumerWidget {
     SalaryRecord record,
   ) async {
     if (PremiumAccess.isFeatureLocked(ref)) {
-      await showPremiumGate(context, feature: PremiumFeature.pdfExport);
+      final upgraded = await PremiumAccess.requirePremium(
+        context,
+        ref,
+        feature: PremiumFeature.pdfExport,
+      );
       await PremiumAccess.showInterstitialIfFree(ref);
-      if (PremiumAccess.isFeatureLocked(ref) || !context.mounted) return;
+      if (!upgraded || !context.mounted) return;
     }
 
     try {

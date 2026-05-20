@@ -37,7 +37,11 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
     if (PremiumAccess.isPremium(ref)) return;
 
-    await showPremiumGate(context, feature: PremiumFeature.fullComparison);
+    await PremiumAccess.requirePremium(
+      context,
+      ref,
+      feature: PremiumFeature.fullComparison,
+    );
     if (!mounted) return;
     if (PremiumAccess.isFeatureLocked(ref)) {
       context.canPop() ? context.pop() : context.go(AppRoutes.home);
