@@ -30,6 +30,9 @@ abstract final class NotificationConstants {
   static const int idPremiumSocial = 8102;
   static const int idPremiumBrainRot = 8103;
 
+  /// Pomodoro — إشعار فوري عند انتهاء الجلسة.
+  static const int idPomodoro = 8200;
+
   // ── Daily messages (free) ────────────────────────────────────────────────────
 
   static const String dailySalaryTitle = 'كم راتبك اليوم؟';

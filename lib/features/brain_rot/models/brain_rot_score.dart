@@ -7,12 +7,16 @@ class BrainRotScore extends Equatable {
     required this.updatedAt,
     this.socialMinutesToday = 0,
     this.tipAr = '',
+    this.lastResetDate,
   });
 
   final int score;
   final DateTime updatedAt;
   final int socialMinutesToday;
   final String tipAr;
+
+  /// آخر إعادة تعيين يومية — last daily reset.
+  final DateTime? lastResetDate;
 
   /// لون الدائرة — أخضر منخفض، أحمر مرتفع.
   bool get isHealthy => score <= 40;
@@ -31,12 +35,17 @@ class BrainRotScore extends Equatable {
     DateTime? updatedAt,
     int? socialMinutesToday,
     String? tipAr,
+    DateTime? lastResetDate,
+    bool clearLastResetDate = false,
   }) {
     return BrainRotScore(
       score: score ?? this.score,
       updatedAt: updatedAt ?? this.updatedAt,
       socialMinutesToday: socialMinutesToday ?? this.socialMinutesToday,
       tipAr: tipAr ?? this.tipAr,
+      lastResetDate: clearLastResetDate
+          ? null
+          : (lastResetDate ?? this.lastResetDate),
     );
   }
 
@@ -45,6 +54,8 @@ class BrainRotScore extends Equatable {
         'updatedAt': updatedAt.toIso8601String(),
         'socialMinutesToday': socialMinutesToday,
         'tipAr': tipAr,
+        if (lastResetDate != null)
+          'lastResetDate': lastResetDate!.toIso8601String(),
       };
 
   factory BrainRotScore.fromJson(Map<String, dynamic> json) {
@@ -54,10 +65,13 @@ class BrainRotScore extends Equatable {
           DateTime.now(),
       socialMinutesToday: (json['socialMinutesToday'] as num?)?.toInt() ?? 0,
       tipAr: json['tipAr'] as String? ?? '',
+      lastResetDate: json['lastResetDate'] != null
+          ? DateTime.tryParse(json['lastResetDate'] as String)
+          : null,
     );
   }
 
   @override
   List<Object?> get props =>
-      [score, updatedAt, socialMinutesToday, tipAr];
+      [score, updatedAt, socialMinutesToday, tipAr, lastResetDate];
 }

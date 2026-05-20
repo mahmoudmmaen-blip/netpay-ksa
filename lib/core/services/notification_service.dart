@@ -274,6 +274,28 @@ class NotificationService {
   Future<void> syncScheduledAlerts(List<GosiRateWarning> warnings) =>
       syncAll(gosiWarnings: warnings, isPremium: false);
 
+  /// إشعار فوري — Pomodoro (انتهاء شغل / راحة).
+  Future<void> showPomodoroComplete({
+    required String title,
+    required String body,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    try {
+      await _plugin.show(
+        NotificationConstants.idPomodoro,
+        title,
+        body,
+        _alertDetails,
+      );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('NotificationService.showPomodoroComplete: $e\n$st');
+      }
+    }
+  }
+
   Future<void> cancelAll() async {
     if (!_initialized) return;
     await _plugin.cancelAll();
