@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// Material 3 themes — Cairo font, emerald/navy/gold, full RTL-ready.
-class AppTheme {
+/// Material 3 themes — Cairo، Emerald Premium، Light + Dark.
+abstract final class AppTheme {
   AppTheme._();
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData get light => _build(Brightness.light);
+  static ThemeData get dark => _build(Brightness.dark);
 
   static TextTheme _cairoTextTheme(Brightness brightness) {
     final color = brightness == Brightness.dark
@@ -28,20 +28,22 @@ class AppTheme {
       primary: AppColors.emerald,
       onPrimary: Colors.white,
       primaryContainer: isDark
-          ? AppColors.emerald.withValues(alpha: 0.2)
-          : AppColors.emerald.withValues(alpha: 0.12),
+          ? AppColors.emerald.withValues(alpha: 0.22)
+          : AppColors.emerald.withValues(alpha: 0.14),
       onPrimaryContainer:
           isDark ? AppColors.emeraldLight : AppColors.emeraldDark,
       secondary: AppColors.gold,
       onSecondary: AppColors.navy,
-      secondaryContainer: AppColors.gold.withValues(alpha: isDark ? 0.15 : 0.2),
+      secondaryContainer: AppColors.gold.withValues(alpha: isDark ? 0.18 : 0.22),
       onSecondaryContainer: isDark ? AppColors.goldBright : AppColors.navy,
+      tertiary: AppColors.emeraldLight,
+      onTertiary: AppColors.navy,
       surface: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       onSurface:
           isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface,
       surfaceContainerHighest: isDark
           ? AppColors.darkSurfaceElevated
-          : const Color(0xFFE2E8F0),
+          : const Color(0xFFECFDF5),
       error: AppColors.error,
       onError: Colors.white,
       outline: isDark
@@ -78,25 +80,44 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         shadowColor: Colors.transparent,
-        color: isDark
-            ? AppColors.darkSurfaceElevated
-            : colorScheme.surface,
+        color: isDark ? AppColors.darkSurfaceElevated : colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(
             color: isDark
                 ? AppColors.glassBorder
-                : const Color(0xFFE2E8F0),
+                : AppColors.emerald.withValues(alpha: 0.12),
           ),
         ),
         margin: const EdgeInsets.symmetric(vertical: 6),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: AppColors.emerald,
+        textColor: colorScheme.onSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.emerald;
+          }
+          return isDark ? AppColors.darkMuted : AppColors.lightMuted;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.emerald.withValues(alpha: 0.35);
+          }
+          return isDark
+              ? AppColors.navyLight.withValues(alpha: 0.5)
+              : const Color(0xFFE2E8F0);
+        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
             ? AppColors.glassFillDark
-            : Colors.white.withValues(alpha: 0.9),
+            : Colors.white.withValues(alpha: 0.95),
         labelStyle: GoogleFonts.cairo(
           color: isDark ? AppColors.darkMuted : AppColors.lightMuted,
         ),
@@ -113,12 +134,13 @@ class AppTheme {
           borderSide: BorderSide(
             color: isDark
                 ? AppColors.glassBorder
-                : const Color(0xFFE2E8F0),
+                : AppColors.emerald.withValues(alpha: 0.15),
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.emeraldLight, width: 1.5),
+          borderSide:
+              const BorderSide(color: AppColors.emeraldLight, width: 1.5),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -138,24 +160,35 @@ class AppTheme {
           ),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.emerald,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.emerald,
-          side: const BorderSide(color: AppColors.emerald),
+          side: BorderSide(
+            color: AppColors.emerald.withValues(alpha: isDark ? 0.7 : 1.0),
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           textStyle: GoogleFonts.cairo(fontWeight: FontWeight.w600),
         ),
       ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.gold,
-        foregroundColor: AppColors.navy,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: AppColors.emerald,
+        foregroundColor: Colors.white,
         elevation: 4,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-        indicatorColor: AppColors.emerald.withValues(alpha: 0.15),
+        indicatorColor: AppColors.emerald.withValues(alpha: 0.18),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           return GoogleFonts.cairo(
             fontSize: 12,
@@ -166,19 +199,17 @@ class AppTheme {
         }),
       ),
       dividerTheme: DividerThemeData(
-        color: isDark
-            ? AppColors.navyLight
-            : const Color(0xFFE2E8F0),
+        color: isDark ? AppColors.navyLight : const Color(0xFFE2E8F0),
         thickness: 1,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: isDark ? AppColors.navyLight : AppColors.navy,
+        backgroundColor: isDark ? AppColors.navyLight : AppColors.emeraldDark,
         contentTextStyle: GoogleFonts.cairo(color: Colors.white),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.emerald.withValues(alpha: 0.1),
+        backgroundColor: AppColors.emerald.withValues(alpha: isDark ? 0.15 : 0.1),
         labelStyle: GoogleFonts.cairo(
           color: isDark ? AppColors.emeraldLight : AppColors.emeraldDark,
           fontWeight: FontWeight.w600,
@@ -186,10 +217,38 @@ class AppTheme {
         side: BorderSide.none,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      dialogTheme: DialogThemeData(
+        backgroundColor: isDark ? AppColors.darkSurfaceElevated : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: GoogleFonts.cairo(
+          fontWeight: FontWeight.w700,
+          fontSize: 18,
+          color: colorScheme.onSurface,
+        ),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor:
+            isDark ? AppColors.darkSurfaceElevated : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppColors.emerald.withValues(alpha: isDark ? 0.25 : 0.15);
+            }
+            return Colors.transparent;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppColors.emerald;
+            }
+            return colorScheme.onSurfaceVariant;
+          }),
         ),
       ),
     );

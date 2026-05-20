@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
-import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_status_card.dart';
@@ -14,7 +14,7 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final appState = ref.watch(appStateProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final historyAsync = ref.watch(historyNotifierProvider);
     final recordCount = historyAsync.valueOrNull?.length ?? 0;
 
@@ -39,30 +39,51 @@ class SettingsScreen extends ConsumerWidget {
           _SectionHeader(title: 'المظهر'),
           _SettingsCard(
             children: [
-              SwitchListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              ListTile(
+                contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                leading: Icon(
+                  _themeIcon(themeMode),
+                  color: AppColors.emerald,
+                ),
                 title: Text(
-                  'الوضع الداكن',
+                  'المظهر',
                   style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  appState.isDarkMode ? 'مفعّل' : 'معطّل',
+                  themeModeLabel(themeMode),
                   style: GoogleFonts.cairo(
                     fontSize: 12,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                secondary: Icon(
-                  appState.isDarkMode
-                      ? Icons.dark_mode_rounded
-                      : Icons.light_mode_rounded,
-                  color: AppColors.emerald,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      icon: Icon(Icons.brightness_auto_rounded, size: 18),
+                      label: Text('تلقائي'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      icon: Icon(Icons.light_mode_rounded, size: 18),
+                      label: Text('فاتح'),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      icon: Icon(Icons.dark_mode_rounded, size: 18),
+                      label: Text('داكن'),
+                    ),
+                  ],
+                  selected: {themeMode},
+                  onSelectionChanged: (selection) {
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(selection.first);
+                  },
                 ),
-                value: appState.isDarkMode,
-                activeThumbColor: AppColors.emerald,
-                onChanged: (_) => ref
-                    .read(appStateProvider.notifier)
-                    .toggleDarkLight(),
               ),
             ],
           ),
@@ -220,6 +241,12 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+IconData _themeIcon(ThemeMode mode) => switch (mode) {
+      ThemeMode.system => Icons.brightness_auto_rounded,
+      ThemeMode.light => Icons.light_mode_rounded,
+      ThemeMode.dark => Icons.dark_mode_rounded,
+    };
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});

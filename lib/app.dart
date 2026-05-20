@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/router/app_router.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/theme/app_theme.dart';
@@ -25,8 +26,8 @@ class NetGulfApp extends ConsumerWidget {
     return MaterialApp.router(
       title: AppConstants.appNameEn,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       themeMode: themeMode,
       locale: const Locale(
         AppConstants.defaultLocaleCode,
@@ -57,8 +58,8 @@ class _BootstrapApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
       themeMode: themeMode,
       home: const _BootstrapLoadingScreen(),
     );

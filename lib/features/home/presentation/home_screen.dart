@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
-import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
@@ -125,7 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             tooltip: 'تبديل الوضع',
             icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
             onPressed: () =>
-                ref.read(appStateProvider.notifier).toggleDarkLight(),
+                ref.read(themeModeProvider.notifier).toggleDarkLight(),
           ),
           _GlassIconButton(
             tooltip: 'السجل',
@@ -133,9 +133,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => context.push(AppRoutes.history),
           ),
           if (!isPremium)
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 4),
-              child: PremiumUpgradeButton(compact: true),
+            _GlassIconButton(
+              tooltip: 'ترقية Premium',
+              icon: Icons.workspace_premium_rounded,
+              onPressed: () => showPremiumGate(
+                context,
+                feature: PremiumFeature.pdfExport,
+              ),
             ),
           const SizedBox(width: 8),
         ],
