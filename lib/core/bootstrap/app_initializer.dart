@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/services/admob_service.dart';
-import 'package:netgulf/features/notifications/notification_service.dart';
+import 'package:netgulf/core/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// تهيئة الخدمات المحلية قبل [runApp] — Offline First.

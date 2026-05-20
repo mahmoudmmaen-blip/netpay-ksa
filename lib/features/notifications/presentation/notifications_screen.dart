@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/features/gosi/domain/enums/gosi_regime.dart';
 import 'package:netgulf/features/gosi/domain/enums/nationality_type.dart';
-import 'package:netgulf/features/notifications/providers/notifications_provider.dart';
+import 'package:netgulf/core/constants/notification_constants.dart';
+import 'package:netgulf/core/providers/notification_provider.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// شاشة التنبيهات — زيادات GOSI القادمة وتفعيل الإشعارات.
@@ -24,7 +26,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (ref.read(notificationsEnabledProvider)) {
-        ref.read(notificationsEnabledProvider.notifier).syncFromSalary(ref);
+        ref.read(notificationsEnabledProvider.notifier).syncAll();
       }
     });
   }
@@ -32,6 +34,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     final enabled = ref.watch(notificationsEnabledProvider);
+    final isPremium = ref.watch(isPremiumProvider);
     final items = ref.watch(gosiNotificationItemsProvider);
     final salary = ref.watch(salaryNotifierProvider);
     final currency = NumberFormat.currency(
@@ -74,7 +77,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 ),
               ),
               subtitle: Text(
-                'تذكير سنوي + تنبيه قبل زيادات GOSI في يوليو',
+                'تذكيرات يومية + GOSI + مزايا Premium',
                 style: GoogleFonts.cairo(fontSize: 13),
               ),
               value: enabled,
@@ -82,10 +85,54 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               onChanged: (v) async {
                 await ref
                     .read(notificationsEnabledProvider.notifier)
-                    .setEnabled(v, ref);
+                    .setEnabled(v);
               },
             ),
           ),
+          const SizedBox(height: 20),
+          Text(
+            'التذكيرات اليومية',
+            style: GoogleFonts.cairo(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _DailyTile(
+            icon: Icons.payments_outlined,
+            title: NotificationConstants.dailySalaryTitle,
+            time: '8:00 ص',
+            enabled: enabled,
+          ),
+          _DailyTile(
+            icon: Icons.self_improvement_outlined,
+            title: NotificationConstants.dailyHabitsTitle,
+            time: '1:00 م',
+            enabled: enabled,
+          ),
+          _DailyTile(
+            icon: Icons.psychology_outlined,
+            title: NotificationConstants.dailyBrainRotTitle,
+            time: '8:00 م',
+            enabled: enabled,
+          ),
+          if (isPremium) ...[
+            const SizedBox(height: 8),
+            _DailyTile(
+              icon: Icons.workspace_premium_rounded,
+              title: NotificationConstants.premiumInsightsTitle,
+              time: '7:30 ص',
+              enabled: enabled,
+              premium: true,
+            ),
+            _DailyTile(
+              icon: Icons.auto_awesome_rounded,
+              title: NotificationConstants.premiumBrainRotTitle,
+              time: '9:30 م',
+              enabled: enabled,
+              premium: true,
+            ),
+          ],
           const SizedBox(height: 20),
           Text(
             'زيادات GOSI القادمة',
@@ -211,6 +258,57 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 }
 
+class _DailyTile extends StatelessWidget {
+  const _DailyTile({
+    required this.icon,
+    required this.title,
+    required this.time,
+    required this.enabled,
+    this.premium = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String time;
+  final bool enabled;
+  final bool premium;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = premium ? AppColors.gold : AppColors.emerald;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: 0.25)),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: enabled ? color : AppColors.lightMuted),
+        title: Text(
+          title,
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: enabled
+                ? null
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Text(
+          time,
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyHint extends StatelessWidget {
   const _EmptyHint({required this.message});
 
@@ -226,6 +324,57 @@ class _EmptyHint extends StatelessWidget {
           fontSize: 14,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
           height: 1.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyTile extends StatelessWidget {
+  const _DailyTile({
+    required this.icon,
+    required this.title,
+    required this.time,
+    required this.enabled,
+    this.premium = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String time;
+  final bool enabled;
+  final bool premium;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = premium ? AppColors.gold : AppColors.emerald;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: 0.25)),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: enabled ? color : AppColors.lightMuted),
+        title: Text(
+          title,
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: enabled
+                ? null
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Text(
+          time,
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
         ),
       ),
     );

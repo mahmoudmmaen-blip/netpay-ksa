@@ -24,7 +24,7 @@ import 'package:netgulf/features/home/presentation/widgets/home_screen_header.da
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
 import 'package:netgulf/features/home/providers/home_uae_notifier.dart';
-import 'package:netgulf/features/notifications/providers/notifications_provider.dart';
+import 'package:netgulf/core/providers/notification_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 import 'package:netgulf/features/share/providers/share_provider.dart';

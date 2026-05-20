@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/providers/notification_provider.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/router/app_router.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
@@ -17,6 +18,7 @@ class NetGulfApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
     final themeMode = ref.watch(themeModeProvider);
+    ref.watch(notificationPremiumSyncProvider);
     final router = ref.watch(appRouterProvider);
 
     if (!appState.isReady) {
