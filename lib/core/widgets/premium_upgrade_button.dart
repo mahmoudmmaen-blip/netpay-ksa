@@ -145,7 +145,7 @@ class _FullUpgradeBanner extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ترقية إلى Premium',
+                        PremiumConstants.upgradeTitle,
                         style: GoogleFonts.cairo(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,

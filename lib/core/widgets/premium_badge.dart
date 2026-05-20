@@ -6,7 +6,7 @@ import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شارة Premium — تاج + خلفية emerald (AppBar / الإعدادات).
+/// شارة Premium — تاج + خلفية emerald + نبض خفيف (AppBar / الإعدادات).
 class PremiumBadge extends ConsumerWidget {
   const PremiumBadge({super.key, this.compact = true});
 
@@ -20,33 +20,75 @@ class PremiumBadge extends ConsumerWidget {
     }
 
     if (compact) {
-      return _CompactBadge();
+      return const _CompactBadge();
     }
 
-    return _FullBadge();
+    return const _FullBadge();
   }
 }
 
-class _CompactBadge extends StatelessWidget {
+class _CompactBadge extends StatefulWidget {
+  const _CompactBadge();
+
+  @override
+  State<_CompactBadge> createState() => _CompactBadgeState();
+}
+
+class _CompactBadgeState extends State<_CompactBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+  late final Animation<double> _glow;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+    _glow = Tween<double>(begin: 0.22, end: 0.48).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+    _scale = Tween<double>(begin: 1.0, end: 1.035).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.emerald, AppColors.emeraldDark],
-        ),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.55)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.emerald.withValues(alpha: 0.35),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) => Transform.scale(
+        scale: _scale.value,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.emerald, AppColors.emeraldDark],
+            ),
+            border: Border.all(
+              color: AppColors.gold.withValues(alpha: 0.45 + _glow.value * 0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.emerald.withValues(alpha: _glow.value),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
+          child: child,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -86,6 +128,8 @@ class _CompactBadge extends StatelessWidget {
 }
 
 class _FullBadge extends StatelessWidget {
+  const _FullBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -114,7 +158,9 @@ class _FullBadge extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white.withValues(alpha: 0.15),
-              border: Border.all(color: AppColors.goldBright.withValues(alpha: 0.6)),
+              border: Border.all(
+                color: AppColors.goldBright.withValues(alpha: 0.6),
+              ),
             ),
             child: const Icon(
               Icons.workspace_premium_rounded,

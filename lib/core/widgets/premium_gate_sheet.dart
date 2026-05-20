@@ -187,7 +187,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                 blendMode: BlendMode.srcIn,
                 shaderCallback: (b) => AppColors.goldGradient.createShader(b),
                 child: Text(
-                  'NetGulf Premium',
+                  PremiumConstants.upgradeTitle,
                   style: GoogleFonts.cairo(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,

@@ -13,9 +13,12 @@ abstract final class PremiumConstants {
   static const String premiumPriceLabel = '$premiumPriceSar ريال';
   static const String premiumPriceFull = '$premiumPriceSar ريال / سنة';
 
+  /// عنوان بوابة الترقية (bottom sheet).
+  static const String upgradeTitle = 'ترقية إلى Premium';
+
   /// نص زر الشراء الموحّد.
-  static const String activateCta = 'فعّل Premium الآن';
-  static const String renewCta = 'جدّد Premium الآن';
+  static const String activateCta = 'فعّل الآن';
+  static const String renewCta = 'جدّد الآن';
 
   // ── حالات الاشتراك (Settings + Home) ─────────────────────────────────────
 
