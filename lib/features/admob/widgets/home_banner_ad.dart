@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:netgulf/features/admob/admob_service.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/services/admob_service.dart';
 
-/// بانر AdMob أسفل الشاشة الرئيسية.
-class HomeBannerAd extends StatefulWidget {
+/// بانر AdMob أسفل الشاشة الرئيسية — للنسخة المجانية فقط.
+class HomeBannerAd extends ConsumerStatefulWidget {
   const HomeBannerAd({super.key});
 
   @override
-  State<HomeBannerAd> createState() => _HomeBannerAdState();
+  ConsumerState<HomeBannerAd> createState() => _HomeBannerAdState();
 }
 
-class _HomeBannerAdState extends State<HomeBannerAd> {
+class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
 
@@ -20,15 +22,28 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
     _loadAd();
   }
 
+  @override
+  void didUpdateWidget(covariant HomeBannerAd oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final isPremium = ref.read(isPremiumProvider);
+    if (isPremium && _bannerAd != null) {
+      _bannerAd?.dispose();
+      _bannerAd = null;
+      _isLoaded = false;
+    } else if (!isPremium && _bannerAd == null) {
+      _loadAd();
+    }
+  }
+
   Future<void> _loadAd() async {
-    if (!AdMobService.isSupported) return;
+    if (!AdMobService.isSupported || ref.read(isPremiumProvider)) return;
 
     await AdMobService.initialize();
 
     final banner = AdMobService.createBannerAd(
       listener: BannerAdListener(
         onAdLoaded: (ad) {
-          if (!mounted) {
+          if (!mounted || ref.read(isPremiumProvider)) {
             ad.dispose();
             return;
           }
@@ -55,7 +70,24 @@ class _HomeBannerAdState extends State<HomeBannerAd> {
 
   @override
   Widget build(BuildContext context) {
-    if (!AdMobService.isSupported || !_isLoaded || _bannerAd == null) {
+    ref.listen(isPremiumProvider, (previous, isPremium) {
+      if (isPremium) {
+        _bannerAd?.dispose();
+        _bannerAd = null;
+        if (_isLoaded) {
+          setState(() => _isLoaded = false);
+        }
+      } else if (_bannerAd == null) {
+        _loadAd();
+      }
+    });
+
+    final isPremium = ref.watch(isPremiumProvider);
+
+    if (isPremium ||
+        !AdMobService.isSupported ||
+        !_isLoaded ||
+        _bannerAd == null) {
       return const SizedBox.shrink();
     }
 

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/router/app_page_transitions.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
-import 'package:netgulf/features/history/presentation/history_screen.dart';
+import 'package:netgulf/features/salary_calculator/presentation/history_screen.dart';
 import 'package:netgulf/features/home/presentation/home_screen.dart';
 import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:netgulf/features/settings/presentation/settings_screen.dart';

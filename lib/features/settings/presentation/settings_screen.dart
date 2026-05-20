@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
 
 /// شاشة الإعدادات — ثيم، لغة، عن التطبيق، مسح السجل.
@@ -13,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appState = ref.watch(appStateProvider);
+    final isPremium = ref.watch(isPremiumProvider);
     final historyAsync = ref.watch(historyNotifierProvider);
     final recordCount = historyAsync.valueOrNull?.length ?? 0;
 
@@ -26,6 +29,46 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
+          _SectionHeader(title: 'Premium'),
+          _SettingsCard(
+            children: [
+              if (isPremium)
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: const Icon(
+                    Icons.verified_rounded,
+                    color: AppColors.goldBright,
+                  ),
+                  title: Text(
+                    'NetGulf Premium',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'مفعّل — بدون إعلانات وميزات كاملة',
+                    style: GoogleFonts.cairo(fontSize: 12),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '${AppConstants.premiumPriceLabel} / سنة',
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.emerald,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const PremiumUpgradeButton(),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
           _SectionHeader(title: 'المظهر'),
           _SettingsCard(
             children: [

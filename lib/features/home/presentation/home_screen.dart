@@ -9,6 +9,8 @@ import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
+import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
@@ -65,6 +67,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deduction =
         isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
 
+    final isPremium = ref.watch(isPremiumProvider);
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -113,6 +117,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             tooltip: 'السجل',
             icon: Icons.history_rounded,
             onPressed: () => context.push(AppRoutes.history),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: PremiumUpgradeButton(compact: true),
           ),
           const SizedBox(width: 8),
         ],
@@ -165,6 +173,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       country: country,
                       items: _quickActionItems(context, country),
                     ),
+                    const SizedBox(height: 20),
+                    if (!isPremium) const PremiumUpgradeButton(),
                     const SizedBox(height: 28),
                     if (isSaudi && salary.hasError)
                       _ErrorBanner(message: salary.errorMessage!),
@@ -188,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          const HomeBannerAd(),
+          if (!isPremium) const HomeBannerAd(),
         ],
       ),
     );
