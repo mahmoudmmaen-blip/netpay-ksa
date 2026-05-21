@@ -123,9 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           const Padding(
             padding: EdgeInsetsDirectional.only(end: 4),
-            child: Center(
-              child: PremiumBadge(compact: true, size: 24),
-            ),
+            child: Center(child: PremiumBadge(compact: true)),
           ),
           const SizedBox(width: 8),
         ],

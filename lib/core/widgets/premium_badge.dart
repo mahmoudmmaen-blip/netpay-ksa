@@ -13,10 +13,10 @@ class PremiumBadge extends ConsumerWidget {
     this.size,
   });
 
-  /// وضع مضغوط للـ AppBar.
+  /// `true` = شارة صغيرة للـ AppBar | `false` = شارة كاملة.
   final bool compact;
 
-  /// حجم الشارة؛ الافتراضي 24 في compact و 32 في الوضع الكامل.
+  /// حجم الشارة؛ الافتراضي 24 في [compact] و 32 في الوضع الكامل.
   final double? size;
 
   @override
@@ -30,7 +30,7 @@ class PremiumBadge extends ConsumerWidget {
     if (compact) {
       return _CompactBadge(size: badgeSize);
     }
-    return _FullBadge();
+    return const _FullBadge();
   }
 }
 
@@ -87,6 +87,8 @@ class _CompactBadge extends StatelessWidget {
 }
 
 class _FullBadge extends StatelessWidget {
+  const _FullBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(

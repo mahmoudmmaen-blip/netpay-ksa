@@ -33,13 +33,12 @@ abstract final class PremiumConstants {
   static const String unlockAllFeatures = 'افتح كل المميزات';
 
   /// عنوان قصير — شارات وبطاقات.
-  static const String benefits = 'مميزات Premium';
+  static String get benefits => 'مميزات Premium';
 
   /// عنوان قسم المزايا في الشاشات.
-  static const String premiumBenefitsTitle = 'مميزات الاشتراك المدفوع';
+  static String get premiumBenefitsTitle => 'مميزات الاشتراك المدفوع';
 
-  /// قائمة المزايا (أيقونة + نص).
-  static const List<(IconData, String)> benefitItems = [
+  static const List<(IconData, String)> _benefitItemsList = [
     (Icons.block_rounded, 'بدون إعلانات نهائياً'),
     (Icons.history_rounded, 'سجل رواتب غير محدود'),
     (Icons.picture_as_pdf_rounded, 'تصدير PDF غير محدود'),
@@ -47,4 +46,7 @@ abstract final class PremiumConstants {
     (Icons.smart_toy_outlined, 'أولوية في المساعد القانوني'),
     (Icons.auto_awesome_rounded, 'ميزات مستقبلية'),
   ];
+
+  /// قائمة المزايا (أيقونة + نص).
+  static List<(IconData, String)> get benefitItems => _benefitItemsList;
 }

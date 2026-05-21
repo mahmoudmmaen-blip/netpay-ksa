@@ -92,6 +92,15 @@ class _ActiveCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 14),
+          Text(
+            PremiumConstants.premiumBenefitsTitle,
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.emerald,
+            ),
+          ),
+          const SizedBox(height: 8),
           const _BenefitsPreview(maxItems: 3),
         ],
       ),
@@ -216,6 +225,15 @@ class _UpgradeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          Text(
+            PremiumConstants.benefits,
+            style: GoogleFonts.cairo(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.emerald,
+            ),
+          ),
+          const SizedBox(height: 8),
           const _BenefitsPreview(),
           const SizedBox(height: 16),
           _PremiumCtaButton(label: PremiumConstants.activateCta),
