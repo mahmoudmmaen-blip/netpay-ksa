@@ -17,8 +17,6 @@ import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/pdf_export/pdf_export_helper.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
-import 'package:netgulf/core/widgets/pomodoro_timer.dart';
-import 'package:netgulf/features/brain_rot/presentation/widgets/brain_rot_score_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
 import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
@@ -125,7 +123,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           const Padding(
             padding: EdgeInsetsDirectional.only(end: 4),
-            child: Center(child: PremiumBadge(compact: true)),
+            child: Center(
+              child: PremiumBadge(compact: true, size: 24),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -149,16 +149,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 20),
                     HomeScreenHeader(country: country),
                     const SizedBox(height: 20),
-                    _HomeSalaryBrainRotRow(
-                      country: country,
-                      net: net,
-                      gross: gross,
-                      deduction: deduction,
-                      isDark: isDark,
-                      formatValue: currency.format,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 320),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.05),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      child: HomeNetSalaryCard(
+                        key: ValueKey(country),
+                        country: country,
+                        net: net,
+                        gross: gross,
+                        deduction: deduction,
+                        isDark: isDark,
+                        formatValue: currency.format,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    const PomodoroStartButton(),
                     const SizedBox(height: 16),
                     const PremiumUpgradeButton(),
                     const SizedBox(height: 24),
@@ -411,66 +425,6 @@ class _ErrorBanner extends StatelessWidget {
           const Icon(Icons.error_outline, color: AppColors.error),
           const SizedBox(width: 10),
           Expanded(child: Text(message, style: GoogleFonts.cairo(fontSize: 13))),
-        ],
-      ),
-    );
-  }
-}
-
-/// صف الراتب + Brain Rot جنباً إلى جنب.
-class _HomeSalaryBrainRotRow extends StatelessWidget {
-  const _HomeSalaryBrainRotRow({
-    required this.country,
-    required this.net,
-    required this.gross,
-    required this.deduction,
-    required this.isDark,
-    required this.formatValue,
-  });
-
-  final GulfCountry country;
-  final double net;
-  final double gross;
-  final double deduction;
-  final bool isDark;
-  final String Function(double) formatValue;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 320),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.05),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
-      ),
-      child: Row(
-        key: ValueKey(country),
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 3,
-            child: HomeNetSalaryCard(
-              country: country,
-              net: net,
-              gross: gross,
-              deduction: deduction,
-              isDark: isDark,
-              formatValue: formatValue,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            flex: 2,
-            child: BrainRotScoreCard(compact: true),
-          ),
         ],
       ),
     );

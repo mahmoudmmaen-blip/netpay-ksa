@@ -23,15 +23,12 @@ abstract final class NotificationConstants {
 
   static const int idDailySalary = 8001;
   static const int idDailySocial = 8002;
-  static const int idDailyBrainRot = 8003;
+  static const int idDailyEveningTip = 8003;
 
   /// تذكيرات يومية — Premium فقط.
   static const int idPremiumInsights = 8101;
   static const int idPremiumSocial = 8102;
-  static const int idPremiumBrainRot = 8103;
-
-  /// Pomodoro — إشعار فوري عند انتهاء الجلسة.
-  static const int idPomodoro = 8200;
+  static const int idPremiumEveningTip = 8103;
 
   // ── Daily messages (free) ────────────────────────────────────────────────────
 
@@ -43,9 +40,9 @@ abstract final class NotificationConstants {
   static const String dailySocialBody =
       'ساعة أقل على السوشيال اليوم = تركيز أفضل على راتبك الحقيقي.';
 
-  static const String dailyBrainRotTitle = 'Brain Rot Tip';
-  static const String dailyBrainRotBody =
-      'حدّث Brain Rot Score — هل وقت السوشيال يؤثر على قراراتك المالية؟';
+  static const String dailyEveningTipTitle = 'راجع ميزانيتك';
+  static const String dailyEveningTipBody =
+      'قبل النوم — هل قراراتك المالية اليوم كانت واعية؟';
 
   // ── Daily messages (Premium) ─────────────────────────────────────────────────
 
@@ -57,9 +54,9 @@ abstract final class NotificationConstants {
   static const String premiumSocialBody =
       'تذكير ذكي: قلّل السوشيال وافتح مقارنة العروض الكاملة.';
 
-  static const String premiumBrainRotTitle = 'Premium — Brain Rot Pro';
-  static const String premiumBrainRotBody =
-      'تحليل أعمق لعاداتك — حدّث Brain Rot Score وتابع تقدمك أسبوعياً.';
+  static const String premiumEveningTipTitle = 'Premium — مراجعة مسائية';
+  static const String premiumEveningTipBody =
+      'راجع سجلك الكامل وقارن عروضك — بدون إعلانات.';
 
   // ── Legacy aliases ─────────────────────────────────────────────────────────
 
@@ -67,6 +64,4 @@ abstract final class NotificationConstants {
   static const String dailyHabitsBody = dailySocialBody;
   static const String premiumInsightsTitle = premiumSalaryTitle;
   static const String premiumInsightsBody = premiumSalaryBody;
-  static const String premiumBrainRotTitleLegacy = premiumBrainRotTitle;
-  static const String premiumBrainRotBodyLegacy = premiumBrainRotBody;
 }

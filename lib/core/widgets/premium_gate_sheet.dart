@@ -223,7 +223,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet> {
                 ),
               ),
               const SizedBox(height: 20),
-              ...PremiumConstants.benefits.map(
+              ...PremiumConstants.benefitItems.map(
                 (b) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(

@@ -32,7 +32,14 @@ abstract final class PremiumConstants {
   static const String premiumBadgeText = 'Premium';
   static const String unlockAllFeatures = 'افتح كل المميزات';
 
-  static const List<(IconData, String)> benefits = [
+  /// عنوان قصير — شارات وبطاقات.
+  static const String benefits = 'مميزات Premium';
+
+  /// عنوان قسم المزايا في الشاشات.
+  static const String premiumBenefitsTitle = 'مميزات الاشتراك المدفوع';
+
+  /// قائمة المزايا (أيقونة + نص).
+  static const List<(IconData, String)> benefitItems = [
     (Icons.block_rounded, 'بدون إعلانات نهائياً'),
     (Icons.history_rounded, 'سجل رواتب غير محدود'),
     (Icons.picture_as_pdf_rounded, 'تصدير PDF غير محدود'),

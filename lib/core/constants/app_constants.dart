@@ -34,7 +34,6 @@ abstract final class AppConstants {
   static const String hiveBoxSettings = 'netgulf_settings';
   static const String hiveBoxHistory = 'netgulf_salary_history';
   static const String hiveBoxPremium = 'netgulf_premium';
-  static const String hiveBoxBrainRot = 'netgulf_brain_rot';
 
   /// مفاتيح Hive — Premium.
   static const String hivePremiumActive = 'premium_active';

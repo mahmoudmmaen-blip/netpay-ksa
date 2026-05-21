@@ -111,8 +111,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             enabled: enabled,
           ),
           _DailyTile(
-            icon: Icons.psychology_outlined,
-            title: NotificationConstants.dailyBrainRotTitle,
+            icon: Icons.nightlight_round,
+            title: NotificationConstants.dailyEveningTipTitle,
             time: '8:00 م',
             enabled: enabled,
           ),
@@ -134,7 +134,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             ),
             _DailyTile(
               icon: Icons.auto_awesome_rounded,
-              title: NotificationConstants.premiumBrainRotTitle,
+              title: NotificationConstants.premiumEveningTipTitle,
               time: '9:30 م',
               enabled: enabled,
               premium: true,

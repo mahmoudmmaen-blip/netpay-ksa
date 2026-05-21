@@ -80,7 +80,6 @@ abstract final class AppInitializer {
         Hive.openBox<dynamic>(AppConstants.hiveBoxSettings),
         Hive.openBox<dynamic>(AppConstants.hiveBoxHistory),
         Hive.openBox<dynamic>(AppConstants.hiveBoxPremium),
-        Hive.openBox<dynamic>(AppConstants.hiveBoxBrainRot),
       ]);
     } catch (e, st) {
       if (kDebugMode) {

@@ -7,10 +7,17 @@ import 'package:netgulf/core/theme/app_colors.dart';
 
 /// شارة Premium — AppBar (تظهر فقط عند اشتراك ساري).
 class PremiumBadge extends ConsumerWidget {
-  const PremiumBadge({super.key, this.compact = true, this.size = 32});
+  const PremiumBadge({
+    super.key,
+    this.compact = false,
+    this.size,
+  });
 
+  /// وضع مضغوط للـ AppBar.
   final bool compact;
-  final double size;
+
+  /// حجم الشارة؛ الافتراضي 24 في compact و 32 في الوضع الكامل.
+  final double? size;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,8 +25,10 @@ class PremiumBadge extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final badgeSize = size ?? (compact ? 24.0 : 32.0);
+
     if (compact) {
-      return _CompactBadge(size: size);
+      return _CompactBadge(size: badgeSize);
     }
     return _FullBadge();
   }
@@ -34,8 +43,8 @@ class _CompactBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: size * 0.35,
-        vertical: size * 0.18,
+        horizontal: size * 0.3,
+        vertical: size * 0.14,
       ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -44,12 +53,12 @@ class _CompactBadge extends StatelessWidget {
             PremiumConstants.premiumGradientEnd,
           ],
         ),
-        borderRadius: BorderRadius.circular(size),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(size * 0.9),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
         boxShadow: [
           BoxShadow(
-            color: PremiumConstants.premiumColor.withValues(alpha: 0.35),
-            blurRadius: 8,
+            color: PremiumConstants.premiumColor.withValues(alpha: 0.3),
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -60,19 +69,17 @@ class _CompactBadge extends StatelessWidget {
           Icon(
             Icons.workspace_premium_rounded,
             color: Colors.white,
-            size: size * 0.55,
+            size: size * 0.5,
           ),
-          SizedBox(width: size * 0.15),
+          SizedBox(width: size * 0.12),
           Text(
             PremiumConstants.premiumBadgeText,
             style: GoogleFonts.cairo(
               color: Colors.white,
-              fontSize: size * 0.38,
+              fontSize: size * 0.34,
               fontWeight: FontWeight.w800,
             ),
           ),
-          SizedBox(width: size * 0.12),
-          Icon(Icons.check_circle_rounded, color: Colors.white, size: size * 0.4),
         ],
       ),
     );

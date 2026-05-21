@@ -140,9 +140,9 @@ class NotificationService {
       details: _dailyDetails,
     );
     await _scheduleDaily(
-      id: NotificationConstants.idDailyBrainRot,
-      title: NotificationConstants.dailyBrainRotTitle,
-      body: NotificationConstants.dailyBrainRotBody,
+      id: NotificationConstants.idDailyEveningTip,
+      title: NotificationConstants.dailyEveningTipTitle,
+      body: NotificationConstants.dailyEveningTipBody,
       hour: 20,
       minute: 0,
       details: _dailyDetails,
@@ -168,9 +168,9 @@ class NotificationService {
       details: _premiumDetails,
     );
     await _scheduleDaily(
-      id: NotificationConstants.idPremiumBrainRot,
-      title: NotificationConstants.premiumBrainRotTitle,
-      body: NotificationConstants.premiumBrainRotBody,
+      id: NotificationConstants.idPremiumEveningTip,
+      title: NotificationConstants.premiumEveningTipTitle,
+      body: NotificationConstants.premiumEveningTipBody,
       hour: 21,
       minute: 30,
       details: _premiumDetails,
@@ -273,28 +273,6 @@ class NotificationService {
   /// @deprecated استخدم [syncAll].
   Future<void> syncScheduledAlerts(List<GosiRateWarning> warnings) =>
       syncAll(gosiWarnings: warnings, isPremium: false);
-
-  /// إشعار فوري — Pomodoro (انتهاء شغل / راحة).
-  Future<void> showPomodoroComplete({
-    required String title,
-    required String body,
-  }) async {
-    if (!_initialized) {
-      await initialize();
-    }
-    try {
-      await _plugin.show(
-        NotificationConstants.idPomodoro,
-        title,
-        body,
-        _alertDetails,
-      );
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('NotificationService.showPomodoroComplete: $e\n$st');
-      }
-    }
-  }
 
   Future<void> cancelAll() async {
     if (!_initialized) return;

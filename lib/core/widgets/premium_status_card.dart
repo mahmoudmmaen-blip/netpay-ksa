@@ -324,8 +324,8 @@ class _BenefitsPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = maxItems != null
-        ? PremiumConstants.benefits.take(maxItems!).toList()
-        : PremiumConstants.benefits;
+        ? PremiumConstants.benefitItems.take(maxItems!).toList()
+        : PremiumConstants.benefitItems;
 
     return Column(
       children: items
