@@ -41,9 +41,7 @@ class HistoryScreen extends ConsumerWidget {
             ),
           const Padding(
             padding: EdgeInsetsDirectional.only(end: 12),
-            child: Center(
-              child: PremiumBadge(compact: true, size: 24),
-            ),
+            child: Center(child: PremiumBadge(compact: true)),
           ),
           historyAsync.whenOrNull(
                 data: (list) => list.isEmpty
