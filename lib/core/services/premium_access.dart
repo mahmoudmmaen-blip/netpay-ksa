@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/services/admob_service.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 
-/// هل يُعرض إعلان AdMob؟ — false لمشتركي Premium فقط.
-final showAdsProvider = Provider<bool>((ref) {
-  return !ref.watch(isPremiumProvider);
-});
-
-/// حالة الاشتراك للعرض (Active / Expired / Not Subscribed).
-final premiumSubscriptionStateProvider =
-    Provider<PremiumSubscriptionState>((ref) {
-  return ref.watch(premiumStatusProvider).subscriptionState;
-});
+export 'package:netgulf/core/providers/premium_provider.dart'
+    show
+        isPremiumProvider,
+        showAdsProvider,
+        premiumSubscriptionStateProvider,
+        premiumStatusProvider,
+        premiumNotifierProvider;
 
 /// مساعد Premium مركزي — إعلانات، بوابات، فحص الميزات.
 abstract final class PremiumAccess {
@@ -26,9 +22,13 @@ abstract final class PremiumAccess {
   /// هل المستخدم يملك Premium ساري؟ (مع إ rebuild عند التغيير)
   static bool watchIsPremium(WidgetRef ref) => ref.watch(isPremiumProvider);
 
+  /// هل تُعرض الإعلانات؟ (مجاني فقط)
+  static bool watchShowAds(WidgetRef ref) => ref.watch(showAdsProvider);
+
   /// interstitial للمجانيين فقط (مرة/جلسة).
   static Future<void> showInterstitialIfFree(WidgetRef ref) {
-    return AdMobService.tryShowInterstitial(isPremium: isPremium(ref));
+    if (!ref.read(showAdsProvider)) return Future.value();
+    return AdMobService.tryShowInterstitial(isPremium: false);
   }
 
   /// هل الميزة مقفلة؟ (عكس isPremium)

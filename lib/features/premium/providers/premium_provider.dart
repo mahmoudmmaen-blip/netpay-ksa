@@ -47,13 +47,19 @@ class PremiumNotifier extends StateNotifier<PremiumStatus> {
 
   PremiumStatus? _readFromHive() {
     final box = _box;
-    if (box == null || box.isEmpty) return null;
+    if (box == null) return null;
+    if (!box.containsKey(AppConstants.hivePremiumActive)) return null;
+
     final active = box.get(AppConstants.hivePremiumActive) as bool? ?? false;
+    if (!active) {
+      return const PremiumStatus(premiumStatus: false);
+    }
+
     final expiryRaw = box.get(AppConstants.hivePremiumExpiresAt) as String?;
-    return PremiumStatus(
-      premiumStatus: active,
-      expiresAt: expiryRaw != null ? DateTime.tryParse(expiryRaw) : null,
-    );
+    final expiresAt =
+        expiryRaw != null ? DateTime.tryParse(expiryRaw) : null;
+
+    return PremiumStatus(premiumStatus: true, expiresAt: expiresAt);
   }
 
   PremiumStatus _readFromPrefs() {
@@ -161,6 +167,17 @@ final premiumStatusProvider = Provider<PremiumStatus>((ref) {
 
 final isPremiumProvider = Provider<bool>((ref) {
   return ref.watch(premiumStatusProvider).isValid;
+});
+
+/// هل يُعرض إعلان AdMob؟ — false لمشتركي Premium فقط.
+final showAdsProvider = Provider<bool>((ref) {
+  return !ref.watch(isPremiumProvider);
+});
+
+/// حالة الاشتراك للعرض (نشط / منتهي / غير مشترك).
+final premiumSubscriptionStateProvider =
+    Provider<PremiumSubscriptionState>((ref) {
+  return ref.watch(premiumStatusProvider).subscriptionState;
 });
 
 @Deprecated('Use premiumNotifierProvider')

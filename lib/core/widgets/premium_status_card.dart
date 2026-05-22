@@ -9,18 +9,96 @@ import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 
-/// بطاقة حالة Premium — أعلى شاشة الإعدادات (Active / Expired / Not Subscribed).
+/// بطاقة حالة Premium — نشط / منتهي / غير مشترك.
 class PremiumStatusCard extends ConsumerWidget {
   const PremiumStatusCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final status = ref.watch(premiumStatusProvider);
-    return switch (status.subscriptionState) {
-      PremiumSubscriptionState.active => _ActiveCard(status: status),
-      PremiumSubscriptionState.expired => _ExpiredCard(expiresAt: status.expiresAt),
-      PremiumSubscriptionState.notSubscribed => const _UpgradeCard(),
+    final state = status.subscriptionState;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _StatusHeader(state: state),
+        const SizedBox(height: 12),
+        switch (state) {
+          PremiumSubscriptionState.active => _ActiveCard(status: status),
+          PremiumSubscriptionState.expired =>
+            _ExpiredCard(expiresAt: status.expiresAt),
+          PremiumSubscriptionState.notSubscribed => const _UpgradeCard(),
+        },
+      ],
+    );
+  }
+}
+
+class _StatusHeader extends StatelessWidget {
+  const _StatusHeader({required this.state});
+
+  final PremiumSubscriptionState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (state) {
+      PremiumSubscriptionState.active => (
+          '● اشتراك نشط',
+          AppColors.emerald,
+          Icons.verified_rounded,
+        ),
+      PremiumSubscriptionState.expired => (
+          '● اشتراك منتهي',
+          AppColors.warning,
+          Icons.error_outline_rounded,
+        ),
+      PremiumSubscriptionState.notSubscribed => (
+          '● غير مشترك',
+          AppColors.lightMuted,
+          Icons.lock_outline_rounded,
+        ),
     };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+              color: color,
+            ),
+          ),
+          if (state == PremiumSubscriptionState.active) ...[
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.emerald.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                'بدون إعلانات',
+                style: GoogleFonts.cairo(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.emeraldLight,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -163,7 +241,10 @@ class _ExpiredCard extends StatelessWidget {
             valueColor: AppColors.warning,
           ),
           const SizedBox(height: 16),
-          _PremiumCtaButton(label: PremiumConstants.renewCta),
+          _PremiumCtaButton(
+            label: PremiumConstants.renewCta,
+            icon: Icons.refresh_rounded,
+          ),
         ],
       ),
     );
@@ -236,7 +317,10 @@ class _UpgradeCard extends StatelessWidget {
           const SizedBox(height: 8),
           const _BenefitsPreview(),
           const SizedBox(height: 16),
-          _PremiumCtaButton(label: PremiumConstants.activateCta),
+          _PremiumCtaButton(
+            label: PremiumConstants.upgradeButtonText,
+            icon: Icons.rocket_launch_rounded,
+          ),
         ],
       ),
     );
@@ -360,7 +444,7 @@ class _BenefitsPreview extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      b.$2,
+                      b,
                       style: GoogleFonts.cairo(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -377,14 +461,16 @@ class _BenefitsPreview extends StatelessWidget {
 }
 
 class _PremiumCtaButton extends StatelessWidget {
-  const _PremiumCtaButton({required this.label});
+  const _PremiumCtaButton({required this.label, this.icon});
 
   final String label;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 50,
+      height: 52,
+      width: double.infinity,
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
@@ -394,30 +480,31 @@ class _PremiumCtaButton extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.gold.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: AppColors.gold.withValues(alpha: 0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
-        child: ElevatedButton(
+        child: ElevatedButton.icon(
           onPressed: () => showPremiumGate(
             context,
             feature: PremiumFeature.pdfExport,
+          ),
+          icon: Icon(icon ?? Icons.workspace_premium_rounded, color: AppColors.navy),
+          label: Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.navy,
+            ),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-          child: Text(
-            label,
-            style: GoogleFonts.cairo(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: AppColors.navy,
             ),
           ),
         ),

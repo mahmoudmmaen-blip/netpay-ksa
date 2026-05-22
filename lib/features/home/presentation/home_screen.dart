@@ -71,7 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deduction =
         isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
 
-    final showAds = ref.watch(showAdsProvider);
+    final showAds = PremiumAccess.watchShowAds(ref);
     final isPremium = PremiumAccess.watchIsPremium(ref);
 
     return Scaffold(

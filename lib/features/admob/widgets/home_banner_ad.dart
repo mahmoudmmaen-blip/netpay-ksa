@@ -2,8 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/services/admob_service.dart';
-import 'package:netgulf/core/services/premium_access.dart';
 
 /// ارتفاع البانر القياسي — يُحجز مسبقاً أثناء التحميل فقط.
 const _kBannerHeight = 50.0;
