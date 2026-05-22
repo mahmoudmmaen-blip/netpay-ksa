@@ -166,12 +166,7 @@ final premiumStatusProvider = Provider<PremiumStatus>((ref) {
 });
 
 final isPremiumProvider = Provider<bool>((ref) {
-  return ref.watch(premiumStatusProvider).isValid;
-});
-
-/// هل يُعرض إعلان AdMob؟ — false لمشتركي Premium فقط.
-final showAdsProvider = Provider<bool>((ref) {
-  return !ref.watch(isPremiumProvider);
+  return ref.watch(premiumStatusProvider).isPremium;
 });
 
 /// حالة الاشتراك للعرض (نشط / منتهي / غير مشترك).

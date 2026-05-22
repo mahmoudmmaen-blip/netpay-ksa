@@ -7,6 +7,7 @@ import 'package:netgulf/core/models/premium_status.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
+import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 
 /// بطاقة حالة Premium — نشط / منتهي / غير مشترك.
@@ -134,7 +135,7 @@ class _ActiveCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _StatusChip(
-                      label: '✅ ${PremiumConstants.statusActive}',
+                      label: PremiumConstants.statusActive,
                       color: AppColors.emerald,
                       textColor: AppColors.emeraldLight,
                     ),
@@ -152,6 +153,7 @@ class _ActiveCard extends StatelessWidget {
                   ],
                 ),
               ),
+              const PremiumBadge(compact: false),
             ],
           ),
           const SizedBox(height: 14),

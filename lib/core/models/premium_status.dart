@@ -30,6 +30,9 @@ class PremiumStatus extends Equatable {
     return expiresAt!.isAfter(DateTime.now());
   }
 
+  /// alias — للاستخدام في [showAdsProvider] والواجهة.
+  bool get isPremium => isValid;
+
   /// حالة العرض الموحّدة عبر التطبيق.
   PremiumSubscriptionState get subscriptionState {
     if (!premiumStatus) return PremiumSubscriptionState.notSubscribed;

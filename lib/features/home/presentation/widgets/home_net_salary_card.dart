@@ -9,8 +9,8 @@ import 'package:netgulf/core/widgets/animated_currency_text.dart';
 import 'package:netgulf/core/widgets/app_logo.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 
-/// بطاقة الراتب الصافي — البطاقة الرئيسية (Hero).
-class HomeNetSalaryCard extends StatelessWidget {
+/// بطاقة الراتب الصافي — Hero مع Gradient + Shadow + Animation.
+class HomeNetSalaryCard extends StatefulWidget {
   const HomeNetSalaryCard({
     super.key,
     required this.country,
@@ -28,40 +28,90 @@ class HomeNetSalaryCard extends StatelessWidget {
   final bool isDark;
   final String Function(double) formatValue;
 
-  String get _deductionColumnLabel => 'خصم ${country.schemeShort}';
+  @override
+  State<HomeNetSalaryCard> createState() => _HomeNetSalaryCardState();
+}
+
+class _HomeNetSalaryCardState extends State<HomeNetSalaryCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _scale = Tween<double>(begin: 0.9, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+    _fade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(HomeNetSalaryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.country != widget.country ||
+        oldWidget.net != widget.net) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String get _deductionColumnLabel => 'خصم ${widget.country.schemeShort}';
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.92, end: 1),
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutBack,
-      builder: (context, scale, child) =>
-          Transform.scale(scale: scale, child: child),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) => Opacity(
+        opacity: _fade.value,
+        child: Transform.scale(scale: _scale.value, child: child),
+      ),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 220),
+        constraints: const BoxConstraints(minHeight: 228),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
-          boxShadow: AppColors.premiumCardGlow(isDark: isDark),
+          boxShadow: [
+            ...AppColors.premiumCardGlow(isDark: widget.isDark),
+            BoxShadow(
+              color: AppColors.emerald.withValues(alpha: 0.2),
+              blurRadius: 28,
+              spreadRadius: -6,
+              offset: const Offset(0, 14),
+            ),
+          ],
         ),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             gradient: AppColors.premiumCardBorder,
           ),
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(2.5),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(29.5),
             child: Stack(
               children: [
                 Positioned.fill(
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: AppColors.heroSalaryGradient(isDark: isDark),
+                      gradient: AppColors.heroSalaryGradient(
+                        isDark: widget.isDark,
+                      ),
                     ),
                   ),
                 ),
-                // شعار خفيف في الخلفية
                 Positioned.fill(
                   child: Center(
                     child: Opacity(
@@ -73,7 +123,7 @@ class HomeNetSalaryCard extends StatelessWidget {
                 Positioned(
                   top: 14,
                   right: 14,
-                  child: _FlagBadge(country: country),
+                  child: _FlagBadge(country: widget.country),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(28, 56, 28, 28),
@@ -92,9 +142,9 @@ class HomeNetSalaryCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       AnimatedCurrencyText(
-                        key: ValueKey('${country.nameEn}-$net'),
-                        value: net,
-                        formatter: formatValue,
+                        key: ValueKey('${widget.country.nameEn}-${widget.net}'),
+                        value: widget.net,
+                        formatter: widget.formatValue,
                         duration: const Duration(milliseconds: 750),
                         style: AppTypography.displayNumber(size: 68),
                       ),
@@ -121,8 +171,8 @@ class HomeNetSalaryCard extends StatelessWidget {
                                   Expanded(
                                     child: _StatColumn(
                                       label: _deductionColumnLabel,
-                                      value: deduction,
-                                      formatValue: formatValue,
+                                      value: widget.deduction,
+                                      formatValue: widget.formatValue,
                                     ),
                                   ),
                                   Container(
@@ -133,8 +183,8 @@ class HomeNetSalaryCard extends StatelessWidget {
                                   Expanded(
                                     child: _StatColumn(
                                       label: 'الإجمالي',
-                                      value: gross,
-                                      formatValue: formatValue,
+                                      value: widget.gross,
+                                      formatValue: widget.formatValue,
                                     ),
                                   ),
                                 ],

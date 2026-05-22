@@ -71,8 +71,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final deduction =
         isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
 
-    final showAds = PremiumAccess.watchShowAds(ref);
-    final isPremium = PremiumAccess.watchIsPremium(ref);
+    final isPremium = ref.watch(isPremiumProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -201,7 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          if (showAds) const HomeBannerAd(),
+          if (ref.watch(showAdsProvider)) const HomeBannerAd(),
         ],
       ),
     );
