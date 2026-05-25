@@ -13,33 +13,53 @@ class HomeScreenHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 360),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.08),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
+        ),
+      ),
       child: Column(
         key: ValueKey(country),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'حاسبة الراتب الصافي',
+            country.calculatorTitleAr,
             textAlign: TextAlign.center,
             style: GoogleFonts.cairo(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w800,
-              height: 1.2,
+              height: 1.25,
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
+          Text(
+            country.calculatorSubtitleAr,
+            textAlign: TextAlign.center,
+            style: AppTypography.labelMuted(context),
+          ),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(country.flag, style: const TextStyle(fontSize: 22)),
               const SizedBox(width: 10),
-              Text(
-                country.currencyNameAr,
-                style: GoogleFonts.cairo(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.emeraldLight,
+              Flexible(
+                child: Text(
+                  country.currencyNameAr,
+                  style: GoogleFonts.cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.emeraldLight,
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -63,12 +83,6 @@ class HomeScreenHeader extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            country.schemeShort,
-            textAlign: TextAlign.center,
-            style: AppTypography.labelMuted(context),
           ),
         ],
       ),

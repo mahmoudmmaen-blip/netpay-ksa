@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/premium_constants.dart';
 import 'package:netgulf/core/models/premium_status.dart';
+import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
@@ -253,11 +254,12 @@ class _ExpiredCard extends StatelessWidget {
   }
 }
 
-class _UpgradeCard extends StatelessWidget {
+class _UpgradeCard extends ConsumerWidget {
   const _UpgradeCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final country = ref.watch(gulfCountryProvider);
     return GlassSurface(
       borderRadius: 22,
       padding: const EdgeInsets.all(20),
@@ -287,7 +289,7 @@ class _UpgradeCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      PremiumConstants.premiumPriceFull,
+                      PremiumConstants.premiumPriceFullFor(country),
                       style: GoogleFonts.cairo(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -420,16 +422,16 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _BenefitsPreview extends StatelessWidget {
+class _BenefitsPreview extends ConsumerWidget {
   const _BenefitsPreview({this.maxItems});
 
   final int? maxItems;
 
   @override
-  Widget build(BuildContext context) {
-    final items = maxItems != null
-        ? PremiumConstants.benefitItems.take(maxItems!).toList()
-        : PremiumConstants.benefitItems;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final country = ref.watch(gulfCountryProvider);
+    final all = PremiumConstants.benefitItemsFor(country);
+    final items = maxItems != null ? all.take(maxItems!).toList() : all;
 
     return Column(
       children: items

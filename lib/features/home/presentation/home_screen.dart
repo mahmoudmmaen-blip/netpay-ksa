@@ -23,7 +23,7 @@ import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
-import 'package:netgulf/features/home/providers/home_uae_notifier.dart';
+import 'package:netgulf/features/salary_calculator/providers/uae_salary_provider.dart';
 import 'package:netgulf/core/providers/notification_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
@@ -61,7 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final salary = ref.watch(salaryNotifierProvider);
     final gosi = ref.watch(gosiModelProvider);
-    final uaeModel = ref.watch(homeUaeModelProvider);
+    final uaeModel = ref.watch(uaeSalaryModelProvider);
     final showGosiBadge =
         isSaudi && ref.watch(gosiAlertWithin30DaysProvider);
 
@@ -69,7 +69,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final gross =
         isSaudi ? (gosi?.totalGross ?? salary.allowances.totalGross) : uaeModel.totalGross;
     final deduction =
-        isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.monthlyContribution;
+        isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.totalMonthlyDeductions;
 
     final isPremium = ref.watch(isPremiumProvider);
 
@@ -90,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               gosi: gosi,
               uaeNet: uaeModel.netSalary,
               uaeGross: uaeModel.totalGross,
-              uaeDeduction: uaeModel.monthlyContribution,
+              uaeDeduction: uaeModel.totalMonthlyDeductions,
             ),
           ),
           if (isSaudi)
@@ -182,7 +182,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _ErrorBanner(message: salary.errorMessage!),
                     if (isSaudi && gosi != null) ..._gosiWarnings(gosi),
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
+                      duration: const Duration(milliseconds: 360),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.04, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
                       child: isSaudi
                           ? SaudiHomeSection(
                               key: const ValueKey('saudi-body'),

@@ -1,32 +1,81 @@
 import 'package:flutter/material.dart';
+import 'package:netgulf/core/domain/gulf_country.dart';
 
 class PremiumConstants {
   // ==================== نصوص عامة ====================
   static const String premiumBadgeText = 'Premium';
 
   static const String premiumUpgradeTitle = 'ترقية إلى Premium';
-  static const String premiumUpgradeSubtitle = 'استمتع بتجربة كاملة بدون إعلانات ومميزات متقدمة';
+  static const String premiumUpgradeSubtitle =
+      'استمتع بتجربة كاملة بدون إعلانات ومميزات متقدمة';
 
   static const String upgradeButtonText = 'ترقية الآن';
   static const String activateCta = 'تفعيل Premium';
   static const String renewCta = 'تجديد الاشتراك';
 
-  static const String monthlyPrice = '٤٩ ريال / شهر';
-  static const String yearlyPrice = '٣٩٩ ريال / سنة';
-  static const String premiumPriceFull = '٤٩ ريال شهرياً';
+  static const String monthlyPriceSar = '٤٩ ريال / شهر';
+  static const String yearlyPriceSar = '٣٩٩ ريال / سنة';
+  static const String premiumPriceFullSar = '٤٩ ريال شهرياً';
+
+  static const String monthlyPriceAed = '٤٩ درهم / شهر';
+  static const String yearlyPriceAed = '٣٩٩ درهم / سنة';
+  static const String premiumPriceFullAed = '٤٩ درهم شهرياً';
+
+  /// @deprecated use [monthlyPriceFor] / [premiumPriceFullFor]
+  static const String monthlyPrice = monthlyPriceSar;
+  static const String yearlyPrice = yearlyPriceSar;
+  static const String premiumPriceFull = premiumPriceFullSar;
 
   // ==================== مميزات Premium ====================
   static const String benefits = 'مميزات Premium';
   static const String premiumBenefitsTitle = 'مميزات الاشتراك المدفوع';
 
-  static const List<String> benefitItems = [
+  static const List<String> _benefitsSaudi = [
     'إخفاء جميع الإعلانات',
-    'تاريخ حسابات غير محدود',
+    'سجل GOSI غير محدود',
     'تقارير شهرية PDF',
-    'دعم كامل لدولة الإمارات',
-    'حسابات متعددة',
+    'مقارنة عروض العمل',
+    'حاسبة الزيادة والترقيات',
     'أولوية في التحديثات',
   ];
+
+  static const List<String> _benefitsUae = [
+    'إخفاء جميع الإعلانات',
+    'سجل GPSSA / DEWS غير محدود',
+    'تقارير شهرية PDF',
+    'نهاية الخدمة — قانون العمل الإماراتي',
+    'صرف الإجازة السنوية + بدل تذكرة',
+    'أولوية في التحديثات',
+  ];
+
+  /// مميزات حسب الدولة المختارة.
+  static List<String> benefitItemsFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => _benefitsSaudi,
+        GulfCountry.uae => _benefitsUae,
+      };
+
+  /// للتوافق — افتراضياً السعودية.
+  static List<String> get benefitItems => _benefitsSaudi;
+
+  static String monthlyPriceFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => monthlyPriceSar,
+        GulfCountry.uae => monthlyPriceAed,
+      };
+
+  static String yearlyPriceFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => yearlyPriceSar,
+        GulfCountry.uae => yearlyPriceAed,
+      };
+
+  static String premiumPriceFullFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => premiumPriceFullSar,
+        GulfCountry.uae => premiumPriceFullAed,
+      };
+
+  static String calculatorLabelFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => 'GOSI · التأمينات الاجتماعية',
+        GulfCountry.uae => 'GPSSA / DEWS · قانون العمل الإماراتي',
+      };
 
   // ==================== حالات الاشتراك ====================
   static const String statusActive = 'اشتراك نشط';
@@ -36,7 +85,8 @@ class PremiumConstants {
   static const String statusExpiredSubtitle = 'اشتراكك انتهى، جدده الآن';
 
   static const String statusNotSubscribed = 'غير مشترك';
-  static const String statusNotSubscribedSubtitle = 'ترقَ إلى Premium وافتح كل المميزات';
+  static const String statusNotSubscribedSubtitle =
+      'ترقَ إلى Premium وافتح كل المميزات';
 
   // ==================== ألوان ====================
   static const Color premiumColor = Color(0xFF10B981);

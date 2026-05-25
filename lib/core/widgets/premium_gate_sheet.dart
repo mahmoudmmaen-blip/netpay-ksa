@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/premium_constants.dart';
 import 'package:netgulf/core/models/premium_status.dart';
+import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
@@ -150,6 +151,8 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet>
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
     final busy = _loading || _restoring;
     final subState = ref.watch(premiumSubscriptionStateProvider);
+    final country = ref.watch(gulfCountryProvider);
+    final benefits = PremiumConstants.benefitItemsFor(country);
     final ctaLabel = subState == PremiumSubscriptionState.expired
         ? PremiumConstants.renewCta
         : PremiumConstants.upgradeButtonText;
@@ -305,7 +308,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet>
                         child: Column(
                           children: [
                             Text(
-                              PremiumConstants.premiumPriceFull,
+                              PremiumConstants.premiumPriceFullFor(country),
                               style: GoogleFonts.cairo(
                                 fontSize: 28,
                                 fontWeight: FontWeight.w900,
@@ -326,7 +329,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet>
                         ),
                       ),
                       const SizedBox(height: 22),
-                      ...PremiumConstants.benefitItems.asMap().entries.map(
+                      ...benefits.asMap().entries.map(
                         (entry) {
                           final benefit = entry.value;
                           final icon = _benefitIcons[

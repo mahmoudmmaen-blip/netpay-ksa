@@ -46,6 +46,13 @@ extension GulfCountryMeta on GulfCountry {
         GulfCountry.uae => 'درهم إماراتي',
       };
 
+  String get currencyNameEn => switch (this) {
+        GulfCountry.saudiArabia => 'Saudi Riyal',
+        GulfCountry.uae => 'UAE Dirham',
+      };
+
+  String get currencyLabel => '$currencyNameAr · $currencyNameEn';
+
   /// عنوان الحاسبة على الشاشة الرئيسية.
   String get calculatorTitleAr => switch (this) {
         GulfCountry.saudiArabia => 'حاسبة الراتب الصافي — GOSI',
