@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
+import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
+import 'package:netgulf/features/home/presentation/widgets/home_page_transitions.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
 import 'package:netgulf/features/home/providers/home_salary_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
-import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 
 /// محتوى الشاشة الرئيسية — محور الدولة + بطاقة الراتب + قسم الحاسبة.
 /// Home scrollable body — country selector, hero card, country-specific calculator.
-class HomeScreenBody extends ConsumerWidget {
+class HomeScreenBody extends ConsumerStatefulWidget {
   const HomeScreenBody({
     super.key,
     required this.scrollController,
@@ -29,65 +33,119 @@ class HomeScreenBody extends ConsumerWidget {
   final Widget quickActions;
   final List<Widget> gosiWarnings;
 
+  static const _horizontalPadding = 20.0;
+  static const _bottomPadding = 32.0;
   static const _sectionSpacing = 20.0;
-  static const _switchDuration = Duration(milliseconds: 320);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreenBody> createState() => _HomeScreenBodyState();
+}
+
+class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<GulfCountry>(gulfCountryProvider, (previous, next) {
+      if (previous != null && previous != next && widget.scrollController.hasClients) {
+        widget.scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
+
     final country = ref.watch(gulfCountryProvider);
     final snapshot = ref.watch(homeSalarySnapshotProvider);
     final currency = ref.watch(homeCurrencyFormatProvider);
     final isSaudi = snapshot.isSaudi;
+    final isPremium = ref.watch(isPremiumProvider);
     final salary = ref.watch(salaryNotifierProvider);
 
     return ListView(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+      controller: widget.scrollController,
+      padding: const EdgeInsets.fromLTRB(
+        HomeScreenBody._horizontalPadding,
+        4,
+        HomeScreenBody._horizontalPadding,
+        HomeScreenBody._bottomPadding,
+      ),
       children: [
+        // ── 1. Country selector (top) ──
         GulfCountrySelector(
           selected: country,
           onSelected: (c) =>
               ref.read(gulfCountryProvider.notifier).setCountry(c),
         ),
-        const SizedBox(height: _sectionSpacing),
+        const SizedBox(height: HomeScreenBody._sectionSpacing),
+
+        // ── 2. Header (title + currency) ──
         HomeScreenHeader(country: country),
-        const SizedBox(height: _sectionSpacing),
+        const SizedBox(height: HomeScreenBody._sectionSpacing),
+
+        // ── 3. Hero salary card ──
         AnimatedSwitcher(
-          duration: _switchDuration,
-          switchInCurve: Curves.easeOutCubic,
+          duration: HomePageTransitions.switchDuration,
+          switchInCurve: HomePageTransitions.switchCurve,
           switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: _fadeSlideTransition,
+          transitionBuilder: HomePageTransitions.fadeSlide,
           child: HomeNetSalaryCard(
-            key: ValueKey(country),
+            key: ValueKey('hero-${country.nameEn}'),
             country: country,
             net: snapshot.net,
             gross: snapshot.gross,
             deduction: snapshot.deduction,
-            isDark: isDark,
+            isDark: widget.isDark,
             formatValue: currency.format,
           ),
         ),
-        const SizedBox(height: 16),
-        const PremiumUpgradeButton(),
+
+        if (!isPremium) ...[
+          const SizedBox(height: 16),
+          PremiumUpgradeButton(
+            onPressed: () => showPremiumGate(
+              context,
+              feature: PremiumFeature.pdfExport,
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
-        quickActions,
+
+        // ── 4. Quick actions ──
+        AnimatedSwitcher(
+          duration: HomePageTransitions.switchDuration,
+          switchInCurve: HomePageTransitions.switchCurve,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: HomePageTransitions.fadeSlide,
+          child: KeyedSubtree(
+            key: ValueKey('actions-${country.nameEn}'),
+            child: widget.quickActions,
+          ),
+        ),
         const SizedBox(height: 28),
+
         if (isSaudi && salary.hasError)
           _HomeErrorBanner(message: salary.errorMessage!),
-        ...gosiWarnings,
+        ...widget.gosiWarnings,
+
+        // ── 5. Calculator section ──
+        _HomeSectionLabel(
+          titleAr: isSaudi ? 'مدخلات الحاسبة — GOSI' : 'مدخلات الحاسبة — GPSSA / DEWS',
+          titleEn: isSaudi ? 'Calculator Inputs — GOSI' : 'Calculator Inputs — GPSSA / DEWS',
+        ),
+        const SizedBox(height: 12),
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 360),
-          switchInCurve: Curves.easeOutCubic,
+          duration: HomePageTransitions.switchDuration,
+          switchInCurve: HomePageTransitions.switchCurve,
           switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: _fadeSlideTransition,
+          transitionBuilder: HomePageTransitions.fadeSlideHorizontal,
           child: isSaudi
               ? SaudiHomeSection(
-                  key: const ValueKey('saudi-body'),
+                  key: ValueKey(GulfCountry.saudiArabia),
                   country: country,
                   currency: currency,
                 )
               : UaeHomeSection(
-                  key: const ValueKey('uae-body'),
+                  key: ValueKey(GulfCountry.uae),
                   country: country,
                   currency: currency,
                 ),
@@ -95,17 +153,64 @@ class HomeScreenBody extends ConsumerWidget {
       ],
     );
   }
+}
 
-  static Widget _fadeSlideTransition(Widget child, Animation<double> animation) {
-    return FadeTransition(
-      opacity: animation,
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.05),
-          end: Offset.zero,
-        ).animate(animation),
-        child: child,
-      ),
+/// عنوان قسم — visual hierarchy divider.
+class _HomeSectionLabel extends StatelessWidget {
+  const _HomeSectionLabel({
+    required this.titleAr,
+    required this.titleEn,
+  });
+
+  final String titleAr;
+  final String titleEn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Divider(
+                color: AppColors.emerald.withValues(alpha: 0.25),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Icon(
+                Icons.calculate_outlined,
+                size: 18,
+                color: AppColors.emerald.withValues(alpha: 0.8),
+              ),
+            ),
+            Expanded(
+              child: Divider(
+                color: AppColors.emerald.withValues(alpha: 0.25),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          titleAr,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.cairo(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        Text(
+          titleEn,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.cairo(
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }

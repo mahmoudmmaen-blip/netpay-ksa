@@ -88,9 +88,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 feature: PremiumFeature.pdfExport,
               ),
             ),
-          const Padding(
-            padding: EdgeInsetsDirectional.only(end: 4),
-            child: Center(child: PremiumBadge(compact: true)),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 4),
+            child: Center(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: isPremium
+                    ? const PremiumBadge(
+                        key: ValueKey('premium-active'),
+                        compact: true,
+                      )
+                    : const SizedBox(
+                        key: ValueKey('premium-hidden'),
+                        width: 0,
+                        height: 0,
+                      ),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -105,6 +119,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   scrollController: _scrollController,
                   isDark: isDark,
                   quickActions: HomeQuickActionsRow(
+                    key: ValueKey('quick-${country.nameEn}'),
                     country: country,
                     items: _quickActionItems(context, ref, country, isPremium),
                   ),
