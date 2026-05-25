@@ -2,11 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
-import 'package:netgulf/features/salary_calculator/models/uae_salary_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 import 'package:netgulf/features/salary_calculator/providers/uae_salary_provider.dart';
+import 'package:netgulf/features/share/widgets/salary_share_card.dart';
 
 /// لقطة الراتب على الشاشة الرئيسية — country-aware hero card data.
+/// Home salary snapshot — unified net/gross/deduction for the active country.
 class HomeSalarySnapshot {
   const HomeSalarySnapshot({
     required this.country,
@@ -23,6 +24,14 @@ class HomeSalarySnapshot {
   bool get hasData => net > 0;
   bool get isSaudi => country == GulfCountry.saudiArabia;
   bool get isUae => country == GulfCountry.uae;
+
+  /// بيانات المشاركة — share payload from snapshot values.
+  SalaryShareData toShareData() => SalaryShareData(
+        netSalary: net,
+        grossSalary: gross,
+        gosiDeduction: deduction,
+        date: DateTime.now(),
+      );
 }
 
 /// تنسيق العملة حسب الدولة المختارة — currency formatter by selected country.
@@ -60,7 +69,7 @@ final homeSalarySnapshotProvider = Provider<HomeSalarySnapshot>((ref) {
   );
 });
 
-/// نموذج الإمارات الحالي — convenience accessor for UAE-specific UI.
-final homeUaeSalaryModelProvider = Provider<UaeSalaryModel>((ref) {
-  return ref.watch(uaeSalaryModelProvider);
+/// هل الدولة الحالية السعودية — convenience for Saudi-only UI.
+final homeIsSaudiProvider = Provider<bool>((ref) {
+  return ref.watch(gulfCountryProvider) == GulfCountry.saudiArabia;
 });

@@ -4,33 +4,26 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
-import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
-import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
 import 'package:netgulf/core/widgets/premium_mesh_background.dart';
 import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/pdf_export/pdf_export_helper.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
-import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
-import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
-import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
-import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
+import 'package:netgulf/features/home/presentation/widgets/home_screen_body.dart';
 import 'package:netgulf/features/home/providers/home_salary_provider.dart';
-import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
 import 'package:netgulf/core/providers/notification_provider.dart';
-import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 import 'package:netgulf/features/share/providers/share_provider.dart';
 import 'package:netgulf/features/share/share_service.dart';
-import 'package:netgulf/features/share/widgets/salary_share_card.dart';
 
 /// الشاشة الرئيسية — حاسبة متعددة الدول (السعودية + الإمارات).
+/// Home screen — multi-country salary calculator (Saudi + UAE).
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -49,22 +42,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final country = ref.watch(gulfCountryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSaudi = country == GulfCountry.saudiArabia;
-    final currency = ref.watch(homeCurrencyFormatProvider);
+    final isSaudi = ref.watch(homeIsSaudiProvider);
     final snapshot = ref.watch(homeSalarySnapshotProvider);
-
-    final salary = ref.watch(salaryNotifierProvider);
     final gosi = ref.watch(gosiModelProvider);
-    final showGosiBadge =
-        isSaudi && ref.watch(gosiAlertWithin30DaysProvider);
-
-    final net = snapshot.net;
-    final gross = snapshot.gross;
-    final deduction = snapshot.deduction;
-
     final isPremium = ref.watch(isPremiumProvider);
+    final country = snapshot.country;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -76,18 +59,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _GlassIconButton(
             tooltip: 'مشاركة النتيجة',
             icon: Icons.share_rounded,
-            onPressed: () => _shareResult(
-              context,
-              ref,
-              snapshot: snapshot,
-              gosi: gosi,
-            ),
+            onPressed: () => _shareResult(context, ref, snapshot),
           ),
           if (isSaudi)
             _GlassIconButton(
               tooltip: 'التنبيهات',
               icon: Icons.notifications_none_rounded,
-              badge: showGosiBadge,
+              badge: ref.watch(gosiAlertWithin30DaysProvider),
               onPressed: () => context.push(AppRoutes.notifications),
             ),
           _GlassIconButton(
@@ -123,81 +101,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: PremiumMeshBackground(
               isDark: isDark,
               child: SafeArea(
-                child: ListView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                  children: [
-                    GulfCountrySelector(
-                      selected: country,
-                      onSelected: (c) => ref
-                          .read(gulfCountryProvider.notifier)
-                          .setCountry(c),
-                    ),
-                    const SizedBox(height: 20),
-                    HomeScreenHeader(country: country),
-                    const SizedBox(height: 20),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 320),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.05),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: HomeNetSalaryCard(
-                        key: ValueKey(country),
-                        country: country,
-                        net: net,
-                        gross: gross,
-                        deduction: deduction,
-                        isDark: isDark,
-                        formatValue: currency.format,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const PremiumUpgradeButton(),
-                    const SizedBox(height: 24),
-                    HomeQuickActionsRow(
-                      country: country,
-                      items: _quickActionItems(context, ref, country, isPremium),
-                    ),
-                    const SizedBox(height: 28),
-                    if (isSaudi && salary.hasError)
-                      _ErrorBanner(message: salary.errorMessage!),
-                    if (isSaudi && gosi != null) ..._gosiWarnings(gosi),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 360),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0.04, 0),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: isSaudi
-                          ? SaudiHomeSection(
-                              key: const ValueKey('saudi-body'),
-                              country: country,
-                              currency: currency,
-                            )
-                          : UaeHomeSection(
-                              key: const ValueKey('uae-body'),
-                              country: country,
-                              currency: currency,
-                            ),
-                    ),
-                  ],
+                child: HomeScreenBody(
+                  scrollController: _scrollController,
+                  isDark: isDark,
+                  quickActions: HomeQuickActionsRow(
+                    country: country,
+                    items: _quickActionItems(context, ref, country, isPremium),
+                  ),
+                  gosiWarnings: isSaudi && gosi != null
+                      ? [HomeGosiWarningBanner(gosi: gosi)]
+                      : const [],
                 ),
               ),
             ),
@@ -328,13 +241,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   static Future<void> _shareResult(
     BuildContext context,
-    WidgetRef ref, {
-    required HomeSalarySnapshot snapshot,
-    required GosiModel? gosi,
-  }) async {
-    final hasData = snapshot.hasData;
-
-    if (!hasData) {
+    WidgetRef ref,
+    HomeSalarySnapshot snapshot,
+  ) async {
+    if (!snapshot.hasData) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -346,24 +256,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
 
-    final data = snapshot.isSaudi
-        ? SalaryShareData(
-            netSalary: gosi!.netSalary,
-            grossSalary: gosi.totalGross,
-            gosiDeduction: gosi.employeeGosi,
-            date: DateTime.now(),
-          )
-        : SalaryShareData(
-            netSalary: snapshot.net,
-            grossSalary: snapshot.gross,
-            gosiDeduction: snapshot.deduction,
-            date: DateTime.now(),
-          );
-
     try {
       await ref.read(shareServiceProvider).shareSalaryResult(
             context: context,
-            data: data,
+            data: snapshot.toShareData(),
           );
     } on ShareException catch (e) {
       if (!context.mounted) return;
@@ -381,46 +277,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
     }
-  }
-
-  List<Widget> _gosiWarnings(GosiModel gosi) {
-    if (!gosi.hasUpcomingWarning) return const [];
-    return [
-      _WarningBanner(message: gosi.upcomingWarning!.messageAr),
-      if (gosi.upcomingWarnings.length > 1)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            '+${gosi.upcomingWarnings.length - 1} زيادات مرحلية قادمة حتى 2028',
-            style: GoogleFonts.cairo(fontSize: 12, color: AppColors.warning),
-          ),
-        ),
-    ];
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: AppColors.error),
-          const SizedBox(width: 10),
-          Expanded(child: Text(message, style: GoogleFonts.cairo(fontSize: 13))),
-        ],
-      ),
-    );
   }
 }
 
@@ -481,37 +337,6 @@ class _GlassIconButton extends StatelessWidget {
             child: Icon(icon, size: 22),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _WarningBanner extends StatelessWidget {
-  const _WarningBanner({required this.message});
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.warning),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: GoogleFonts.cairo(fontSize: 13, height: 1.45),
-            ),
-          ),
-        ],
       ),
     );
   }
