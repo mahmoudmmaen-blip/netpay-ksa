@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/features/salary_calculator/models/uae_salary_model.dart';
 import 'package:netgulf/features/uae/domain/models/uae_model.dart';
 
-/// حالة مدخلات حاسبة الإمارات.
+/// حالة مدخلات حاسبة الإمارات — UAE calculator input state.
 class UaeSalaryState extends Equatable {
   const UaeSalaryState({
     this.basicSalary = 10000,
@@ -27,6 +27,7 @@ class UaeSalaryState extends Equatable {
   final double visaFeesMonthly;
   final UAENationalityType nationality;
 
+  /// نموذج محسوب — computed salary model.
   UaeSalaryModel get model => UaeSalaryModel(
         basicSalary: basicSalary,
         housingAllowance: housingAllowance,
@@ -80,8 +81,9 @@ class UaeSalaryState extends Equatable {
       ];
 }
 
-/// UAE salary provider — Riverpod state for Emirates calculator.
-class UaeSalaryNotifier extends Notifier<UaeSalaryState> {
+/// مزود راتب الإمارات الموحد — GPSSA / DEWS / EOS.
+/// Unified UAE salary provider — single source of truth for Emirates calculator.
+class UaeSalaryProvider extends Notifier<UaeSalaryState> {
   @override
   UaeSalaryState build() => const UaeSalaryState();
 
@@ -101,11 +103,19 @@ class UaeSalaryNotifier extends Notifier<UaeSalaryState> {
       state = state.copyWith(nationality: v);
 }
 
-final uaeSalaryNotifierProvider =
-    NotifierProvider<UaeSalaryNotifier, UaeSalaryState>(
-  UaeSalaryNotifier.new,
+/// المزود الرئيسي — primary UAE salary state provider.
+final uaeSalaryProvider =
+    NotifierProvider<UaeSalaryProvider, UaeSalaryState>(
+  UaeSalaryProvider.new,
 );
 
+/// نموذج محسوب للواجهة والتصدير — computed model for UI and export.
 final uaeSalaryModelProvider = Provider<UaeSalaryModel>((ref) {
-  return ref.watch(uaeSalaryNotifierProvider).model;
+  return ref.watch(uaeSalaryProvider).model;
 });
+
+@Deprecated('Use uaeSalaryProvider')
+final uaeSalaryNotifierProvider = uaeSalaryProvider;
+
+@Deprecated('Use UaeSalaryProvider')
+typedef UaeSalaryNotifier = UaeSalaryProvider;

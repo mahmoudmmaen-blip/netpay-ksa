@@ -11,7 +11,8 @@ import 'package:netgulf/features/salary_calculator/models/uae_salary_model.dart'
 import 'package:netgulf/features/salary_calculator/providers/uae_salary_provider.dart';
 import 'package:netgulf/features/uae/domain/models/uae_model.dart';
 
-/// قسم حاسبة الإمارات — GPSSA / DEWS + EOS + إجازة + تذكرة.
+/// قسم حاسبة الإمارات — يستخدم [uaeSalaryProvider] الموحد.
+/// UAE home section — GPSSA / DEWS / EOS via unified salary provider.
 class UaeHomeSection extends ConsumerWidget {
   const UaeHomeSection({
     super.key,
@@ -24,9 +25,9 @@ class UaeHomeSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final uaeState = ref.watch(uaeSalaryNotifierProvider);
+    final uaeState = ref.watch(uaeSalaryProvider);
     final model = uaeState.model;
-    final notifier = ref.read(uaeSalaryNotifierProvider.notifier);
+    final notifier = ref.read(uaeSalaryProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

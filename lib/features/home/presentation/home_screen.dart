@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
@@ -22,8 +21,8 @@ import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_ro
 import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
+import 'package:netgulf/features/home/providers/home_salary_provider.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
-import 'package:netgulf/features/salary_calculator/providers/uae_salary_provider.dart';
 import 'package:netgulf/core/providers/notification_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
@@ -53,23 +52,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final country = ref.watch(gulfCountryProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSaudi = country == GulfCountry.saudiArabia;
-    final currency = NumberFormat.currency(
-      locale: country.currencyLocale,
-      symbol: country.currencySymbol,
-      decimalDigits: 2,
-    );
+    final currency = ref.watch(homeCurrencyFormatProvider);
+    final snapshot = ref.watch(homeSalarySnapshotProvider);
 
     final salary = ref.watch(salaryNotifierProvider);
     final gosi = ref.watch(gosiModelProvider);
-    final uaeModel = ref.watch(uaeSalaryModelProvider);
     final showGosiBadge =
         isSaudi && ref.watch(gosiAlertWithin30DaysProvider);
 
-    final net = isSaudi ? (gosi?.netSalary ?? 0) : uaeModel.netSalary;
-    final gross =
-        isSaudi ? (gosi?.totalGross ?? salary.allowances.totalGross) : uaeModel.totalGross;
-    final deduction =
-        isSaudi ? (gosi?.employeeGosi ?? 0) : uaeModel.totalMonthlyDeductions;
+    final net = snapshot.net;
+    final gross = snapshot.gross;
+    final deduction = snapshot.deduction;
 
     final isPremium = ref.watch(isPremiumProvider);
 
@@ -86,11 +79,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => _shareResult(
               context,
               ref,
-              country: country,
+              snapshot: snapshot,
               gosi: gosi,
-              uaeNet: uaeModel.netSalary,
-              uaeGross: uaeModel.totalGross,
-              uaeDeduction: uaeModel.totalMonthlyDeductions,
             ),
           ),
           if (isSaudi)
@@ -339,16 +329,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static Future<void> _shareResult(
     BuildContext context,
     WidgetRef ref, {
-    required GulfCountry country,
+    required HomeSalarySnapshot snapshot,
     required GosiModel? gosi,
-    required double uaeNet,
-    required double uaeGross,
-    required double uaeDeduction,
   }) async {
-    final isSaudi = country == GulfCountry.saudiArabia;
-    final hasData = isSaudi
-        ? gosi != null && gosi.netSalary > 0
-        : uaeNet > 0;
+    final hasData = snapshot.hasData;
 
     if (!hasData) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -362,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       return;
     }
 
-    final data = isSaudi
+    final data = snapshot.isSaudi
         ? SalaryShareData(
             netSalary: gosi!.netSalary,
             grossSalary: gosi.totalGross,
@@ -370,9 +354,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             date: DateTime.now(),
           )
         : SalaryShareData(
-            netSalary: uaeNet,
-            grossSalary: uaeGross,
-            gosiDeduction: uaeDeduction,
+            netSalary: snapshot.net,
+            grossSalary: snapshot.gross,
+            gosiDeduction: snapshot.deduction,
             date: DateTime.now(),
           );
 
