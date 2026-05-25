@@ -155,7 +155,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet>
     final benefits = PremiumConstants.benefitItemsFor(country);
     final ctaLabel = subState == PremiumSubscriptionState.expired
         ? PremiumConstants.renewCta
-        : PremiumConstants.upgradeButtonText;
+        : PremiumConstants.activatePremiumCtaFor(country);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -265,7 +265,7 @@ class _PremiumGateSheetState extends ConsumerState<_PremiumGateSheet>
                         shaderCallback: (b) =>
                             AppColors.goldGradient.createShader(b),
                         child: Text(
-                          PremiumConstants.premiumUpgradeTitle,
+                          PremiumConstants.upgradeTitle,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.cairo(
                             fontSize: 26,

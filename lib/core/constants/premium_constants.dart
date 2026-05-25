@@ -6,6 +6,9 @@ class PremiumConstants {
   static const String premiumBadgeText = 'Premium';
 
   static const String premiumUpgradeTitle = 'ترقية إلى Premium';
+  /// alias — used in premium gate sheet title.
+  static const String upgradeTitle = premiumUpgradeTitle;
+
   static const String premiumUpgradeSubtitle =
       'استمتع بتجربة كاملة بدون إعلانات ومميزات متقدمة';
 
@@ -14,12 +17,12 @@ class PremiumConstants {
   static const String renewCta = 'تجديد الاشتراك';
 
   static const String monthlyPriceSar = '٤٩ ريال / شهر';
-  static const String yearlyPriceSar = '٣٩٩ ريال / سنة';
-  static const String premiumPriceFullSar = '٤٩ ريال شهرياً';
+  static const String yearlyPriceSar = '٢٩ ريال / سنة';
+  static const String premiumPriceFullSar = '٢٩ ريال/سنة';
 
   static const String monthlyPriceAed = '٤٩ درهم / شهر';
-  static const String yearlyPriceAed = '٣٩٩ درهم / سنة';
-  static const String premiumPriceFullAed = '٤٩ درهم شهرياً';
+  static const String yearlyPriceAed = '٢٩ درهم / سنة';
+  static const String premiumPriceFullAed = '٢٩ درهم/سنة';
 
   /// @deprecated use [monthlyPriceFor] / [premiumPriceFullFor]
   static const String monthlyPrice = monthlyPriceSar;
@@ -70,6 +73,12 @@ class PremiumConstants {
   static String premiumPriceFullFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => premiumPriceFullSar,
         GulfCountry.uae => premiumPriceFullAed,
+      };
+
+  /// زر التفعيل في بوابة Premium — Activate Premium CTA in gate sheet.
+  static String activatePremiumCtaFor(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => 'فعّل Premium — $premiumPriceFullSar',
+        GulfCountry.uae => 'فعّل Premium — $premiumPriceFullAed',
       };
 
   static String calculatorLabelFor(GulfCountry country) => switch (country) {
