@@ -213,12 +213,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     bool isPremium,
   ) async {
     if (!isPremium) {
-      await PremiumAccess.requirePremium(
+      final upgraded = await PremiumAccess.requirePremium(
         context,
         ref,
         feature: PremiumFeature.pdfExport,
       );
-      await PremiumAccess.showInterstitialIfFree(ref);
+      if (!context.mounted) return;
+      if (!upgraded) {
+        await PremiumAccess.showInterstitialAfterPdfAttempt(ref);
+      }
       if (!context.mounted) return;
       if (PremiumAccess.isPremium(ref)) {
         await _exportPdfFromHome(context, ref, true);

@@ -5,10 +5,11 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/services/admob_service.dart';
 
-/// ارتفاع البانر القياسي — يُحجز مسبقاً أثناء التحميل فقط.
-const _kBannerHeight = 50.0;
+/// ارتفاع البانر الاحتياطي — fallback banner height.
+const _kFallbackBannerHeight = 50.0;
 
 /// بانر AdMob أسفل الشاشة الرئيسية — للنسخة المجانية فقط.
+/// Home bottom banner — visible for non-premium users only.
 class HomeBannerAd extends ConsumerStatefulWidget {
   const HomeBannerAd({super.key});
 
@@ -29,15 +30,30 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
   }
 
   Future<void> _loadAd() async {
+    if (!mounted) return;
     if (_isLoading || _bannerAd != null || _loadFailed) return;
     if (!AdMobService.isSupported || !ref.read(showAdsProvider)) return;
 
     setState(() => _isLoading = true);
 
+    final width = MediaQuery.sizeOf(context).width.truncate();
+
     try {
       await AdMobService.initialize();
+      if (!mounted || !ref.read(showAdsProvider)) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final adSize =
+          await AdMobService.adaptiveBannerSize(width) ?? AdSize.banner;
+      if (!mounted || !ref.read(showAdsProvider)) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
       final banner = AdMobService.createBannerAd(
+        size: adSize,
         listener: BannerAdListener(
           onAdLoaded: (ad) {
             if (!mounted || !ref.read(showAdsProvider)) {
@@ -117,7 +133,7 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
       return const SizedBox.shrink();
     }
 
-    final height = _bannerAd?.size.height.toDouble() ?? _kBannerHeight;
+    final height = _bannerAd?.size.height.toDouble() ?? _kFallbackBannerHeight;
 
     return SafeArea(
       top: false,
@@ -128,12 +144,19 @@ class _HomeBannerAdState extends ConsumerState<HomeBannerAd> {
         child: _isLoaded && _bannerAd != null
             ? SizedBox(
                 key: const ValueKey('banner-loaded'),
-                width: _bannerAd!.size.width.toDouble(),
+                width: double.infinity,
                 height: height,
-                child: AdWidget(ad: _bannerAd!),
+                child: Center(
+                  child: SizedBox(
+                    width: _bannerAd!.size.width.toDouble(),
+                    height: height,
+                    child: AdWidget(ad: _bannerAd!),
+                  ),
+                ),
               )
             : SizedBox(
                 key: const ValueKey('banner-slot'),
+                width: double.infinity,
                 height: _isLoading ? height : 0,
               ),
       ),

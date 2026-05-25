@@ -3,11 +3,21 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-/// AdMob — بانر + interstitial (مرة واحدة لكل جلسة).
+/// موضع عرض الإعلان البيني — interstitial placement per user action.
+enum InterstitialPlacement {
+  /// بعد حفظ الراتب — after salary save.
+  salarySave,
+
+  /// بعد محاولة تصدير PDF — after PDF export attempt.
+  pdfExport,
+}
+
+/// AdMob — بانر + interstitial (test IDs — استبدلها قبل الإنتاج).
+/// AdMob service — banner + interstitial ads for free-tier users.
 class AdMobService {
   AdMobService._();
 
-  // ── Test IDs (استبدلها في الإنتاج) ───────────────────────────────────────
+  // ── Test IDs (Google official sample — replace before production) ───────────
 
   static const String androidAppId = 'ca-app-pub-3940256099942544~3347511713';
   static const String iosAppId = 'ca-app-pub-3940256099942544~1458002511';
@@ -23,9 +33,11 @@ class AdMobService {
       'ca-app-pub-3940256099942544/4411468910';
 
   static bool _initialized = false;
-  static bool _interstitialShownThisSession = false;
   static InterstitialAd? _interstitialAd;
   static bool _interstitialLoading = false;
+
+  /// مرة واحدة لكل موضع في الجلسة — once per placement per session.
+  static final Set<InterstitialPlacement> _shownPlacements = {};
 
   static bool get isInitialized => _initialized;
 
@@ -56,7 +68,7 @@ class AdMobService {
 
   static BannerAd createBannerAd({
     required BannerAdListener listener,
-    AdSize size = AdSize.banner,
+    required AdSize size,
   }) {
     return BannerAd(
       adUnitId: bannerAdUnitId,
@@ -64,6 +76,11 @@ class AdMobService {
       request: const AdRequest(),
       listener: listener,
     );
+  }
+
+  /// حجم بانر متكيّف بعرض الشاشة — adaptive anchored banner size.
+  static Future<AdSize?> adaptiveBannerSize(int width) {
+    return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width);
   }
 
   /// يحمّل interstitial مسبقاً للعرض السريع.
@@ -105,9 +122,14 @@ class AdMobService {
     );
   }
 
-  /// يعرض interstitial للمستخدم المجاني — مرة واحدة لكل جلسة.
-  static Future<void> tryShowInterstitial({bool isPremium = false}) async {
-    if (isPremium || !isSupported || _interstitialShownThisSession) return;
+  /// يعرض interstitial للمستخدم المجاني — مرة واحدة لكل [placement] في الجلسة.
+  static Future<void> tryShowInterstitial({
+    required InterstitialPlacement placement,
+    bool isPremium = false,
+  }) async {
+    if (isPremium || !isSupported || _shownPlacements.contains(placement)) {
+      return;
+    }
 
     final ad = _interstitialAd;
     if (ad == null) {
@@ -115,13 +137,15 @@ class AdMobService {
       return;
     }
 
-    _interstitialShownThisSession = true;
+    _shownPlacements.add(placement);
     ad.show();
     _interstitialAd = null;
+    preloadInterstitial();
   }
 
   static void dispose() {
     _interstitialAd?.dispose();
     _interstitialAd = null;
+    _shownPlacements.clear();
   }
 }

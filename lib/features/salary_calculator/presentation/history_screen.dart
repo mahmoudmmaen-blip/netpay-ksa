@@ -158,7 +158,7 @@ class HistoryScreen extends ConsumerWidget {
           .saveCurrentSalary(controller.text);
       if (!context.mounted) return;
       if (saved) {
-        await PremiumAccess.showInterstitialIfFree(ref);
+        await PremiumAccess.showInterstitialAfterSave(ref);
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -181,8 +181,12 @@ class HistoryScreen extends ConsumerWidget {
         ref,
         feature: PremiumFeature.pdfExport,
       );
-      await PremiumAccess.showInterstitialIfFree(ref);
-      if (!upgraded || !context.mounted) return;
+      if (!context.mounted) return;
+      if (!upgraded) {
+        await PremiumAccess.showInterstitialAfterPdfAttempt(ref);
+      }
+      if (!context.mounted) return;
+      if (PremiumAccess.isFeatureLocked(ref)) return;
     }
 
     try {
