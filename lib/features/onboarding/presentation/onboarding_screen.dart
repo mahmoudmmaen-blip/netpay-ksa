@@ -9,7 +9,7 @@ import 'package:netgulf/core/providers/app_state_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شاشة التعريف — 3 صفحات قبل البدء
+/// شاشة التعريف المطورة — تجربة مستخدم سلسة وواضحة
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -25,17 +25,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardingPageData(
       icon: Icons.calculate_rounded,
       title: AppConstants.onboardingWelcomeTitleAr,
-      subtitle: 'حاسبة الراتب الصافي للسعودية والإمارات — دقيقة، سريعة، بدون إنترنت',
+      subtitle: 'حاسبة الراتب الصافي للسعودية والإمارات — دقيقة، سريعة، وتعمل بالكامل بدون إنترنت',
     ),
     _OnboardingPageData(
       icon: Icons.shield_rounded,
-      title: 'احسب تأميناتك ونهاية خدمتك بدقة',
-      subtitle: 'GOSI • GPSSA • DEWS • المادة 84 و85',
+      title: 'حساب التأمينات ونهاية الخدمة',
+      subtitle: 'حسابات دقيقة وفقاً لأنظمة GOSI • GPSSA • DEWS والمادتين 84 و85 من قانون العمل',
     ),
     _OnboardingPageData(
       icon: Icons.rocket_launch_rounded,
-      title: 'ابدأ الآن',
-      subtitle: 'احفظ سجلاتك • صدّر PDF • قارن العروض • تابع راتبك بكل وضوح',
+      title: 'إدارة وتصدير التقارير',
+      subtitle: 'احفظ سجلاتك، صدّر تقاريرك كـ PDF، وقارن بين العروض الوظيفية بكل وضوح وسهولة',
     ),
   ];
 
@@ -96,12 +96,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 count: _pages.length,
                 currentIndex: _currentPage,
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 54,
+                  height: 56, // تحسين مساحة الضغط للمخدم
                   child: FilledButton(
                     onPressed: _next,
                     style: FilledButton.styleFrom(
@@ -110,12 +110,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
+                      elevation: 2,
                     ),
-                    child: Text(
-                      isLastPage ? 'ابدأ الآن' : 'التالي',
-                      style: GoogleFonts.cairo(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        isLastPage ? 'ابدأ الآن' : 'التالي',
+                        key: ValueKey<bool>(isLastPage),
+                        style: GoogleFonts.cairo(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
@@ -142,7 +148,7 @@ class _OnboardingPageData {
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.data, super.key});
+  const _OnboardingPage({required this.data});
 
   final _OnboardingPageData data;
 
@@ -154,8 +160,8 @@ class _OnboardingPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 128,
-            height: 128,
+            width: 132,
+            height: 132,
             decoration: BoxDecoration(
               color: AppColors.emerald.withValues(alpha: 0.12),
               shape: BoxShape.circle,
@@ -163,26 +169,33 @@ class _OnboardingPage extends StatelessWidget {
                 color: AppColors.emerald.withValues(alpha: 0.35),
                 width: 3,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.emerald.withValues(alpha: 0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
             ),
-            child: Icon(data.icon, size: 60, color: AppColors.emerald),
+            child: Icon(data.icon, size: 64, color: AppColors.emerald),
           ),
           const SizedBox(height: 48),
           Text(
             data.title,
             style: GoogleFonts.cairo(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppColors.emerald,
-              height: 1.25,
+              height: 1.3,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             data.subtitle,
             style: GoogleFonts.cairo(
-              fontSize: 16,
-              height: 1.55,
+              fontSize: 15,
+              height: 1.6,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
@@ -209,10 +222,10 @@ class _DotIndicator extends StatelessWidget {
       children: List.generate(count, (i) {
         final isActive = i == currentIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 280),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.symmetric(horizontal: 5),
-          width: isActive ? 32 : 8,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOutCubic, // المنحنى الحركي الصحيح والمستقر
+          margin: const EdgeInsets.symmetric(horizontal: 6),
+          width: isActive ? 28 : 8,
           height: 8,
           decoration: BoxDecoration(
             color: isActive

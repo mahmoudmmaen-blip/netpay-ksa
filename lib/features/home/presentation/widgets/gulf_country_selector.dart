@@ -129,8 +129,8 @@ class _CurrencyChip extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.cairo(
                 fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: AppColors.goldBright,
+                fontWeight: FontWeight.w900,
+                color: AppColors.currencyBarText,
               ),
             ),
           ),
@@ -138,15 +138,18 @@ class _CurrencyChip extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: AppColors.emerald.withValues(alpha: 0.2),
+              color: AppColors.currencyBarText.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.currencyBarText.withValues(alpha: 0.35),
+              ),
             ),
             child: Text(
               country.currencySymbol,
               style: GoogleFonts.cairo(
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
-                color: AppColors.emeraldLight,
+                color: AppColors.currencyBarText,
               ),
             ),
           ),

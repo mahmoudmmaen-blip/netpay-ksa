@@ -12,6 +12,9 @@ class AppColors {
   static const Color emeraldLight = Color(AppPalette.emeraldLight);
   static const Color emeraldMuted = Color(AppPalette.emeraldMuted);
 
+  /// نص شريط العملة — تباين عالٍ على الخلفية الفاتحة.
+  static const Color currencyBarText = Color(0xFF0F5132);
+
   // ── كحلي ───────────────────────────────────────────────────────────────────
 
   static const Color navy = Color(AppPalette.navy);

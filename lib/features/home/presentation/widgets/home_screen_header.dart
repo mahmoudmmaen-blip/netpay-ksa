@@ -57,8 +57,8 @@ class HomeScreenHeader extends StatelessWidget {
                   country.currencyNameAr,
                   style: GoogleFonts.cairo(
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.emeraldLight,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.currencyBarText,
                   ),
                 ),
               ),
@@ -67,18 +67,18 @@ class HomeScreenHeader extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.15),
+                  color: AppColors.currencyBarText.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: AppColors.gold.withValues(alpha: 0.4),
+                    color: AppColors.currencyBarText.withValues(alpha: 0.35),
                   ),
                 ),
                 child: Text(
                   country.currencySymbol,
                   style: GoogleFonts.cairo(
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.goldBright,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.currencyBarText,
                   ),
                 ),
               ),
