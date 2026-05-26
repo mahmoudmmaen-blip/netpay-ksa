@@ -16,6 +16,13 @@ abstract final class AppConstants {
   static const String appTaglineEn =
       'Gulf Net Salary Calculator — KSA & UAE';
 
+  /// معرّف الحزمة — Android & iOS.
+  static const String applicationId = 'com.example.netgulf';
+
+  /// سياسة الخصوصية (أصول + رابط للنشر على Play Console).
+  static const String privacyPolicyAsset = 'assets/privacy_policy.html';
+  static const String privacyPolicyUrl = 'https://netgulf.app/privacy';
+
   static const String appVersion = '1.0.0';
   static const int appBuildNumber = 1;
 

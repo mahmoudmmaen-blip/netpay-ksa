@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
+import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_status_card.dart';
@@ -152,6 +154,24 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.email_outlined,
                 label: 'التواصل',
                 value: 'support@netgulf.app',
+              ),
+              const Divider(height: 1, indent: 56),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Icons.privacy_tip_outlined, color: AppColors.emerald),
+                title: Text(
+                  'سياسة الخصوصية',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Privacy Policy',
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_left_rounded),
+                onTap: () => context.push(AppRoutes.privacyPolicy),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
