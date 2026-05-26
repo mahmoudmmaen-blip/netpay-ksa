@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
@@ -313,13 +314,16 @@ class _HomeAppBarTitle extends StatelessWidget {
     );
 
     if (!isDark) {
-      return Text('NetGulf', style: style);
+      return Text(AppConstants.appNameEn, style: style);
     }
 
     return ShaderMask(
       blendMode: BlendMode.srcIn,
       shaderCallback: (b) => AppColors.goldGradient.createShader(b),
-      child: Text('NetGulf', style: style.copyWith(color: Colors.white)),
+      child: Text(
+        AppConstants.appNameEn,
+        style: style.copyWith(color: Colors.white),
+      ),
     );
   }
 }

@@ -9,12 +9,19 @@
 abstract final class AppConstants {
   AppConstants._();
 
-  static const String appNameAr = 'نت غلف';
+  static const String appNameAr = 'نتجلف';
   static const String appNameEn = 'NetGulf';
   static const String appTaglineAr =
       'حاسبة الراتب الصافي — السعودية والإمارات';
   static const String appTaglineEn =
       'Gulf Net Salary Calculator — KSA & UAE';
+
+  /// نص الترحيب في شاشة التعريف.
+  static const String onboardingWelcomeTitleAr = 'مرحباً بك في NetGulf';
+  static const String onboardingWelcomeSubtitleAr =
+      'NetGulf — حاسبة الراتب الصافي للسعودية والإمارات';
+  static const String onboardingPensionSubtitleAr =
+      'GOSI للسعودية · GPSSA / DEWS للإمارات — دقة، مراحل، وتنبيهات';
 
   /// معرّف الحزمة — Android & iOS.
   static const String applicationId = 'com.example.netgulf';

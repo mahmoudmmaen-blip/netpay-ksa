@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
@@ -23,13 +24,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   static const _pages = [
     _OnboardingPageData(
       icon: Icons.calculate_rounded,
-      title: 'مرحباً بك في NetGulf',
-      subtitle: 'حاسبة الراتب الصافي السعودية 2026 — سريعة، دقيقة، بدون إنترنت',
+      title: AppConstants.onboardingWelcomeTitleAr,
+      subtitle: AppConstants.onboardingWelcomeSubtitleAr,
     ),
     _OnboardingPageData(
       icon: Icons.shield_rounded,
-      title: 'احسب تأميناتك بدقة 100%',
-      subtitle: 'نظام GOSI القديم والجديد 2026 مع المراحل والتنبيهات',
+      title: 'احسب تأميناتك وتقاعدك بدقة',
+      subtitle: AppConstants.onboardingPensionSubtitleAr,
     ),
     _OnboardingPageData(
       icon: Icons.rocket_launch_rounded,
