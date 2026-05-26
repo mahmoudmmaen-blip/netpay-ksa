@@ -9,6 +9,8 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/features/splash/presentation/splash_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'test_utils/create_localized_test_widget.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -22,6 +24,7 @@ void main() {
   });
 
   testWidgets('Splash screen shows NetGulf branding', (tester) async {
+    const homeLabel = 'Home';
     final router = GoRouter(
       initialLocation: AppRoutes.splash,
       routes: [
@@ -33,7 +36,7 @@ void main() {
         GoRoute(
           path: AppRoutes.home,
           name: AppRoutes.homeName,
-          builder: (context, state) => const Scaffold(body: Text('Home')),
+          builder: (context, state) => const Scaffold(body: Text(homeLabel)),
         ),
         GoRoute(
           path: AppRoutes.onboarding,
@@ -44,9 +47,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: router),
-      ),
+      createLocalizedTestWidget(routerConfig: router),
     );
 
     await tester.pump();
@@ -58,6 +59,6 @@ void main() {
     await tester.pump(AppConstants.splashDisplayDuration);
     await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text(homeLabel), findsOneWidget);
   });
 }
