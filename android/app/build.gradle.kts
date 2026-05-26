@@ -5,6 +5,8 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+import java.util.Properties
+
 android {
     namespace = "com.example.netgulf"
     compileSdk = flutter.compileSdkVersion
@@ -31,11 +33,46 @@ android {
         versionName = flutter.versionName
     }
 
+    // ── Release signing (Play Store) ─────────────────────────────────────────
+    // IMPORTANT: `android/key.properties` + keystore file must NOT be committed.
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val hasKeystoreFile = keystorePropertiesFile.exists()
+
+    if (hasKeystoreFile) {
+        keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+    }
+
+    fun prop(name: String): String =
+        (keystoreProperties.getProperty(name) ?: "").trim()
+
+    val hasReleaseSigning =
+        hasKeystoreFile &&
+            prop("storeFile").isNotEmpty() &&
+            prop("storePassword").isNotEmpty() &&
+            prop("keyAlias").isNotEmpty() &&
+            prop("keyPassword").isNotEmpty() &&
+            file(prop("storeFile")).exists()
+
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(prop("storeFile"))
+                storePassword = prop("storePassword")
+                keyAlias = prop("keyAlias")
+                keyPassword = prop("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release keystore when available; fallback to debug to keep local builds working.
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
