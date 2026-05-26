@@ -1,10 +1,19 @@
-/// مفاتيح API — من متغيرات البيئة عند البناء (لا تُخزَّن في الكود).
+import 'package:flutter/foundation.dart';
+
+/// مفاتيح API — Web: ثابت للاختبار | Mobile: `--dart-define=ANTHROPIC_API_KEY=...`
 abstract final class ApiKeys {
   ApiKeys._();
 
-  /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...`
-  static const String anthropicApiKey =
-      String.fromEnvironment('ANTHROPIC_API_KEY');
+  /// Web testing only — replace with your real `sk-ant-...` key locally.
+  /// ⚠️ Never commit a real production key to git.
+  static const String _webAnthropicApiKey =
+      'حط_مفتاحك_الحقيقي_هنا_مكان_الكلّام_ده';
+
+  /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...` (non-Web)
+  static String get anthropicApiKey {
+    if (kIsWeb) return _webAnthropicApiKey;
+    return const String.fromEnvironment('ANTHROPIC_API_KEY');
+  }
 
   static bool get hasAnthropicApiKey => anthropicApiKey.trim().isNotEmpty;
 
