@@ -9,7 +9,7 @@ import 'package:netgulf/core/providers/app_state_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شاشة التعريف — 3 صفحات قبل البدء.
+/// شاشة التعريف — 3 صفحات قبل البدء
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -25,17 +25,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardingPageData(
       icon: Icons.calculate_rounded,
       title: AppConstants.onboardingWelcomeTitleAr,
-      subtitle: AppConstants.onboardingWelcomeSubtitleAr,
+      subtitle: 'حاسبة الراتب الصافي للسعودية والإمارات — دقيقة، سريعة، بدون إنترنت',
     ),
     _OnboardingPageData(
       icon: Icons.shield_rounded,
-      title: 'احسب تأميناتك وتقاعدك بدقة',
-      subtitle: AppConstants.onboardingPensionSubtitleAr,
+      title: 'احسب تأميناتك ونهاية خدمتك بدقة',
+      subtitle: 'GOSI • GPSSA • DEWS • المادة 84 و85',
     ),
     _OnboardingPageData(
       icon: Icons.rocket_launch_rounded,
       title: 'ابدأ الآن',
-      subtitle: 'احفظ سجلاتك، صدّر PDF، وتابع راتبك بكل وضوح',
+      subtitle: 'احفظ سجلاتك • صدّر PDF • قارن العروض • تابع راتبك بكل وضوح',
     ),
   ];
 
@@ -45,17 +45,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     super.dispose();
   }
 
-  void _onPageChanged(int index) => setState(() => _currentPage = index);
+  void _onPageChanged(int index) {
+    if (mounted) {
+      setState(() => _currentPage = index);
+    }
+  }
 
   void _next() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 350),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOutCubic,
       );
-      return;
+    } else {
+      unawaited(_finishOnboarding());
     }
-    unawaited(_finishOnboarding());
   }
 
   Future<void> _finishOnboarding() async {
@@ -81,35 +85,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 child: PageView.builder(
                   controller: _pageController,
                   onPageChanged: _onPageChanged,
+                  physics: const ClampingScrollPhysics(),
                   itemCount: _pages.length,
-                  itemBuilder: (_, index) => _OnboardingPage(
+                  itemBuilder: (context, index) => _OnboardingPage(
                     data: _pages[index],
                   ),
                 ),
               ),
               _DotIndicator(
                 count: _pages.length,
-                index: _currentPage,
+                currentIndex: _currentPage,
               ),
               const SizedBox(height: 28),
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 52,
+                  height: 54,
                   child: FilledButton(
                     onPressed: _next,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.emerald,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: Text(
                       isLastPage ? 'ابدأ الآن' : 'التالي',
                       style: GoogleFonts.cairo(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -137,7 +142,7 @@ class _OnboardingPageData {
 }
 
 class _OnboardingPage extends StatelessWidget {
-  const _OnboardingPage({required this.data});
+  const _OnboardingPage({required this.data, super.key});
 
   final _OnboardingPageData data;
 
@@ -149,35 +154,35 @@ class _OnboardingPage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 128,
+            height: 128,
             decoration: BoxDecoration(
               color: AppColors.emerald.withValues(alpha: 0.12),
               shape: BoxShape.circle,
               border: Border.all(
                 color: AppColors.emerald.withValues(alpha: 0.35),
-                width: 2,
+                width: 3,
               ),
             ),
-            child: Icon(data.icon, size: 56, color: AppColors.emerald),
+            child: Icon(data.icon, size: 60, color: AppColors.emerald),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 48),
           Text(
             data.title,
             style: GoogleFonts.cairo(
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
               color: AppColors.emerald,
-              height: 1.3,
+              height: 1.25,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             data.subtitle,
             style: GoogleFonts.cairo(
-              fontSize: 15,
-              height: 1.5,
+              fontSize: 16,
+              height: 1.55,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
@@ -188,30 +193,29 @@ class _OnboardingPage extends StatelessWidget {
   }
 }
 
-/// مؤشرات النقاط المتحركة أسفل الصفحات.
 class _DotIndicator extends StatelessWidget {
   const _DotIndicator({
     required this.count,
-    required this.index,
+    required this.currentIndex,
   });
 
   final int count;
-  final int index;
+  final int currentIndex;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (i) {
-        final active = i == index;
+        final isActive = i == currentIndex;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: active ? 28 : 8,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          width: isActive ? 32 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: active
+            color: isActive
                 ? AppColors.emerald
                 : AppColors.emerald.withValues(alpha: 0.25),
             borderRadius: BorderRadius.circular(4),

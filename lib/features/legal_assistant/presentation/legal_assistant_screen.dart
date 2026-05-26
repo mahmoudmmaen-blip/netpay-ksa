@@ -28,7 +28,11 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
   final _messages = <ChatMessage>[];
   final _uuid = const Uuid();
 
+  static const _requestTimeout = Duration(seconds: 15);
+  static const _retryLabel = 'تعذر الاتصال بالمساعد. إعادة المحاولة';
+
   bool _isLoading = false;
+  String? _failedMessage;
 
   static const _exampleQuestions = [
     'عقدي ستين وهمشي بعد سنه',
@@ -48,24 +52,48 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
     final text = (preset ?? _inputController.text).trim();
     if (text.isEmpty || _isLoading) return;
 
+    if (preset == null) _inputController.clear();
+    await _dispatchQuestion(text, appendUserMessage: true);
+  }
+
+  /// إعادة إرسال آخر سؤال فشل دون إضافة رسالة مستخدم مكررة.
+  Future<void> _retryFailedMessage() async {
+    final text = _failedMessage?.trim();
+    if (text == null || text.isEmpty || _isLoading) return;
+    await _dispatchQuestion(text, appendUserMessage: false);
+  }
+
+  Future<void> _dispatchQuestion(
+    String text, {
+    required bool appendUserMessage,
+  }) async {
+    if (_isLoading) return;
+
     setState(() {
       _isLoading = true;
-      _messages.add(
-        ChatMessage(
-          id: _uuid.v4(),
-          text: text,
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
-      );
-      _inputController.clear();
+      _failedMessage = null;
+      if (appendUserMessage) {
+        _messages.add(
+          ChatMessage(
+            id: _uuid.v4(),
+            text: text,
+            isUser: true,
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
     });
     _scrollToBottom();
 
     try {
       final service = ref.read(legalAiServiceProvider);
       final history = List<ChatMessage>.from(_messages);
-      final reply = await service.ask(question: text, history: history);
+      final reply = await service
+          .ask(question: text, history: history)
+          .timeout(
+            _requestTimeout,
+            onTimeout: () => throw LegalAiException(_retryLabel),
+          );
 
       if (!mounted) return;
       setState(() {
@@ -80,32 +108,12 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         );
       });
       ref.invalidate(legalAiRemainingProvider);
-    } on LegalAiException catch (e) {
+    } on LegalAiException {
       if (!mounted) return;
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            id: _uuid.v4(),
-            text: e.message,
-            isUser: false,
-            isError: true,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
+      setState(() => _failedMessage = text);
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            id: _uuid.v4(),
-            text: 'حدث خطأ غير متوقع. حاول مرة أخرى.',
-            isUser: false,
-            isError: true,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
+      setState(() => _failedMessage = text);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -183,12 +191,30 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
                   ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                    itemCount: _messages.length + (_isLoading ? 1 : 0),
+                    itemCount: _messages.length +
+                        (_isLoading ? 1 : 0) +
+                        (_failedMessage != null && !_isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (_isLoading && index == _messages.length) {
+                      if (index < _messages.length) {
+                        return _MessageBubble(message: _messages[index]);
+                      }
+
+                      var slot = _messages.length;
+                      if (_isLoading && index == slot) {
                         return const _TypingIndicator();
                       }
-                      return _MessageBubble(message: _messages[index]);
+                      slot += _isLoading ? 1 : 0;
+
+                      if (_failedMessage != null &&
+                          !_isLoading &&
+                          index == slot) {
+                        return _SmartRetryBanner(
+                          label: _retryLabel,
+                          onRetry: _retryFailedMessage,
+                        );
+                      }
+
+                      return const SizedBox.shrink();
                     },
                   ),
                   if (!hasUserMessages && !_isLoading)
@@ -642,12 +668,36 @@ class _ChatBubblePainter extends CustomPainter {
   }
 }
 
-class _TypingIndicator extends StatelessWidget {
+class _TypingIndicator extends StatefulWidget {
   const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final bg = AppColors.navyMid.withValues(alpha: 0.9);
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -656,27 +706,179 @@ class _TypingIndicator extends StatelessWidget {
           isUser: false,
           color: bg,
           borderColor: AppColors.navyLight.withValues(alpha: 0.5),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: AppColors.emeraldLight,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(3, (i) {
+                  return AnimatedBuilder(
+                    animation: _pulse,
+                    builder: (context, _) {
+                      final phase = (_pulse.value + i * 0.22) % 1.0;
+                      final scale = 0.65 + (0.35 * (1 - (phase - 0.5).abs() * 2));
+                      final opacity = 0.35 + (0.65 * (1 - (phase - 0.5).abs() * 2));
+                      return Padding(
+                        padding: EdgeInsetsDirectional.only(
+                          end: i == 2 ? 0 : 6,
+                        ),
+                        child: Transform.scale(
+                          scale: scale.clamp(0.65, 1.0),
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.emeraldLight
+                                  .withValues(alpha: opacity.clamp(0.35, 1.0)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.emerald
+                                      .withValues(alpha: opacity * 0.35),
+                                  blurRadius: 6,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(height: 10),
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (context, _) {
+                  return ShaderMask(
+                    blendMode: BlendMode.srcATop,
+                    shaderCallback: (bounds) {
+                      final t = _pulse.value;
+                      return LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.25),
+                          Colors.white.withValues(alpha: 0.85),
+                          Colors.white.withValues(alpha: 0.25),
+                        ],
+                        stops: [
+                          (t - 0.35).clamp(0.0, 1.0),
+                          t.clamp(0.0, 1.0),
+                          (t + 0.35).clamp(0.0, 1.0),
+                        ],
+                      ).createShader(bounds);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 88,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
               Text(
                 'المساعد بيفكر...',
                 style: GoogleFonts.cairo(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.92),
+                  color: Colors.white.withValues(alpha: 0.72),
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// زر إعادة المحاولة الذكية — يظهر عند فشل الاتصال دون إضافة رسالة خطأ.
+class _SmartRetryBanner extends StatelessWidget {
+  const _SmartRetryBanner({
+    required this.label,
+    required this.onRetry,
+  });
+
+  final String label;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onRetry,
+            borderRadius: BorderRadius.circular(16),
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.error.withValues(alpha: 0.12),
+                    AppColors.gold.withValues(alpha: 0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.wifi_off_rounded,
+                      size: 20,
+                      color: AppColors.error.withValues(alpha: 0.9),
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 20,
+                      color: AppColors.emerald,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -709,78 +911,88 @@ class _InputBar extends StatelessWidget {
           child: GlassSurface(
             borderRadius: 28,
             padding: const EdgeInsetsDirectional.fromSTEB(6, 6, 6, 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    minLines: 1,
-                    maxLines: 4,
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.right,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
-                    style: GoogleFonts.cairo(fontSize: 15),
-                    decoration: InputDecoration(
-                      hintText: 'اكتب سؤالك القانوني...',
-                      hintStyle: GoogleFonts.cairo(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.45),
-                      ),
-                      filled: true,
-                      fillColor: isDark
-                          ? AppColors.navyMid.withValues(alpha: 0.5)
-                          : Colors.white.withValues(alpha: 0.85),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(22),
-                        borderSide: BorderSide(
-                          color: AppColors.emerald.withValues(alpha: 0.6),
-                          width: 1.5,
+            child: ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller,
+              builder: (context, value, _) {
+                final canSend =
+                    !isLoading && value.text.trim().isNotEmpty;
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        minLines: 1,
+                        maxLines: 4,
+                        enabled: !isLoading,
+                        textDirection: TextDirection.rtl,
+                        textAlign: TextAlign.right,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: canSend ? (_) => onSend() : null,
+                        style: GoogleFonts.cairo(fontSize: 15),
+                        decoration: InputDecoration(
+                          hintText: 'اكتب سؤالك القانوني...',
+                          hintStyle: GoogleFonts.cairo(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.45),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? AppColors.navyMid.withValues(alpha: 0.5)
+                              : Colors.white.withValues(alpha: 0.85),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(22),
+                            borderSide: BorderSide(
+                              color: AppColors.emerald.withValues(alpha: 0.6),
+                              width: 1.5,
+                            ),
+                          ),
+                          contentPadding:
+                              const EdgeInsetsDirectional.fromSTEB(
+                            16,
+                            12,
+                            16,
+                            12,
+                          ),
                         ),
                       ),
-                      contentPadding: const EdgeInsetsDirectional.fromSTEB(
-                        16,
-                        12,
-                        16,
-                        12,
-                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: isLoading ? null : onSend,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.emerald,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        AppColors.emerald.withValues(alpha: 0.35),
-                    padding: const EdgeInsets.all(14),
-                    shape: const CircleBorder(),
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.send_rounded),
-                ),
-              ],
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: canSend ? onSend : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.emerald,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor:
+                            AppColors.emerald.withValues(alpha: 0.35),
+                        padding: const EdgeInsets.all(14),
+                        shape: const CircleBorder(),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.send_rounded),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ),

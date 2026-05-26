@@ -129,7 +129,7 @@ class LegalAiService {
           },
           body: body,
         )
-        .timeout(const Duration(seconds: 60));
+        .timeout(const Duration(seconds: 15));
 
     if (response.statusCode != 200) {
       final err = _parseError(response.body);
