@@ -287,7 +287,7 @@ class _WizardBottomBar extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (isLastStep && wizard.canProceedStep1) const _LivePreviewBar(),
+        if (wizard.canShowLivePreview && stepIndex >= 1) const _LivePreviewBar(),
         if (validationMsg != null && !canAdvance)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -394,7 +394,7 @@ class _LivePreviewBar extends ConsumerWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'معاينة الإجمالي',
+                'معاينة الإجمالي (تقديرية)',
                 style: GoogleFonts.cairo(
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
@@ -430,7 +430,7 @@ const _terminationRadioOptions = <(EosbTerminationType, String, IconData)>[
   ),
   (
     EosbTerminationType.employeeResignation,
-    'استقالة',
+    'استقالة الموظف',
     Icons.exit_to_app_rounded,
   ),
   (
@@ -462,16 +462,14 @@ class _StepTermination extends ConsumerWidget {
           if (v != null) notifier.setTerminationType(v);
         },
         child: Column(
-          children: _terminationRadioOptions.asMap().entries.map((entry) {
-            final index = entry.key;
-            final opt = entry.value;
+          children: _terminationRadioOptions.map((opt) {
             final selected = groupValue == opt.$1;
             return RadioListTile<EosbTerminationType>(
               value: opt.$1,
               activeColor: AppColors.emerald,
               selected: selected,
               title: Text(
-                '${index + 1}. ${opt.$2}',
+                opt.$2,
                 style: GoogleFonts.cairo(
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   fontSize: 14,
@@ -547,6 +545,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final currency = wizard.country.currencySymbol;
+    final showFieldErrors = !wizard.canProceedStep1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -558,16 +557,18 @@ class _StepContractState extends ConsumerState<_StepContract> {
             ButtonSegment(
               value: GulfCountry.saudiArabia,
               label: Text(
-                '🇸🇦 السعودية',
+                'السعودية',
                 style: GoogleFonts.cairo(fontSize: 12),
               ),
+              icon: const Text('🇸🇦'),
             ),
             ButtonSegment(
               value: GulfCountry.uae,
               label: Text(
-                '🇦🇪 الإمارات',
+                'الإمارات',
                 style: GoogleFonts.cairo(fontSize: 12),
               ),
+              icon: const Text('🇦🇪'),
             ),
           ],
           selected: {wizard.country},
@@ -583,19 +584,22 @@ class _StepContractState extends ConsumerState<_StepContract> {
             children: [
               _EosbTextField(
                 controller: _yearsCtrl,
-                label: 'سنوات الخدمة',
+                label: 'عدد السنوات',
                 hint: 'مثال: 5',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                errorText: showFieldErrors ? wizard.serviceYearsFieldError : null,
                 onChanged: (_) => _pushToProvider(),
               ),
               const SizedBox(height: 12),
               _EosbTextField(
                 controller: _monthsCtrl,
-                label: 'شهور إضافية',
-                hint: '0–11',
+                label: 'عدد الشهور الإضافية',
+                hint: 'من 0 إلى 11',
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                errorText:
+                    showFieldErrors ? wizard.serviceMonthsFieldError : null,
                 onChanged: (_) => _pushToProvider(),
               ),
               const SizedBox(height: 12),
@@ -608,13 +612,14 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
                 ],
+                errorText: showFieldErrors ? wizard.basicSalaryFieldError : null,
                 onChanged: (_) => _pushToProvider(),
               ),
               const SizedBox(height: 12),
               _EosbTextField(
                 controller: _housingCtrl,
-                label: 'بدل السكن ($currency)',
-                hint: '0 إن لم يوجد',
+                label: 'بدل السكن ($currency) (اختياري)',
+                hint: 'اتركه فارغاً إن لم يوجد',
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -671,7 +676,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           child: _EosbTextField(
             controller: _leaveCtrl,
             label: 'عدد أيام الإجازات المتبقية',
-            hint: '0 إن لم يوجد',
+            hint: '0 إن لم يوجد رصيد',
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             onChanged: (v) => notifier.setAccruedLeave(
@@ -1058,6 +1063,7 @@ class _EosbTextField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.hint,
+    this.errorText,
     this.keyboardType,
     this.inputFormatters,
     this.onChanged,
@@ -1066,35 +1072,66 @@ class _EosbTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
   final String? hint;
+  final String? errorText;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged,
-        style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 15),
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          labelStyle: GoogleFonts.cairo(fontSize: 13),
-          hintStyle: GoogleFonts.cairo(
-            fontSize: 13,
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      validator: errorText != null ? (_) => errorText : null,
+      style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 15),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        errorText: errorText,
+        labelStyle: GoogleFonts.cairo(fontSize: 13),
+        hintStyle: GoogleFonts.cairo(
+          fontSize: 13,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.45),
+        ),
+        errorStyle: GoogleFonts.cairo(fontSize: 11),
+        filled: true,
+        fillColor: Theme.of(context)
+            .colorScheme
+            .surface
+            .withValues(alpha: 0.35),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
             color: Theme.of(context)
                 .colorScheme
-                .onSurface
-                .withValues(alpha: 0.45),
+                .outline
+                .withValues(alpha: 0.2),
           ),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
         ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.emerald, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
     );
   }

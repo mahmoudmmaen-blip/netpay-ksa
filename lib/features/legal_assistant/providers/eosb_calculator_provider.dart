@@ -57,14 +57,33 @@ class EosbWizardState {
   /// الخطوة 3 — كل الحقول اختيارية.
   bool get canProceedStep2 => true;
 
+  /// معاينة مباشرة عند اكتمال الخطوتين 1 و 2.
+  bool get canShowLivePreview => canProceedStep0 && canProceedStep1;
+
+  String? get serviceYearsFieldError {
+    if (years > 40) return 'عدد السنوات يبدو غير واقعي (الحد الأقصى 40)';
+    if (years <= 0 && months <= 0) {
+      return 'أدخل عدد السنوات أو الشهور الإضافية';
+    }
+    return null;
+  }
+
+  String? get serviceMonthsFieldError {
+    if (months > 11) return 'الشهور الإضافية من 0 إلى 11 فقط';
+    return null;
+  }
+
+  String? get basicSalaryFieldError => basicSalary <= 0
+      ? 'أدخل الراتب الأساسي (أكبر من صفر)'
+      : null;
+
   String? validationMessageForStep(int step) {
     return switch (step) {
-      0 when !canProceedStep0 => 'اختر نوع إنهاء الخدمة من القائمة',
-      1 when basicSalary <= 0 => 'أدخل الراتب الأساسي (أكبر من صفر)',
-      1 when years <= 0 && months <= 0 =>
-        'أدخل سنوات الخدمة أو شهوراً إضافية على الأقل',
-      1 when months > 11 => 'الشهور الإضافية يجب أن تكون من 0 إلى 11',
-      1 when years > 40 => 'تحقق من عدد سنوات الخدمة',
+      0 when !canProceedStep0 =>
+        'اختر نوع إنهاء الخدمة للمتابعة',
+      1 when basicSalaryFieldError != null => basicSalaryFieldError,
+      1 when serviceMonthsFieldError != null => serviceMonthsFieldError,
+      1 when serviceYearsFieldError != null => serviceYearsFieldError,
       _ => null,
     };
   }
