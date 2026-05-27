@@ -231,6 +231,7 @@ class LegalAiService {
         )
         .timeout(const Duration(seconds: 30));
 
+    debugPrint('=== LegalAI RESPONSE: status=${response.statusCode}, body=${response.body.substring(0, response.body.length.clamp(0, 200))}');
     if (response.statusCode != 200) {
       final err = _parseError(response.body);
       throw LegalAiException(err);
