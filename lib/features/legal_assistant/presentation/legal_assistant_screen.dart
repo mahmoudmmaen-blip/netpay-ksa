@@ -94,7 +94,9 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
           .ask(question: text, history: history)
           .timeout(
             _requestTimeout,
-            onTimeout: () => throw LegalAiException(_retryLabel),
+            onTimeout: () => throw LegalAiException(
+              'انتهت مهلة الاتصال (60 ثانية). تحقق من الإنترنت وحاول مرة أخرى.',
+            ),
           );
 
       if (!mounted) return;

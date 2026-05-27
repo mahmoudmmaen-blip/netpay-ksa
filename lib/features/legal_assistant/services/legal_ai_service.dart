@@ -33,7 +33,8 @@ class LegalAiService {
 
   static const String _anthropicMessagesUrl =
       'https://api.anthropic.com/v1/messages';
-  static const String _model = 'claude-3-5-sonnet-20240620';
+  /// Haiku: سريع، رخيص، ومتوفر بثبات على Anthropic API.
+  static const String _model = 'claude-3-haiku-20240307';
   static const String _apiVersion = '2023-06-01';
   static const Duration _httpTimeout = Duration(seconds: 60);
   static const int _maxTokens = 1500;
@@ -75,7 +76,8 @@ class LegalAiService {
   bool get isWebMockOverride =>
       !isLiveMode && ApiKeys.anthropicBlockedByBrowserCors;
 
-  bool get _viaProxy => ApiKeys.hasAnthropicProxy;
+  /// Web → بروكسي (CORS). Mobile مع مفتاح → API مباشر (أوثق).
+  bool get _viaProxy => ApiKeys.useAnthropicProxy;
 
   Future<int> getRemainingQuestionsToday() async {
     final used = await _questionsUsedToday();
@@ -92,7 +94,7 @@ class LegalAiService {
   }) async {
     debugPrint('=== LEGAL AI ASK STARTED === Question: $question');
     debugPrint(
-      '=== Live: ${ApiKeys.canUseLiveAnthropic} | Proxy: ${ApiKeys.hasAnthropicProxy} | '
+      '=== Live: ${ApiKeys.canUseLiveAnthropic} | viaProxy: ${ApiKeys.useAnthropicProxy} | '
       'KeyLen: ${ApiKeys.anthropicApiKey.length}',
     );
 

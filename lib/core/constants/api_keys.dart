@@ -19,6 +19,14 @@ abstract final class ApiKeys {
 
   static bool get hasAnthropicProxy => anthropicProxyUrl.trim().isNotEmpty;
 
+  /// مسار الطلب: Web دائماً عبر البروكسي؛ الجوال مع مفتاح مباشر.
+  static bool get useAnthropicProxy {
+    if (!hasAnthropicProxy) return false;
+    if (kIsWeb) return true;
+    if (hasAnthropicApiKey) return false;
+    return true;
+  }
+
   /// Web بدون بروكسي — لا يمكن الاتصال المباشر بـ api.anthropic.com.
   static bool get anthropicBlockedByBrowserCors =>
       kIsWeb && !hasAnthropicProxy;
