@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -33,6 +34,7 @@ class LegalAiService {
   static const String _apiUrl = 'https://api.anthropic.com/v1/messages';
   static const String _model = 'claude-sonnet-4-20250514';
   static const String _apiVersion = '2023-06-01';
+  static const Duration _httpTimeout = Duration(seconds: 60);
 
   static const String systemPrompt = '''
 أنت "المساعد القانوني لـ NetGulf" — خبير متخصص في قانون العمل السعودي والإماراتي.
@@ -119,7 +121,9 @@ class LegalAiService {
     required String question,
     required List<ChatMessage> history,
   }) async {
-    debugPrint('=== LegalAI DEBUG: isLiveMode=$isLiveMode, isWebMock=$isWebMockOverride, key=${ApiKeys.anthropicApiKey.substring(0, 10)}');
+    debugPrint('=== LEGAL AI ASK STARTED === Question: $question');
+    debugPrint('=== Live Mode: ${ApiKeys.canUseLiveAnthropic} | Key length: ${ApiKeys.anthropicApiKey.length}');
+    debugPrint('=== LegalAI DEBUG: isLiveMode=$isLiveMode, isWebMock=$isWebMockOverride, key=${ApiKeys.anthropicApiKey.isEmpty ? "(empty)" : ApiKeys.anthropicApiKey.substring(0, ApiKeys.anthropicApiKey.length.clamp(0, 10))}');
     final remaining = await getRemainingQuestionsToday();
     if (remaining <= 0) {
       throw LegalAiException(
@@ -148,6 +152,11 @@ class LegalAiService {
       return LegalAiReply(text: reply, isDemo: false);
     } on LegalAiException {
       rethrow;
+    } on TimeoutException catch (e) {
+      debugPrint('=== LegalAI TIMEOUT in ask(): $e');
+      throw LegalAiException(
+        'انتهت مهلة الاتصال بالمساعد (60 ثانية). حاول مرة أخرى.',
+      );
     } on http.ClientException catch (e) {
       if (kIsWeb) {
         await _recordQuestionUsed();
@@ -232,7 +241,7 @@ class LegalAiService {
             headers: _requestHeaders,
             body: body,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(_httpTimeout);
 
       debugPrint('=== LegalAI STATUS: ${response.statusCode}');
       debugPrint('=== LegalAI BODY: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
@@ -255,10 +264,18 @@ class LegalAiService {
         }
       }
       throw LegalAiException('تعذر قراءة رد المساعد.');
+    } on TimeoutException catch (e) {
+      debugPrint('=== LegalAI TIMEOUT in _callAnthropic: $e');
+      throw LegalAiException(
+        'انتهت مهلة الاتصال بالمساعد. حاول مرة أخرى.',
+      );
     } catch (e, stack) {
       debugPrint('=== LegalAI EXCEPTION: $e');
       debugPrint('=== LegalAI STACK: $stack');
-      rethrow;
+      if (e is LegalAiException) rethrow;
+      throw LegalAiException(
+        'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
+      );
     }
   }
 
