@@ -4,14 +4,14 @@ import 'package:flutter/foundation.dart';
 abstract final class ApiKeys {
   ApiKeys._();
 
-  /// Web testing only — replace locally with `sk-ant-...`.
-  /// ⚠️ Never commit a real production key to git.
-  static const String _webAnthropicApiKey =
-      'حط_مفتاحك_الحقيقي_هنا_مكان_الكلّام_ده';
-
   /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...` (non-Web)
   static String get anthropicApiKey {
-    if (kIsWeb) return _webAnthropicApiKey;
+    if (kIsWeb) {
+      return const String.fromEnvironment(
+        'ANTHROPIC_API_KEY',
+        defaultValue: '',
+      );
+    }
     return const String.fromEnvironment('ANTHROPIC_API_KEY');
   }
 
