@@ -92,10 +92,16 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
 }
 
 /// معالج 3 خطوات — خطوة واحدة ظاهرة في كل مرة.
-class _WizardStepper extends ConsumerWidget {
+class _WizardStepper extends ConsumerStatefulWidget {
   const _WizardStepper({super.key, required this.isDark});
 
   final bool isDark;
+
+  @override
+  ConsumerState<_WizardStepper> createState() => _WizardStepperState();
+}
+
+class _WizardStepperState extends ConsumerState<_WizardStepper> {
 
   static const _stepTitles = [
   'نوع إنهاء الخدمة',
@@ -110,7 +116,7 @@ class _WizardStepper extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final step = wizard.stepIndex.clamp(0, 2);
 
@@ -138,9 +144,9 @@ class _WizardStepper extends ConsumerWidget {
               key: ValueKey<int>(step),
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: switch (step) {
-                0 => const _StepTermination(),
-                1 => const _StepContract(),
-                _ => const _StepExtras(),
+                0 => _StepTermination(key: const ValueKey('s0')),
+                1 => _StepContract(key: const ValueKey('s1')),
+                _ => _StepExtras(key: const ValueKey('s2')),
               },
             ),
           ),
@@ -272,58 +278,80 @@ class _WizardBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
+    final canAdvance = wizard.canAdvanceFromCurrentStep;
+    final validationMsg = wizard.validationMessageForStep(stepIndex);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (isLastStep) const _LivePreviewBar(),
+        if (isLastStep && wizard.canProceedStep1) const _LivePreviewBar(),
+        if (validationMsg != null && !canAdvance)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: Text(
+              validationMsg,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.error,
+              ),
+            ),
+          ),
         GlassSurface(
           borderRadius: 0,
           blur: 8,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           child: Row(
             children: [
-              if (stepIndex > 0)
-                TextButton.icon(
-                  onPressed: notifier.previousStep,
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  label: Text(
-                    'السابق',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
-                  ),
+              TextButton.icon(
+                onPressed: stepIndex > 0 ? notifier.previousStep : null,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: Text(
+                  'السابق',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
                 ),
+              ),
               const Spacer(),
               FilledButton.icon(
-                onPressed: () {
-                  final error = notifier.validateCurrentStep();
-                  if (error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(error, style: GoogleFonts.cairo()),
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                    return;
-                  }
-                  if (!notifier.nextStep()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'تعذر إكمال الحساب',
-                          style: GoogleFonts.cairo(),
-                        ),
-                      ),
-                    );
-                  }
-                },
+                onPressed: canAdvance
+                    ? () {
+                        final error = isLastStep
+                            ? wizard.validationBeforeResults()
+                            : notifier.validateCurrentStep();
+                        if (error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error, style: GoogleFonts.cairo()),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                          return;
+                        }
+                        if (!notifier.nextStep()) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'أكمل جميع الخطوات المطلوبة',
+                                style: GoogleFonts.cairo(),
+                              ),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                        }
+                      }
+                    : null,
                 icon: Icon(
                   isLastStep ? Icons.calculate_rounded : Icons.arrow_back_rounded,
                   size: 18,
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.emerald,
+                  disabledBackgroundColor:
+                      AppColors.emerald.withValues(alpha: 0.35),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 24,
                     vertical: 12,
@@ -418,7 +446,7 @@ const _terminationRadioOptions = <(EosbTerminationType, String, IconData)>[
 ];
 
 class _StepTermination extends ConsumerWidget {
-  const _StepTermination();
+  const _StepTermination({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -434,14 +462,16 @@ class _StepTermination extends ConsumerWidget {
           if (v != null) notifier.setTerminationType(v);
         },
         child: Column(
-          children: _terminationRadioOptions.map((opt) {
+          children: _terminationRadioOptions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final opt = entry.value;
             final selected = groupValue == opt.$1;
             return RadioListTile<EosbTerminationType>(
               value: opt.$1,
               activeColor: AppColors.emerald,
               selected: selected,
               title: Text(
-                opt.$2,
+                '${index + 1}. ${opt.$2}',
                 style: GoogleFonts.cairo(
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
                   fontSize: 14,
@@ -460,39 +490,90 @@ class _StepTermination extends ConsumerWidget {
   }
 }
 
-class _StepContract extends ConsumerWidget {
-  const _StepContract();
+class _StepContract extends ConsumerStatefulWidget {
+  const _StepContract({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_StepContract> createState() => _StepContractState();
+}
+
+class _StepContractState extends ConsumerState<_StepContract> {
+  late final TextEditingController _yearsCtrl;
+  late final TextEditingController _monthsCtrl;
+  late final TextEditingController _basicCtrl;
+  late final TextEditingController _housingCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final w = ref.read(eosbWizardProvider);
+    _yearsCtrl = TextEditingController(
+      text: w.years > 0 ? '${w.years}' : '',
+    );
+    _monthsCtrl = TextEditingController(
+      text: w.months > 0 ? '${w.months}' : '',
+    );
+    _basicCtrl = TextEditingController(
+      text: w.basicSalary > 0 ? _fmt(w.basicSalary) : '',
+    );
+    _housingCtrl = TextEditingController(
+      text: w.housingAllowance > 0 ? _fmt(w.housingAllowance) : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _yearsCtrl.dispose();
+    _monthsCtrl.dispose();
+    _basicCtrl.dispose();
+    _housingCtrl.dispose();
+    super.dispose();
+  }
+
+  void _pushToProvider() {
+    final notifier = ref.read(eosbWizardProvider.notifier);
+    notifier.setServiceDuration(
+      years: int.tryParse(_yearsCtrl.text) ?? 0,
+      months: (int.tryParse(_monthsCtrl.text) ?? 0).clamp(0, 11),
+    );
+    notifier.setSalaries(
+      basic: double.tryParse(_basicCtrl.text) ?? 0,
+      housing: double.tryParse(_housingCtrl.text) ?? 0,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
+    final currency = wizard.country.currencySymbol;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('الدولة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _CountryChip(
-                country: GulfCountry.saudiArabia,
-                selected: wizard.country == GulfCountry.saudiArabia,
-                onTap: () => notifier.setCountry(GulfCountry.saudiArabia),
+        SegmentedButton<GulfCountry>(
+          segments: [
+            ButtonSegment(
+              value: GulfCountry.saudiArabia,
+              label: Text(
+                '🇸🇦 السعودية',
+                style: GoogleFonts.cairo(fontSize: 12),
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _CountryChip(
-                country: GulfCountry.uae,
-                selected: wizard.country == GulfCountry.uae,
-                onTap: () => notifier.setCountry(GulfCountry.uae),
+            ButtonSegment(
+              value: GulfCountry.uae,
+              label: Text(
+                '🇦🇪 الإمارات',
+                style: GoogleFonts.cairo(fontSize: 12),
               ),
             ),
           ],
+          selected: {wizard.country},
+          onSelectionChanged: (s) => notifier.setCountry(s.first),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         _CountryLawChip(country: wizard.country),
         const SizedBox(height: 16),
         GlassSurface(
@@ -500,46 +581,46 @@ class _StepContract extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'مدة الخدمة',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              _EosbTextField(
+                controller: _yearsCtrl,
+                label: 'سنوات الخدمة',
+                hint: 'مثال: 5',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (_) => _pushToProvider(),
               ),
               const SizedBox(height: 12),
-              _NumField(
-                key: const ValueKey('years'),
-                label: 'سنوات الخدمة',
-                initial: wizard.years > 0 ? '${wizard.years}' : '',
-                onChanged: (v) => notifier.setServiceDuration(
-                  years: int.tryParse(v) ?? 0,
-                ),
+              _EosbTextField(
+                controller: _monthsCtrl,
+                label: 'شهور إضافية',
+                hint: '0–11',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (_) => _pushToProvider(),
               ),
-              const SizedBox(height: 10),
-              _NumField(
-                key: const ValueKey('months'),
-                label: 'شهور إضافية (0–11)',
-                initial: wizard.months > 0 ? '${wizard.months}' : '',
-                onChanged: (v) => notifier.setServiceDuration(
-                  months: (int.tryParse(v) ?? 0).clamp(0, 11),
-                ),
+              const SizedBox(height: 12),
+              _EosbTextField(
+                controller: _basicCtrl,
+                label: 'الراتب الأساسي ($currency)',
+                hint: 'مثال: 12000',
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                ],
+                onChanged: (_) => _pushToProvider(),
               ),
-              const SizedBox(height: 10),
-              _NumField(
-                key: const ValueKey('basic'),
-                label: 'الراتب الأساسي (${wizard.country.currencySymbol})',
-                initial:
-                    wizard.basicSalary > 0 ? _fmt(wizard.basicSalary) : '',
-                onChanged: (v) =>
-                    notifier.setSalaries(basic: double.tryParse(v) ?? 0),
-              ),
-              const SizedBox(height: 10),
-              _NumField(
-                key: const ValueKey('housing'),
-                label: 'بدل السكن (${wizard.country.currencySymbol})',
-                initial: wizard.housingAllowance > 0
-                    ? _fmt(wizard.housingAllowance)
-                    : '',
-                onChanged: (v) =>
-                    notifier.setSalaries(housing: double.tryParse(v) ?? 0),
+              const SizedBox(height: 12),
+              _EosbTextField(
+                controller: _housingCtrl,
+                label: 'بدل السكن ($currency)',
+                hint: '0 إن لم يوجد',
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                ],
+                onChanged: (_) => _pushToProvider(),
               ),
             ],
           ),
@@ -552,11 +633,33 @@ class _StepContract extends ConsumerWidget {
       v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(2);
 }
 
-class _StepExtras extends ConsumerWidget {
-  const _StepExtras();
+class _StepExtras extends ConsumerStatefulWidget {
+  const _StepExtras({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_StepExtras> createState() => _StepExtrasState();
+}
+
+class _StepExtrasState extends ConsumerState<_StepExtras> {
+  late final TextEditingController _leaveCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final days = ref.read(eosbWizardProvider).accruedLeaveDays;
+    _leaveCtrl = TextEditingController(
+      text: days > 0 ? '$days' : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _leaveCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
@@ -565,20 +668,15 @@ class _StepExtras extends ConsumerWidget {
       children: [
         GlassSurface(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _NumField(
-                key: const ValueKey('leave'),
-                label: 'إجازات متبقية (أيام)',
-                initial: wizard.accruedLeaveDays > 0
-                    ? '${wizard.accruedLeaveDays}'
-                    : '',
-                onChanged: (v) => notifier.setAccruedLeave(
-                  (int.tryParse(v) ?? 0).clamp(0, 90),
-                ),
-              ),
-            ],
+          child: _EosbTextField(
+            controller: _leaveCtrl,
+            label: 'عدد أيام الإجازات المتبقية',
+            hint: '0 إن لم يوجد',
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            onChanged: (v) => notifier.setAccruedLeave(
+              (int.tryParse(v) ?? 0).clamp(0, 90),
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -586,11 +684,11 @@ class _StepExtras extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: SwitchListTile(
             title: Text(
-              'تذكرة طيران',
+              'هل تستحق تذكرة طيران؟',
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              'تضمين تذكرة السفر في التقدير (للوافدين)',
+              'للوافدين حسب العقد أو اللائحة',
               style: GoogleFonts.cairo(fontSize: 11),
             ),
             value: wizard.includeFlightTicket,
@@ -607,7 +705,7 @@ class _StepExtras extends ConsumerWidget {
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              'عدم الإشعار قد يؤثر على التعويضات (م. 75)',
+              'عدم الإشعار قد يؤثر على التعويض (م. 75)',
               style: GoogleFonts.cairo(fontSize: 11),
             ),
             value: wizard.noticeProvided,
@@ -954,80 +1052,48 @@ class _ResultsBottomBar extends ConsumerWidget {
   }
 }
 
-class _CountryChip extends StatelessWidget {
-  const _CountryChip({
-    required this.country,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final GulfCountry country;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassSurface(
-      highlighted: selected,
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Center(
-        child: Text(
-          '${country.flag} ${country.nameAr}',
-          style: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 14),
-        ),
-      ),
-    );
-  }
-}
-
-class _NumField extends StatefulWidget {
-  const _NumField({
-    super.key,
+/// حقل إدخال زجاجي — TextFormField.
+class _EosbTextField extends StatelessWidget {
+  const _EosbTextField({
+    required this.controller,
     required this.label,
-    required this.onChanged,
-    this.initial = '',
+    this.hint,
+    this.keyboardType,
+    this.inputFormatters,
+    this.onChanged,
   });
 
+  final TextEditingController controller;
   final String label;
-  final String initial;
-  final ValueChanged<String> onChanged;
-
-  @override
-  State<_NumField> createState() => _NumFieldState();
-}
-
-class _NumFieldState extends State<_NumField> {
-  late final TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initial);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final String? hint;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
     return GlassSurface(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: TextField(
-        controller: _controller,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
-        ],
-        onChanged: widget.onChanged,
-        style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        onChanged: onChanged,
+        style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 15),
         decoration: InputDecoration(
-          labelText: widget.label,
+          labelText: label,
+          hintText: hint,
           labelStyle: GoogleFonts.cairo(fontSize: 13),
+          hintStyle: GoogleFonts.cairo(
+            fontSize: 13,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.45),
+          ),
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );

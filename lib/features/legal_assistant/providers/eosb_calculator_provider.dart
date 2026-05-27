@@ -59,12 +59,27 @@ class EosbWizardState {
 
   String? validationMessageForStep(int step) {
     return switch (step) {
-      0 when !canProceedStep0 => 'اختر نوع إنهاء الخدمة',
-      1 when basicSalary <= 0 => 'أدخل الراتب الأساسي',
+      0 when !canProceedStep0 => 'اختر نوع إنهاء الخدمة من القائمة',
+      1 when basicSalary <= 0 => 'أدخل الراتب الأساسي (أكبر من صفر)',
       1 when years <= 0 && months <= 0 =>
-        'أدخل سنوات الخدمة أو شهوراً إضافية',
+        'أدخل سنوات الخدمة أو شهوراً إضافية على الأقل',
+      1 when months > 11 => 'الشهور الإضافية يجب أن تكون من 0 إلى 11',
+      1 when years > 40 => 'تحقق من عدد سنوات الخدمة',
       _ => null,
     };
+  }
+
+  /// هل يمكن الانتقال للخطوة التالية أو عرض النتيجة؟
+  bool get canAdvanceFromCurrentStep =>
+      validationMessageForStep(stepIndex) == null;
+
+  /// التحقق الكامل قبل عرض النتائج.
+  String? validationBeforeResults() {
+    for (var i = 0; i < totalSteps; i++) {
+      final msg = validationMessageForStep(i);
+      if (msg != null) return msg;
+    }
+    return null;
   }
 
   EosbModel toModel() => EosbModel(
@@ -212,7 +227,7 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   /// إنهاء المعالج والانتقال لشاشة النتائج.
   bool finishWizard() {
-    if (!state.canProceedStep0 || !state.canProceedStep1) return false;
+    if (state.validationBeforeResults() != null) return false;
     state = state.copyWith(showResults: true);
     return true;
   }
