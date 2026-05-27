@@ -66,6 +66,7 @@ class EosbModel {
     this.daysOfService = 0,
     this.basicSalary = 0,
     this.housingAllowance = 0,
+    this.otherAllowances = 0,
     this.contractType = EosbContractType.unlimited,
     this.terminationType = EosbTerminationType.employerDismissalUnfair,
     this.ticketCost = 0,
@@ -81,6 +82,7 @@ class EosbModel {
   final int daysOfService;
   final double basicSalary;
   final double housingAllowance;
+  final double otherAllowances;
   final int accruedLeaveDays;
   final EosbContractType contractType;
   final EosbTerminationType terminationType;
@@ -99,7 +101,8 @@ class EosbModel {
       ? basicSalary
       : basicSalary + housingAllowance;
 
-  double get monthlyWage => basicSalary + housingAllowance;
+  double get monthlyWage =>
+      basicSalary + housingAllowance + otherAllowances;
 
   double get dailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
 
@@ -287,6 +290,7 @@ class EosbModel {
     int? daysOfService,
     double? basicSalary,
     double? housingAllowance,
+    double? otherAllowances,
     EosbContractType? contractType,
     EosbTerminationType? terminationType,
     double? ticketCost,
@@ -302,6 +306,7 @@ class EosbModel {
       daysOfService: daysOfService ?? this.daysOfService,
       basicSalary: basicSalary ?? this.basicSalary,
       housingAllowance: housingAllowance ?? this.housingAllowance,
+      otherAllowances: otherAllowances ?? this.otherAllowances,
       contractType: contractType ?? this.contractType,
       terminationType: terminationType ?? this.terminationType,
       ticketCost: ticketCost ?? this.ticketCost,

@@ -10,16 +10,23 @@ import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
-import 'package:netgulf/features/legal_assistant/providers/eosb_wizard_provider.dart';
+import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
 import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
 /// المساعد القانوني — حاسبة نهاية الخدمة الشاملة (offline).
-class LegalAssistantScreen extends ConsumerWidget {
+class LegalAssistantScreen extends ConsumerStatefulWidget {
   const LegalAssistantScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LegalAssistantScreen> createState() =>
+      _LegalAssistantScreenState();
+}
+
+class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
+  @override
+  Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -30,8 +37,11 @@ class LegalAssistantScreen extends ConsumerWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_forward_ios_rounded),
-          onPressed: () =>
-              context.canPop() ? context.pop() : context.go(AppRoutes.home),
+          onPressed: () => wizard.showResults
+              ? ref.read(eosbWizardProvider.notifier).previousStep()
+              : (context.canPop()
+                  ? context.pop()
+                  : context.go(AppRoutes.home)),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +55,10 @@ class LegalAssistantScreen extends ConsumerWidget {
               style: GoogleFonts.cairo(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.65),
               ),
             ),
           ],
@@ -56,109 +69,178 @@ class LegalAssistantScreen extends ConsumerWidget {
           gradient: AppColors.homeGradient(Theme.of(context).brightness),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              if (!wizard.showResults) _StepIndicator(current: wizard.stepIndex),
-              Expanded(
-                child: wizard.showResults
-                    ? _ResultsView(isDark: isDark)
-                    : _WizardBody(step: wizard.stepIndex, isDark: isDark),
-              ),
-              _BottomBar(showResults: wizard.showResults),
-            ],
-          ),
+          child: wizard.showResults
+              ? _ResultsView(isDark: isDark)
+              : _WizardStepper(isDark: isDark),
         ),
       ),
     );
   }
 }
 
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.current});
+class _WizardStepper extends ConsumerWidget {
+  const _WizardStepper({required this.isDark});
 
-  final int current;
-
-  static const _labels = [
-    'نوع الإنهاء',
-    'بيانات العقد',
-    'تفاصيل إضافية',
-  ];
+  final bool isDark;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-      child: Row(
-        children: List.generate(_labels.length, (i) {
-          final active = i <= current;
-          final isCurrent = i == current;
-          return Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        height: 4,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          color: active
-                              ? AppColors.emerald
-                              : AppColors.emerald.withValues(alpha: 0.2),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _labels[i],
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          fontWeight:
-                              isCurrent ? FontWeight.w700 : FontWeight.w500,
-                          color: isCurrent
-                              ? AppColors.emerald
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final wizard = ref.watch(eosbWizardProvider);
+    final notifier = ref.read(eosbWizardProvider.notifier);
+
+    return Column(
+      children: [
+        Expanded(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context).colorScheme.copyWith(
+                    primary: AppColors.emerald,
                   ),
+            ),
+            child: Stepper(
+              type: StepperType.vertical,
+              currentStep: wizard.stepIndex,
+              onStepTapped: notifier.goToStep,
+              controlsBuilder: (_, _) => const SizedBox.shrink(),
+              steps: [
+                Step(
+                  state: _stepState(0, wizard.stepIndex),
+                  isActive: wizard.stepIndex >= 0,
+                  title: Text(
+                    'نوع الإنهاء',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'فصل · استقالة · انتهاء عقد · تراضي',
+                    style: GoogleFonts.cairo(fontSize: 11),
+                  ),
+                  content: const _StepTermination(),
                 ),
-                if (i < _labels.length - 1) const SizedBox(width: 6),
+                Step(
+                  state: _stepState(1, wizard.stepIndex),
+                  isActive: wizard.stepIndex >= 1,
+                  title: Text(
+                    'بيانات العقد',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'الدولة · المدة · الراتب والبدلات',
+                    style: GoogleFonts.cairo(fontSize: 11),
+                  ),
+                  content: const _StepContract(),
+                ),
+                Step(
+                  state: _stepState(2, wizard.stepIndex),
+                  isActive: wizard.stepIndex >= 2,
+                  title: Text(
+                    'تفاصيل إضافية',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    'إجازات · تذكرة · إشعار',
+                    style: GoogleFonts.cairo(fontSize: 11),
+                  ),
+                  content: const _StepExtras(),
+                ),
               ],
             ),
-          );
-        }),
+          ),
+        ),
+        _WizardBottomBar(stepIndex: wizard.stepIndex),
+      ],
+    );
+  }
+
+  StepState _stepState(int step, int current) {
+    if (current > step) return StepState.complete;
+    if (current == step) return StepState.editing;
+    return StepState.indexed;
+  }
+}
+
+class _WizardBottomBar extends ConsumerWidget {
+  const _WizardBottomBar({required this.stepIndex});
+
+  final int stepIndex;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(eosbWizardProvider.notifier);
+
+    return GlassSurface(
+      borderRadius: 0,
+      blur: 8,
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      child: Row(
+        children: [
+          if (stepIndex > 0)
+            TextButton(
+              onPressed: notifier.previousStep,
+              child: Text(
+                'السابق',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              ),
+            ),
+          const Spacer(),
+          FilledButton(
+            onPressed: () {
+              if (!notifier.nextStep()) {
+                final msg = switch (stepIndex) {
+                  0 => 'اختر نوع إنهاء الخدمة',
+                  1 => 'أدخل مدة الخدمة والراتب الأساسي',
+                  _ => 'أكمل الحقول المطلوبة',
+                };
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(msg, style: GoogleFonts.cairo())),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.emerald,
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+            ),
+            child: Text(
+              stepIndex == 2 ? 'عرض النتيجة' : 'التالي',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _WizardBody extends ConsumerWidget {
-  const _WizardBody({required this.step, required this.isDark});
+/// فئات الإنهاء الرئيسية (الخطوة 1).
+enum _TerminationCategory {
+  dismissal,
+  resignation,
+  contractEnd,
+  mutual,
+}
 
-  final int step;
-  final bool isDark;
+extension _TerminationCategoryX on _TerminationCategory {
+  String get label => switch (this) {
+        _TerminationCategory.dismissal => 'فصل من صاحب العمل',
+        _TerminationCategory.resignation => 'استقالة الموظف',
+        _TerminationCategory.contractEnd => 'انتهاء العقد',
+        _TerminationCategory.mutual => 'اتفاق بالتراضي',
+      };
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      children: [
-        switch (step) {
-          0 => const _StepTermination(),
-          1 => const _StepContract(),
-          2 => const _StepExtras(),
-          _ => const SizedBox.shrink(),
-        },
-      ],
-    );
-  }
+  IconData get icon => switch (this) {
+        _TerminationCategory.dismissal => Icons.gavel_rounded,
+        _TerminationCategory.resignation => Icons.exit_to_app_rounded,
+        _TerminationCategory.contractEnd => Icons.event_busy_rounded,
+        _TerminationCategory.mutual => Icons.handshake_rounded,
+      };
+
+  EosbTerminationType get type => switch (this) {
+        _TerminationCategory.dismissal =>
+          EosbTerminationType.employerDismissalUnfair,
+        _TerminationCategory.resignation =>
+          EosbTerminationType.employeeResignation,
+        _TerminationCategory.contractEnd => EosbTerminationType.contractExpiry,
+        _TerminationCategory.mutual => EosbTerminationType.mutualAgreement,
+      };
 }
 
 class _StepTermination extends ConsumerWidget {
@@ -169,41 +251,37 @@ class _StepTermination extends ConsumerWidget {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
-    const options = <(EosbTerminationType, IconData)>[
-      (EosbTerminationType.employerDismissalUnfair, Icons.gavel_rounded),
-      (EosbTerminationType.employerDismissalValidReason, Icons.rule_rounded),
-      (EosbTerminationType.employeeResignation, Icons.exit_to_app_rounded),
-      (EosbTerminationType.contractExpiry, Icons.event_busy_rounded),
-      (EosbTerminationType.mutualAgreement, Icons.handshake_rounded),
-      (EosbTerminationType.retirementOrDeath, Icons.elderly_rounded),
-    ];
+    _TerminationCategory? selectedCategory;
+    for (final c in _TerminationCategory.values) {
+      if (wizard.terminationType == c.type ||
+          (c == _TerminationCategory.dismissal &&
+              (wizard.terminationType ==
+                      EosbTerminationType.employerDismissalUnfair ||
+                  wizard.terminationType ==
+                      EosbTerminationType.employerDismissalValidReason))) {
+        selectedCategory = c;
+        break;
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionHeader(
-          title: 'الخطوة 1: نوع إنهاء الخدمة',
-          subtitle: 'اختر السبب الأقرب لحالتك',
-        ),
-        const SizedBox(height: 12),
-        ...options.map((o) {
-          final selected = wizard.terminationType == o.$1;
+        ..._TerminationCategory.values.map((cat) {
+          final selected = selectedCategory == cat;
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GlassSurface(
               highlighted: selected,
-              onTap: () => notifier.setTermination(o.$1),
+              onTap: () => notifier.selectTerminationCategory(cat.type),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
-                  Icon(
-                    o.$2,
-                    color: selected ? AppColors.emerald : null,
-                  ),
+                  Icon(cat.icon, color: selected ? AppColors.emerald : null),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      EosbModel.terminationTypeLabel(o.$1),
+                      cat.label,
                       style: GoogleFonts.cairo(
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w600,
@@ -219,6 +297,37 @@ class _StepTermination extends ConsumerWidget {
             ),
           );
         }),
+        if (selectedCategory == _TerminationCategory.dismissal) ...[
+          const SizedBox(height: 8),
+          GlassSurface(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'نوع الفصل',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment(
+                      value: false,
+                      label: Text('تعسفي', style: GoogleFonts.cairo(fontSize: 12)),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      label: Text('سبب مشروع', style: GoogleFonts.cairo(fontSize: 12)),
+                    ),
+                  ],
+                  selected: {wizard.dismissalIsValidReason},
+                  onSelectionChanged: (s) =>
+                      notifier.setDismissalValidReason(s.first),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -235,11 +344,6 @@ class _StepContract extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeader(
-          title: 'الخطوة 2: بيانات العقد',
-          subtitle: 'الدولة، المدة، والأجر',
-        ),
-        const SizedBox(height: 12),
         Text('الدولة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Row(
@@ -262,8 +366,7 @@ class _StepContract extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Text('مدة الخدمة',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+        Text('مدة الخدمة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         Row(
           children: [
@@ -271,9 +374,8 @@ class _StepContract extends ConsumerWidget {
               child: _NumField(
                 label: 'سنوات',
                 initial: wizard.years > 0 ? '${wizard.years}' : '',
-                onChanged: (v) => notifier.setServiceDuration(
-                  years: int.tryParse(v) ?? 0,
-                ),
+                onChanged: (v) =>
+                    notifier.setServiceDuration(years: int.tryParse(v) ?? 0),
               ),
             ),
             const SizedBox(width: 8),
@@ -302,16 +404,23 @@ class _StepContract extends ConsumerWidget {
         _NumField(
           label: 'الراتب الأساسي (${wizard.country.currencySymbol})',
           initial: wizard.basicSalary > 0 ? _fmt(wizard.basicSalary) : '',
-          onChanged: (v) =>
-              notifier.setSalaries(basic: double.tryParse(v) ?? 0),
+          onChanged: (v) => notifier.setSalaries(basic: double.tryParse(v) ?? 0),
         ),
         const SizedBox(height: 10),
         _NumField(
-          label: 'بدل السكن (اختياري)',
+          label: 'بدل السكن',
           initial:
               wizard.housingAllowance > 0 ? _fmt(wizard.housingAllowance) : '',
           onChanged: (v) =>
               notifier.setSalaries(housing: double.tryParse(v) ?? 0),
+        ),
+        const SizedBox(height: 10),
+        _NumField(
+          label: 'بدلات أخرى (اختياري)',
+          initial:
+              wizard.otherAllowances > 0 ? _fmt(wizard.otherAllowances) : '',
+          onChanged: (v) =>
+              notifier.setSalaries(other: double.tryParse(v) ?? 0),
         ),
         if (wizard.country == GulfCountry.uae)
           Padding(
@@ -322,15 +431,11 @@ class _StepContract extends ConsumerWidget {
             ),
           ),
         const SizedBox(height: 16),
-        Text('نوع العقد',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+        Text('نوع العقد', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
         SegmentedButton<EosbContractType>(
           segments: const [
-            ButtonSegment(
-              value: EosbContractType.fixed,
-              label: Text('محدد المدة'),
-            ),
+            ButtonSegment(value: EosbContractType.fixed, label: Text('محدد')),
             ButtonSegment(
               value: EosbContractType.unlimited,
               label: Text('غير محدد'),
@@ -358,17 +463,11 @@ class _StepExtras extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeader(
-          title: 'الخطوة 3: تفاصيل إضافية',
-          subtitle: 'إجازات، تذكرة، وإشعار الإنهاء',
-        ),
-        const SizedBox(height: 12),
         _NumField(
           label: 'الإجازات المتبقية (أيام)',
           initial:
               wizard.accruedLeaveDays > 0 ? '${wizard.accruedLeaveDays}' : '',
-          onChanged: (v) =>
-              notifier.setAccruedLeave(int.tryParse(v) ?? 0),
+          onChanged: (v) => notifier.setAccruedLeave(int.tryParse(v) ?? 0),
         ),
         const SizedBox(height: 16),
         GlassSurface(
@@ -382,7 +481,7 @@ class _StepExtras extends ConsumerWidget {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('تضمين تذكرة سفر في الحساب',
+                title: Text('تضمين تذكرة سفر',
                     style: GoogleFonts.cairo(fontSize: 14)),
                 value: wizard.includeFlightTicket,
                 activeThumbColor: AppColors.emerald,
@@ -391,8 +490,9 @@ class _StepExtras extends ConsumerWidget {
               if (wizard.includeFlightTicket) ...[
                 _NumField(
                   label: 'تكلفة التذكرة التقديرية',
-                  initial:
-                      wizard.ticketCost > 0 ? '${wizard.ticketCost.round()}' : '',
+                  initial: wizard.ticketCost > 0
+                      ? '${wizard.ticketCost.round()}'
+                      : '',
                   onChanged: (v) => notifier.setFlightTicket(
                     include: true,
                     cost: double.tryParse(v) ?? 0,
@@ -434,14 +534,11 @@ class _StepExtras extends ConsumerWidget {
           child: SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              'تم تقديم إشعار الإنهاء وفق النظام',
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              'تم تقديم إشعار الإنهاء',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
-              'عدم الإشعار قد يؤثر على التعويضات',
+              'عدم الإشعار قد يؤثر على التعويضات (م. 75)',
               style: GoogleFonts.cairo(fontSize: 11),
             ),
             value: wizard.noticeProvided,
@@ -461,115 +558,71 @@ class _ResultsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final model = ref.watch(eosbCalculationProvider);
+    final result = ref.watch(eosbCalculatorProvider);
+    final model = result.input;
     final currency = NumberFormat.currency(
       locale: model.country.currencyLocale,
       symbol: model.country.currencySymbol,
       decimalDigits: 2,
     );
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+    return Column(
       children: [
-        _TotalHeroCard(model: model, currency: currency, isDark: isDark),
-        const SizedBox(height: 16),
-        Text('جدول التفصيل',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16)),
-        const SizedBox(height: 10),
-        GlassSurface(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Table(
-            columnWidths: const {
-              0: FlexColumnWidth(2),
-              1: FlexColumnWidth(1),
-            },
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             children: [
-              _tableHeader(),
-              ...model.breakdownRows.map((r) => _tableRow(r, currency)),
+              _TotalHeroCard(result: result, currency: currency, isDark: isDark),
+              const SizedBox(height: 20),
+              Text(
+                'تفصيل المستحقات',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              ...result.components.map(
+                (c) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ComponentCard(item: c, currency: currency),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'المراجع القانونية',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              const SizedBox(height: 10),
+              ...result.legalReferences.map(
+                (ref) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: GlassSurface(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ref.article,
+                          style: GoogleFonts.cairo(
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.emerald,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          ref.summary,
+                          style: GoogleFonts.cairo(fontSize: 12, height: 1.45),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const _LegalDisclaimer(),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        Text('التفصيل القانوني',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16)),
-        const SizedBox(height: 10),
-        ...model.legalReferences.map(
-          (ref) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: GlassSurface(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ref.article,
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.emerald,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    ref.summary,
-                    style: GoogleFonts.cairo(fontSize: 12, height: 1.45),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _LegalDisclaimer(),
-        const SizedBox(height: 80),
-      ],
-    );
-  }
-
-  TableRow _tableHeader() => TableRow(
-        decoration: BoxDecoration(
-          color: AppColors.emerald.withValues(alpha: 0.08),
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Text('البند',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Text('المبلغ',
-                textAlign: TextAlign.end,
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
-          ),
-        ],
-      );
-
-  TableRow _tableRow(EosbBreakdownRow row, NumberFormat currency) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Text(
-            row.label,
-            style: GoogleFonts.cairo(
-              fontWeight: row.highlight ? FontWeight.w700 : FontWeight.w500,
-              fontSize: 13,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          child: Text(
-            currency.format(row.amount),
-            textAlign: TextAlign.end,
-            style: GoogleFonts.cairo(
-              fontWeight: row.highlight ? FontWeight.w800 : FontWeight.w600,
-              fontSize: 13,
-              color: row.highlight ? AppColors.emerald : null,
-            ),
-          ),
-        ),
+        _ResultsBottomBar(),
       ],
     );
   }
@@ -577,58 +630,73 @@ class _ResultsView extends ConsumerWidget {
 
 class _TotalHeroCard extends StatelessWidget {
   const _TotalHeroCard({
-    required this.model,
+    required this.result,
     required this.currency,
     required this.isDark,
   });
 
-  final EosbModel model;
+  final EosbCalculationResult result;
   final NumberFormat currency;
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final model = result.input;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         gradient: AppColors.brandGradient,
         boxShadow: AppColors.premiumCardGlow(isDark: isDark),
       ),
       child: Column(
         children: [
           Text(
-            'الإجمالي المستحق',
+            result.countryLabel,
             style: GoogleFonts.cairo(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            currency.format(model.totalEntitlements),
-            style: GoogleFonts.cairo(
-              fontSize: 30,
-              fontWeight: FontWeight.w900,
-              color: AppColors.goldBright,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            model.terminationSummary,
-            textAlign: TextAlign.center,
+            'إجمالي المستحقات',
             style: GoogleFonts.cairo(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'مكافأة نهاية الخدمة: ${currency.format(model.endOfServiceAmount)}',
-            style: GoogleFonts.cairo(
-              fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.75),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              currency.format(result.totalEntitlements),
+              style: GoogleFonts.cairo(
+                fontSize: 42,
+                fontWeight: FontWeight.w900,
+                color: AppColors.goldBright,
+                height: 1.1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              model.terminationSummary,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
             ),
           ),
         ],
@@ -637,89 +705,132 @@ class _TotalHeroCard extends StatelessWidget {
   }
 }
 
-class _BottomBar extends ConsumerWidget {
-  const _BottomBar({required this.showResults});
+class _ComponentCard extends StatelessWidget {
+  const _ComponentCard({
+    required this.item,
+    required this.currency,
+  });
 
-  final bool showResults;
+  final EosbComponentItem item;
+  final NumberFormat currency;
 
   @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      highlighted: item.isPrimary,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.emerald.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              _iconFor(item.id),
+              color: AppColors.emerald,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.titleAr,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                if (item.subtitleAr != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    item.subtitleAr!,
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Text(
+            currency.format(item.amount),
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              color: item.isPrimary ? AppColors.emerald : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _iconFor(String id) => switch (id) {
+        'eos' => Icons.card_giftcard_rounded,
+        'vacation' => Icons.beach_access_rounded,
+        'leave' => Icons.event_available_rounded,
+        'ticket' => Icons.flight_rounded,
+        _ => Icons.payments_rounded,
+      };
+}
+
+class _ResultsBottomBar extends ConsumerWidget {
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     return GlassSurface(
       borderRadius: 0,
       blur: 8,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
       child: SafeArea(
         top: false,
-        child: showResults
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => _exportPdf(context, ref),
-                      icon: const Icon(Icons.picture_as_pdf_rounded),
-                      label: Text(
-                        'تصدير PDF',
-                        style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.emerald,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton.icon(
+                onPressed: () => _exportPdf(context, ref),
+                icon: const Icon(Icons.picture_as_pdf_rounded, size: 22),
+                label: Text(
+                  'تصدير PDF',
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: notifier.reset,
-                    child: Text(
-                      'حساب جديد',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
-                    ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.emerald,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                ],
-              )
-            : Row(
-                children: [
-                  if (wizard.stepIndex > 0)
-                    TextButton(
-                      onPressed: notifier.previousStep,
-                      child: Text('السابق',
-                          style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
-                    ),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: () {
-                      if (!notifier.nextStep()) {
-                        final msg = switch (wizard.stepIndex) {
-                          0 => 'اختر نوع إنهاء الخدمة',
-                          1 => 'أدخل مدة الخدمة والراتب الأساسي',
-                          _ => 'أكمل الحقول المطلوبة',
-                        };
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(msg, style: GoogleFonts.cairo()),
-                          ),
-                        );
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.emerald,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 28,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: Text(
-                      wizard.stepIndex == 2 ? 'عرض النتيجة' : 'التالي',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: notifier.reset,
+              child: Text(
+                'حساب جديد',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -735,8 +846,8 @@ class _BottomBar extends ConsumerWidget {
       return;
     }
     try {
-      final model = ref.read(eosbCalculationProvider);
-      await EosbPdfService.exportAndShare(model);
+      final result = ref.read(eosbCalculatorProvider);
+      await EosbPdfService.exportAndShare(result);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -748,33 +859,6 @@ class _BottomBar extends ConsumerWidget {
         ),
       );
     }
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 18)),
-        if (subtitle != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            subtitle!,
-            style: GoogleFonts.cairo(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ],
-    );
   }
 }
 
@@ -798,10 +882,7 @@ class _CountryChip extends StatelessWidget {
       child: Center(
         child: Text(
           '${country.flag} ${country.nameAr}',
-          style: GoogleFonts.cairo(
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 14),
         ),
       ),
     );
@@ -835,7 +916,8 @@ class _NumFieldState extends State<_NumField> {
   @override
   void didUpdateWidget(covariant _NumField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.initial != widget.initial && widget.initial != _controller.text) {
+    if (oldWidget.initial != widget.initial &&
+        widget.initial != _controller.text) {
       _controller.text = widget.initial;
     }
   }
@@ -869,6 +951,8 @@ class _NumFieldState extends State<_NumField> {
 }
 
 class _LegalDisclaimer extends StatelessWidget {
+  const _LegalDisclaimer();
+
   @override
   Widget build(BuildContext context) {
     return GlassSurface(
@@ -881,9 +965,8 @@ class _LegalDisclaimer extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'تنبيه قانوني: هذه الحاسبة أداة تقديرية عامة وفق أنظمة العمل في '
-              'السعودية والإمارات، ولا تُغني عن مراجعة العقد أو محامٍ أو الجهة '
-              'المختصة — خاصة في الفصل لسبب مشروع أو النزاعات.',
+              'تنبيه قانوني: أداة تقديرية عامة وفق أنظمة العمل في السعودية والإمارات. '
+              'لا تُغني عن مراجعة العقد أو محامٍ أو الجهة المختصة.',
               style: GoogleFonts.cairo(fontSize: 11, height: 1.5),
             ),
           ),
