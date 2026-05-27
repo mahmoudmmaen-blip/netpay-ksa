@@ -32,6 +32,19 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: wizard.showResults
+          ? FloatingActionButton.extended(
+              onPressed: () => ref.read(eosbWizardProvider.notifier).reset(),
+              backgroundColor: AppColors.emerald,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(
+                'حساب جديد',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -71,152 +84,135 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         child: SafeArea(
           child: wizard.showResults
               ? _ResultsView(isDark: isDark)
-              : _WizardStepper(isDark: isDark),
+              : _WizardStepper(isDark: isDark, key: const ValueKey('eosb_wizard')),
         ),
       ),
     );
   }
 }
 
+/// معالج 3 خطوات — خطوة واحدة ظاهرة في كل مرة.
 class _WizardStepper extends ConsumerWidget {
-  const _WizardStepper({required this.isDark});
+  const _WizardStepper({super.key, required this.isDark});
 
   final bool isDark;
+
+  static const _stepTitles = [
+  'نوع إنهاء الخدمة',
+  'بيانات العقد',
+  'تفاصيل إضافية',
+  ];
+
+  static const _stepSubtitles = [
+    'اختر السبب الأقرب لوضعك',
+    'السعودية أو الإمارات · المدة والأجر',
+    'إجازات · تذكرة · إشعار الإنهاء',
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final notifier = ref.read(eosbWizardProvider.notifier);
+    final step = wizard.stepIndex.clamp(0, 2);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-          child: _StepProgressDots(current: wizard.stepIndex),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: _StepProgressDots(current: step),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: _WizardStepHeader(
+            stepNumber: step + 1,
+            title: _stepTitles[step],
+            subtitle: _stepSubtitles[step],
+          ),
         ),
         Expanded(
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: AppColors.emerald,
-                  ),
-            ),
-            child: Stepper(
-              type: StepperType.vertical,
-              currentStep: wizard.stepIndex,
-              onStepTapped: (i) {
-                if (i <= wizard.stepIndex) notifier.goToStep(i);
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: SingleChildScrollView(
+              key: ValueKey<int>(step),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: switch (step) {
+                0 => const _StepTermination(),
+                1 => const _StepContract(),
+                _ => const _StepExtras(),
               },
-              controlsBuilder: (_, _) => const SizedBox.shrink(),
-              connectorColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return AppColors.emerald;
-                }
-                return AppColors.emerald.withValues(alpha: 0.25);
-              }),
-              stepIconBuilder: (step, state) {
-                final done = wizard.stepIndex > step;
-                final active = wizard.stepIndex == step;
-                return Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: done || active
-                        ? AppColors.emerald
-                        : AppColors.emerald.withValues(alpha: 0.15),
-                    border: Border.all(
-                      color: active ? AppColors.gold : Colors.transparent,
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: done
-                        ? const Icon(Icons.check, color: Colors.white, size: 18)
-                        : Text(
-                            '${step + 1}',
-                            style: GoogleFonts.cairo(
-                              fontWeight: FontWeight.w800,
-                              color: active
-                                  ? Colors.white
-                                  : AppColors.emerald,
-                              fontSize: 14,
-                            ),
-                          ),
-                  ),
-                );
-              },
-              steps: [
-                Step(
-                  state: _stepState(0, wizard.stepIndex),
-                  isActive: wizard.stepIndex >= 0,
-                  title: Text(
-                    'نوع إنهاء الخدمة',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'اختر السبب الأقرب لوضعك',
-                    style: GoogleFonts.cairo(fontSize: 11),
-                  ),
-                  content: const Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: 16),
-                    child: _StepTermination(),
-                  ),
-                ),
-                Step(
-                  state: _stepState(1, wizard.stepIndex),
-                  isActive: wizard.stepIndex >= 1,
-                  title: Text(
-                    'بيانات العقد',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'الدولة · مدة الخدمة · الأجر',
-                    style: GoogleFonts.cairo(fontSize: 11),
-                  ),
-                  content: const Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: 16),
-                    child: _StepContract(),
-                  ),
-                ),
-                Step(
-                  state: _stepState(2, wizard.stepIndex),
-                  isActive: wizard.stepIndex >= 2,
-                  title: Text(
-                    'التفاصيل الإضافية',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'إجازات · تذكرة · إشعار',
-                    style: GoogleFonts.cairo(fontSize: 11),
-                  ),
-                  content: const Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: 16),
-                    child: _StepExtras(),
-                  ),
-                ),
-              ],
             ),
           ),
         ),
-        _WizardBottomBar(stepIndex: wizard.stepIndex),
+        _WizardBottomBar(stepIndex: step),
       ],
     );
   }
+}
 
-  StepState _stepState(int step, int current) {
-    if (current > step) return StepState.complete;
-    if (current == step) return StepState.editing;
-    return StepState.indexed;
+class _WizardStepHeader extends StatelessWidget {
+  const _WizardStepHeader({
+    required this.stepNumber,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final int stepNumber;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: AppColors.brandGradient,
+            boxShadow: AppColors.cardShadow(
+              isDark: Theme.of(context).brightness == Brightness.dark,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            '$stepNumber',
+            style: GoogleFonts.cairo(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: GoogleFonts.cairo(
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -425,6 +421,8 @@ class _StepContract extends ConsumerWidget {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        _CountryLawChip(country: wizard.country),
         const SizedBox(height: 16),
         GlassSurface(
           padding: const EdgeInsets.all(16),
@@ -436,38 +434,28 @@ class _StepContract extends ConsumerWidget {
                 style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              _LabeledSlider(
-                label: 'سنوات',
-                value: wizard.years.toDouble(),
-                min: 0,
-                max: 40,
-                divisions: 40,
-                displayValue: '${wizard.years} سنة',
-                onChanged: (v) =>
-                    notifier.setServiceDuration(years: v.round()),
-              ),
-              _LabeledSlider(
-                label: 'أشهر',
-                value: wizard.months.toDouble(),
-                min: 0,
-                max: 11,
-                divisions: 11,
-                displayValue: '${wizard.months} شهر',
-                onChanged: (v) =>
-                    notifier.setServiceDuration(months: v.round()),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        GlassSurface(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'الأجر والبدلات',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              Row(
+                children: [
+                  Expanded(
+                    child: _NumField(
+                      label: 'سنوات',
+                      initial: wizard.years > 0 ? '${wizard.years}' : '',
+                      onChanged: (v) => notifier.setServiceDuration(
+                        years: int.tryParse(v) ?? 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _NumField(
+                      label: 'أشهر (0–11)',
+                      initial: wizard.months > 0 ? '${wizard.months}' : '',
+                      onChanged: (v) => notifier.setServiceDuration(
+                        months: (int.tryParse(v) ?? 0).clamp(0, 11),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               _NumField(
@@ -479,35 +467,16 @@ class _StepContract extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               _NumField(
-                label: 'بدل السكن',
+                label: 'بدل السكن (${wizard.country.currencySymbol})',
                 initial: wizard.housingAllowance > 0
                     ? _fmt(wizard.housingAllowance)
                     : '',
                 onChanged: (v) =>
                     notifier.setSalaries(housing: double.tryParse(v) ?? 0),
               ),
-              const SizedBox(height: 8),
-              _LabeledSlider(
-                label: 'تقدير سريع — الراتب الأساسي',
-                value: wizard.basicSalary.clamp(0, 50000),
-                min: 0,
-                max: 50000,
-                divisions: 50,
-                displayValue:
-                    '${wizard.basicSalary.round()} ${wizard.country.currencySymbol}',
-                onChanged: (v) => notifier.setSalaries(basic: v),
-              ),
             ],
           ),
         ),
-        if (wizard.country == GulfCountry.uae)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'الإمارات: المكافأة تُحسب على الأجر الأساسي غالباً.',
-              style: GoogleFonts.cairo(fontSize: 11, color: AppColors.info),
-            ),
-          ),
         const SizedBox(height: 16),
         Text('نوع العقد', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
@@ -541,27 +510,12 @@ class _StepExtras extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GlassSurface(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'الإجازات المتبقية',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              _LabeledSlider(
-                label: 'أيام الإجازة',
-                value: wizard.accruedLeaveDays.toDouble(),
-                min: 0,
-                max: 60,
-                divisions: 60,
-                displayValue: '${wizard.accruedLeaveDays} يوم',
-                onChanged: (v) => notifier.setAccruedLeave(v.round()),
-              ),
-            ],
-          ),
+        _NumField(
+          label: 'الإجازات المتبقية (أيام)',
+          initial:
+              wizard.accruedLeaveDays > 0 ? '${wizard.accruedLeaveDays}' : '',
+          onChanged: (v) =>
+              notifier.setAccruedLeave((int.tryParse(v) ?? 0).clamp(0, 90)),
         ),
         const SizedBox(height: 16),
         GlassSurface(
@@ -671,59 +625,31 @@ class _StepExtras extends ConsumerWidget {
   }
 }
 
-/// شريط تمرير مع تسمية وقيمة.
-class _LabeledSlider extends StatelessWidget {
-  const _LabeledSlider({
-    required this.label,
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.divisions,
-    required this.displayValue,
-    required this.onChanged,
-  });
+/// شارة نظام العمل حسب الدولة.
+class _CountryLawChip extends StatelessWidget {
+  const _CountryLawChip({required this.country});
 
-  final String label;
-  final double value;
-  final double min;
-  final double max;
-  final int divisions;
-  final String displayValue;
-  final ValueChanged<double> onChanged;
+  final GulfCountry country;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final text = country == GulfCountry.saudiArabia
+        ? '🇸🇦 نظام العمل السعودي — المواد 84 و 85'
+        : '🇦🇪 قانون العمل الإماراتي — المادة 51';
+    return GlassSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
-              Text(
-                displayValue,
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.emerald,
-                ),
+          Icon(Icons.balance_rounded, color: AppColors.emerald, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.emerald,
               ),
-            ],
-          ),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.emerald,
-              thumbColor: AppColors.emerald,
-              inactiveTrackColor: AppColors.emerald.withValues(alpha: 0.2),
-              overlayColor: AppColors.emerald.withValues(alpha: 0.12),
-            ),
-            child: Slider(
-              value: value.clamp(min, max),
-              min: min,
-              max: max,
-              divisions: divisions,
-              onChanged: onChanged,
             ),
           ),
         ],
@@ -751,7 +677,7 @@ class _ResultsView extends ConsumerWidget {
       children: [
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
             children: [
               _TotalHeroCard(result: result, currency: currency, isDark: isDark),
               const SizedBox(height: 20),
@@ -968,8 +894,6 @@ class _ComponentCard extends StatelessWidget {
 class _ResultsBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(eosbWizardProvider.notifier);
-
     return GlassSurface(
       borderRadius: 0,
       blur: 8,
@@ -1000,14 +924,6 @@ class _ResultsBottomBar extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: notifier.reset,
-              child: Text(
-                'حساب جديد',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
               ),
             ),
           ],
