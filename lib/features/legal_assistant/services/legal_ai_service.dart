@@ -119,6 +119,7 @@ class LegalAiService {
     required String question,
     required List<ChatMessage> history,
   }) async {
+    debugPrint('=== LegalAI DEBUG: isLiveMode=$isLiveMode, isWebMock=$isWebMockOverride, key=${ApiKeys.anthropicApiKey.substring(0, 10)}');
     final remaining = await getRemainingQuestionsToday();
     if (remaining <= 0) {
       throw LegalAiException(
