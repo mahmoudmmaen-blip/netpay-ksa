@@ -32,7 +32,7 @@ class LegalAiService {
       : _http = httpClient ?? http.Client();
 
   static const String _apiUrl = 'https://api.anthropic.com/v1/messages';
-  static const String _model = 'claude-sonnet-4-20250514';
+  static const String _model = 'claude-3-5-sonnet-20240620';
   static const String _apiVersion = '2023-06-01';
   static const Duration _httpTimeout = Duration(seconds: 60);
 
