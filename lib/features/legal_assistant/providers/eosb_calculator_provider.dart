@@ -47,16 +47,7 @@ class EosbWizardState {
 
   static const int totalSteps = 3;
 
-  EosbTerminationType? get resolvedTermination {
-    final t = terminationType;
-    if (t == EosbTerminationType.employerDismissalUnfair ||
-        t == EosbTerminationType.employerDismissalValidReason) {
-      return dismissalIsValidReason
-          ? EosbTerminationType.employerDismissalValidReason
-          : EosbTerminationType.employerDismissalUnfair;
-    }
-    return t;
-  }
+  EosbTerminationType? get resolvedTermination => terminationType;
 
   bool get canProceedStep0 => terminationType != null;
 
@@ -136,16 +127,18 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
-  void selectTerminationCategory(EosbTerminationType type) {
+  /// اختيار نوع الإنهاء (زر اختيار — الخطوة 1).
+  void setTerminationType(EosbTerminationType type) {
     state = state.copyWith(
       terminationType: type,
-      dismissalIsValidReason: false,
+      dismissalIsValidReason:
+          type == EosbTerminationType.employerDismissalValidReason,
     );
   }
 
-  void setDismissalValidReason(bool valid) {
-    state = state.copyWith(dismissalIsValidReason: valid);
-  }
+  /// @deprecated استخدم [setTerminationType]
+  void selectTerminationCategory(EosbTerminationType type) =>
+      setTerminationType(type);
 
   void setCountry(GulfCountry country) {
     state = state.copyWith(country: country);

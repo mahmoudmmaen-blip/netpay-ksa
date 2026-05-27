@@ -15,7 +15,7 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     final notifier = container.read(eosbWizardProvider.notifier);
-    notifier.selectTerminationCategory(EosbTerminationType.contractExpiry);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
     notifier.setSalaries(basic: 5000);
     notifier.setServiceDuration(years: 2);
     expect(notifier.nextStep(), isTrue); // → step 1

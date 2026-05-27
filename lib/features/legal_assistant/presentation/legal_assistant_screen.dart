@@ -90,6 +90,10 @@ class _WizardStepper extends ConsumerWidget {
 
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: _StepProgressDots(current: wizard.stepIndex),
+        ),
         Expanded(
           child: Theme(
             data: Theme.of(context).copyWith(
@@ -100,47 +104,105 @@ class _WizardStepper extends ConsumerWidget {
             child: Stepper(
               type: StepperType.vertical,
               currentStep: wizard.stepIndex,
-              onStepTapped: notifier.goToStep,
+              onStepTapped: (i) {
+                if (i <= wizard.stepIndex) notifier.goToStep(i);
+              },
               controlsBuilder: (_, _) => const SizedBox.shrink(),
+              connectorColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return AppColors.emerald;
+                }
+                return AppColors.emerald.withValues(alpha: 0.25);
+              }),
+              stepIconBuilder: (step, state) {
+                final done = wizard.stepIndex > step;
+                final active = wizard.stepIndex == step;
+                return Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: done || active
+                        ? AppColors.emerald
+                        : AppColors.emerald.withValues(alpha: 0.15),
+                    border: Border.all(
+                      color: active ? AppColors.gold : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: done
+                        ? const Icon(Icons.check, color: Colors.white, size: 18)
+                        : Text(
+                            '${step + 1}',
+                            style: GoogleFonts.cairo(
+                              fontWeight: FontWeight.w800,
+                              color: active
+                                  ? Colors.white
+                                  : AppColors.emerald,
+                              fontSize: 14,
+                            ),
+                          ),
+                  ),
+                );
+              },
               steps: [
                 Step(
                   state: _stepState(0, wizard.stepIndex),
                   isActive: wizard.stepIndex >= 0,
                   title: Text(
-                    'نوع الإنهاء',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                    'نوع إنهاء الخدمة',
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
                   ),
                   subtitle: Text(
-                    'فصل · استقالة · انتهاء عقد · تراضي',
+                    'اختر السبب الأقرب لوضعك',
                     style: GoogleFonts.cairo(fontSize: 11),
                   ),
-                  content: const _StepTermination(),
+                  content: const Padding(
+                    padding: EdgeInsets.only(top: 8, bottom: 16),
+                    child: _StepTermination(),
+                  ),
                 ),
                 Step(
                   state: _stepState(1, wizard.stepIndex),
                   isActive: wizard.stepIndex >= 1,
                   title: Text(
                     'بيانات العقد',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
                   ),
                   subtitle: Text(
-                    'الدولة · المدة · الراتب والبدلات',
+                    'الدولة · مدة الخدمة · الأجر',
                     style: GoogleFonts.cairo(fontSize: 11),
                   ),
-                  content: const _StepContract(),
+                  content: const Padding(
+                    padding: EdgeInsets.only(top: 8, bottom: 16),
+                    child: _StepContract(),
+                  ),
                 ),
                 Step(
                   state: _stepState(2, wizard.stepIndex),
                   isActive: wizard.stepIndex >= 2,
                   title: Text(
-                    'تفاصيل إضافية',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                    'التفاصيل الإضافية',
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
                   ),
                   subtitle: Text(
                     'إجازات · تذكرة · إشعار',
                     style: GoogleFonts.cairo(fontSize: 11),
                   ),
-                  content: const _StepExtras(),
+                  content: const Padding(
+                    padding: EdgeInsets.only(top: 8, bottom: 16),
+                    child: _StepExtras(),
+                  ),
                 ),
               ],
             ),
@@ -155,6 +217,55 @@ class _WizardStepper extends ConsumerWidget {
     if (current > step) return StepState.complete;
     if (current == step) return StepState.editing;
     return StepState.indexed;
+  }
+}
+
+/// نقاط تقدم أعلى المعالج.
+class _StepProgressDots extends StatelessWidget {
+  const _StepProgressDots({required this.current});
+
+  final int current;
+
+  static const _labels = ['الإنهاء', 'العقد', 'التفاصيل'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(3, (i) {
+        final active = i <= current;
+        return Expanded(
+          child: Column(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 280),
+                height: 4,
+                margin: EdgeInsets.only(left: i > 0 ? 4 : 0, right: i < 2 ? 4 : 0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: active
+                      ? AppColors.emerald
+                      : AppColors.emerald.withValues(alpha: 0.2),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _labels[i],
+                style: GoogleFonts.cairo(
+                  fontSize: 10,
+                  fontWeight: i == current ? FontWeight.w700 : FontWeight.w500,
+                  color: i == current
+                      ? AppColors.emerald
+                      : Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
   }
 }
 
@@ -210,38 +321,34 @@ class _WizardBottomBar extends ConsumerWidget {
   }
 }
 
-/// فئات الإنهاء الرئيسية (الخطوة 1).
-enum _TerminationCategory {
-  dismissal,
-  resignation,
-  contractEnd,
-  mutual,
-}
-
-extension _TerminationCategoryX on _TerminationCategory {
-  String get label => switch (this) {
-        _TerminationCategory.dismissal => 'فصل من صاحب العمل',
-        _TerminationCategory.resignation => 'استقالة الموظف',
-        _TerminationCategory.contractEnd => 'انتهاء العقد',
-        _TerminationCategory.mutual => 'اتفاق بالتراضي',
-      };
-
-  IconData get icon => switch (this) {
-        _TerminationCategory.dismissal => Icons.gavel_rounded,
-        _TerminationCategory.resignation => Icons.exit_to_app_rounded,
-        _TerminationCategory.contractEnd => Icons.event_busy_rounded,
-        _TerminationCategory.mutual => Icons.handshake_rounded,
-      };
-
-  EosbTerminationType get type => switch (this) {
-        _TerminationCategory.dismissal =>
-          EosbTerminationType.employerDismissalUnfair,
-        _TerminationCategory.resignation =>
-          EosbTerminationType.employeeResignation,
-        _TerminationCategory.contractEnd => EosbTerminationType.contractExpiry,
-        _TerminationCategory.mutual => EosbTerminationType.mutualAgreement,
-      };
-}
+/// خيارات الخطوة 1 — أزرار اختيار.
+const _terminationRadioOptions = <(EosbTerminationType, String, IconData)>[
+  (
+    EosbTerminationType.employerDismissalUnfair,
+    'فصل تعسفي',
+    Icons.gavel_rounded,
+  ),
+  (
+    EosbTerminationType.employerDismissalValidReason,
+    'فصل لسبب مشروع',
+    Icons.rule_rounded,
+  ),
+  (
+    EosbTerminationType.employeeResignation,
+    'استقالة',
+    Icons.exit_to_app_rounded,
+  ),
+  (
+    EosbTerminationType.contractExpiry,
+    'انتهاء عقد',
+    Icons.event_busy_rounded,
+  ),
+  (
+    EosbTerminationType.mutualAgreement,
+    'اتفاق بالتراضي',
+    Icons.handshake_rounded,
+  ),
+];
 
 class _StepTermination extends ConsumerWidget {
   const _StepTermination();
@@ -250,85 +357,38 @@ class _StepTermination extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
+    final groupValue = wizard.resolvedTermination;
 
-    _TerminationCategory? selectedCategory;
-    for (final c in _TerminationCategory.values) {
-      if (wizard.terminationType == c.type ||
-          (c == _TerminationCategory.dismissal &&
-              (wizard.terminationType ==
-                      EosbTerminationType.employerDismissalUnfair ||
-                  wizard.terminationType ==
-                      EosbTerminationType.employerDismissalValidReason))) {
-        selectedCategory = c;
-        break;
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._TerminationCategory.values.map((cat) {
-          final selected = selectedCategory == cat;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: GlassSurface(
-              highlighted: selected,
-              onTap: () => notifier.selectTerminationCategory(cat.type),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: [
-                  Icon(cat.icon, color: selected ? AppColors.emerald : null),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      cat.label,
-                      style: GoogleFonts.cairo(
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  if (selected)
-                    const Icon(Icons.check_circle_rounded,
-                        color: AppColors.emerald),
-                ],
+    return GlassSurface(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: RadioGroup<EosbTerminationType>(
+        groupValue: groupValue,
+        onChanged: (v) {
+          if (v != null) notifier.setTerminationType(v);
+        },
+        child: Column(
+          children: _terminationRadioOptions.map((opt) {
+            final selected = groupValue == opt.$1;
+            return RadioListTile<EosbTerminationType>(
+              value: opt.$1,
+              activeColor: AppColors.emerald,
+              selected: selected,
+              title: Text(
+                opt.$2,
+                style: GoogleFonts.cairo(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
-            ),
-          );
-        }),
-        if (selectedCategory == _TerminationCategory.dismissal) ...[
-          const SizedBox(height: 8),
-          GlassSurface(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'نوع الفصل',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment(
-                      value: false,
-                      label: Text('تعسفي', style: GoogleFonts.cairo(fontSize: 12)),
-                    ),
-                    ButtonSegment(
-                      value: true,
-                      label: Text('سبب مشروع', style: GoogleFonts.cairo(fontSize: 12)),
-                    ),
-                  ],
-                  selected: {wizard.dismissalIsValidReason},
-                  onSelectionChanged: (s) =>
-                      notifier.setDismissalValidReason(s.first),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
+              secondary: Icon(
+                opt.$3,
+                color: selected ? AppColors.emerald : null,
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
@@ -366,61 +426,79 @@ class _StepContract extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        Text('مدة الخدمة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _NumField(
+        GlassSurface(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'مدة الخدمة',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              _LabeledSlider(
                 label: 'سنوات',
-                initial: wizard.years > 0 ? '${wizard.years}' : '',
+                value: wizard.years.toDouble(),
+                min: 0,
+                max: 40,
+                divisions: 40,
+                displayValue: '${wizard.years} سنة',
                 onChanged: (v) =>
-                    notifier.setServiceDuration(years: int.tryParse(v) ?? 0),
+                    notifier.setServiceDuration(years: v.round()),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _NumField(
+              _LabeledSlider(
                 label: 'أشهر',
-                initial: wizard.months > 0 ? '${wizard.months}' : '',
-                onChanged: (v) => notifier.setServiceDuration(
-                  months: (int.tryParse(v) ?? 0).clamp(0, 11),
-                ),
+                value: wizard.months.toDouble(),
+                min: 0,
+                max: 11,
+                divisions: 11,
+                displayValue: '${wizard.months} شهر',
+                onChanged: (v) =>
+                    notifier.setServiceDuration(months: v.round()),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _NumField(
-                label: 'أيام',
-                initial: wizard.days > 0 ? '${wizard.days}' : '',
-                onChanged: (v) => notifier.setServiceDuration(
-                  days: (int.tryParse(v) ?? 0).clamp(0, 364),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 16),
-        _NumField(
-          label: 'الراتب الأساسي (${wizard.country.currencySymbol})',
-          initial: wizard.basicSalary > 0 ? _fmt(wizard.basicSalary) : '',
-          onChanged: (v) => notifier.setSalaries(basic: double.tryParse(v) ?? 0),
-        ),
-        const SizedBox(height: 10),
-        _NumField(
-          label: 'بدل السكن',
-          initial:
-              wizard.housingAllowance > 0 ? _fmt(wizard.housingAllowance) : '',
-          onChanged: (v) =>
-              notifier.setSalaries(housing: double.tryParse(v) ?? 0),
-        ),
-        const SizedBox(height: 10),
-        _NumField(
-          label: 'بدلات أخرى (اختياري)',
-          initial:
-              wizard.otherAllowances > 0 ? _fmt(wizard.otherAllowances) : '',
-          onChanged: (v) =>
-              notifier.setSalaries(other: double.tryParse(v) ?? 0),
+        GlassSurface(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'الأجر والبدلات',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              _NumField(
+                label: 'الراتب الأساسي (${wizard.country.currencySymbol})',
+                initial:
+                    wizard.basicSalary > 0 ? _fmt(wizard.basicSalary) : '',
+                onChanged: (v) =>
+                    notifier.setSalaries(basic: double.tryParse(v) ?? 0),
+              ),
+              const SizedBox(height: 10),
+              _NumField(
+                label: 'بدل السكن',
+                initial: wizard.housingAllowance > 0
+                    ? _fmt(wizard.housingAllowance)
+                    : '',
+                onChanged: (v) =>
+                    notifier.setSalaries(housing: double.tryParse(v) ?? 0),
+              ),
+              const SizedBox(height: 8),
+              _LabeledSlider(
+                label: 'تقدير سريع — الراتب الأساسي',
+                value: wizard.basicSalary.clamp(0, 50000),
+                min: 0,
+                max: 50000,
+                divisions: 50,
+                displayValue:
+                    '${wizard.basicSalary.round()} ${wizard.country.currencySymbol}',
+                onChanged: (v) => notifier.setSalaries(basic: v),
+              ),
+            ],
+          ),
         ),
         if (wizard.country == GulfCountry.uae)
           Padding(
@@ -463,11 +541,27 @@ class _StepExtras extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _NumField(
-          label: 'الإجازات المتبقية (أيام)',
-          initial:
-              wizard.accruedLeaveDays > 0 ? '${wizard.accruedLeaveDays}' : '',
-          onChanged: (v) => notifier.setAccruedLeave(int.tryParse(v) ?? 0),
+        GlassSurface(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'الإجازات المتبقية',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              _LabeledSlider(
+                label: 'أيام الإجازة',
+                value: wizard.accruedLeaveDays.toDouble(),
+                min: 0,
+                max: 60,
+                divisions: 60,
+                displayValue: '${wizard.accruedLeaveDays} يوم',
+                onChanged: (v) => notifier.setAccruedLeave(v.round()),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         GlassSurface(
@@ -481,8 +575,14 @@ class _StepExtras extends ConsumerWidget {
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text('تضمين تذكرة سفر',
-                    style: GoogleFonts.cairo(fontSize: 14)),
+                title: Text(
+                  'مستحق تذكرة سفر؟',
+                  style: GoogleFonts.cairo(fontSize: 14),
+                ),
+                subtitle: Text(
+                  'حسب العقد أو اللائحة الداخلية',
+                  style: GoogleFonts.cairo(fontSize: 11),
+                ),
                 value: wizard.includeFlightTicket,
                 activeThumbColor: AppColors.emerald,
                 onChanged: (v) => notifier.setFlightTicket(include: v),
@@ -531,22 +631,103 @@ class _StepExtras extends ConsumerWidget {
         const SizedBox(height: 16),
         GlassSurface(
           padding: const EdgeInsets.all(14),
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              'تم تقديم إشعار الإنهاء',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            subtitle: Text(
-              'عدم الإشعار قد يؤثر على التعويضات (م. 75)',
-              style: GoogleFonts.cairo(fontSize: 11),
-            ),
-            value: wizard.noticeProvided,
-            activeThumbColor: AppColors.emerald,
-            onChanged: notifier.setNoticeProvided,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'إشعار الإنهاء',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'هل تم تقديم الإشعار وفق المدة النظامية؟ (م. 75)',
+                style: GoogleFonts.cairo(fontSize: 11),
+              ),
+              RadioGroup<bool>(
+                groupValue: wizard.noticeProvided,
+                onChanged: (v) {
+                  if (v != null) notifier.setNoticeProvided(v);
+                },
+                child: Column(
+                  children: [
+                    RadioListTile<bool>(
+                      value: true,
+                      activeColor: AppColors.emerald,
+                      title: Text('نعم، تم الإشعار', style: GoogleFonts.cairo()),
+                    ),
+                    RadioListTile<bool>(
+                      value: false,
+                      activeColor: AppColors.emerald,
+                      title: Text('لا، لم يُقدَّم', style: GoogleFonts.cairo()),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// شريط تمرير مع تسمية وقيمة.
+class _LabeledSlider extends StatelessWidget {
+  const _LabeledSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.displayValue,
+    required this.onChanged,
+  });
+
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final int divisions;
+  final String displayValue;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
+              Text(
+                displayValue,
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.emerald,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: AppColors.emerald,
+              thumbColor: AppColors.emerald,
+              inactiveTrackColor: AppColors.emerald.withValues(alpha: 0.2),
+              overlayColor: AppColors.emerald.withValues(alpha: 0.12),
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              divisions: divisions,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
