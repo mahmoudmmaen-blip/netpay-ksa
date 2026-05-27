@@ -273,45 +273,116 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(eosbWizardProvider.notifier);
+    final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
 
-    return GlassSurface(
-      borderRadius: 0,
-      blur: 8,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Row(
-        children: [
-          if (stepIndex > 0)
-            TextButton(
-              onPressed: notifier.previousStep,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isLastStep) const _LivePreviewBar(),
+        GlassSurface(
+          borderRadius: 0,
+          blur: 8,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: Row(
+            children: [
+              if (stepIndex > 0)
+                TextButton.icon(
+                  onPressed: notifier.previousStep,
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                  label: Text(
+                    'السابق',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              const Spacer(),
+              FilledButton.icon(
+                onPressed: () {
+                  final error = notifier.validateCurrentStep();
+                  if (error != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(error, style: GoogleFonts.cairo()),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                    return;
+                  }
+                  if (!notifier.nextStep()) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'تعذر إكمال الحساب',
+                          style: GoogleFonts.cairo(),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(
+                  isLastStep ? Icons.calculate_rounded : Icons.arrow_back_rounded,
+                  size: 18,
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.emerald,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+                label: Text(
+                  isLastStep ? 'عرض النتيجة' : 'التالي',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// معاينة مباشرة للإجمالي — يتحدث مع [eosbCalculatorProvider].
+class _LivePreviewBar extends ConsumerWidget {
+  const _LivePreviewBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final result = ref.watch(eosbCalculatorProvider);
+    final currency = NumberFormat.currency(
+      locale: result.input.country.currencyLocale,
+      symbol: result.input.country.currencySymbol,
+      decimalDigits: 0,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: GlassSurface(
+        highlighted: true,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Icon(Icons.insights_rounded, color: AppColors.emerald),
+            const SizedBox(width: 10),
+            Expanded(
               child: Text(
-                'السابق',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                'معاينة الإجمالي',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
             ),
-          const Spacer(),
-          FilledButton(
-            onPressed: () {
-              if (!notifier.nextStep()) {
-                final msg = switch (stepIndex) {
-                  0 => 'اختر نوع إنهاء الخدمة',
-                  1 => 'أدخل مدة الخدمة والراتب الأساسي',
-                  _ => 'أكمل الحقول المطلوبة',
-                };
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(msg, style: GoogleFonts.cairo())),
-                );
-              }
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.emerald,
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+            Text(
+              currency.format(result.totalEntitlements),
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: AppColors.emerald,
+              ),
             ),
-            child: Text(
-              stepIndex == 2 ? 'عرض النتيجة' : 'التالي',
-              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -336,7 +407,7 @@ const _terminationRadioOptions = <(EosbTerminationType, String, IconData)>[
   ),
   (
     EosbTerminationType.contractExpiry,
-    'انتهاء عقد',
+    'انتهاء العقد',
     Icons.event_busy_rounded,
   ),
   (
@@ -434,31 +505,26 @@ class _StepContract extends ConsumerWidget {
                 style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _NumField(
-                      label: 'سنوات',
-                      initial: wizard.years > 0 ? '${wizard.years}' : '',
-                      onChanged: (v) => notifier.setServiceDuration(
-                        years: int.tryParse(v) ?? 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _NumField(
-                      label: 'أشهر (0–11)',
-                      initial: wizard.months > 0 ? '${wizard.months}' : '',
-                      onChanged: (v) => notifier.setServiceDuration(
-                        months: (int.tryParse(v) ?? 0).clamp(0, 11),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
               _NumField(
+                key: const ValueKey('years'),
+                label: 'سنوات الخدمة',
+                initial: wizard.years > 0 ? '${wizard.years}' : '',
+                onChanged: (v) => notifier.setServiceDuration(
+                  years: int.tryParse(v) ?? 0,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _NumField(
+                key: const ValueKey('months'),
+                label: 'شهور إضافية (0–11)',
+                initial: wizard.months > 0 ? '${wizard.months}' : '',
+                onChanged: (v) => notifier.setServiceDuration(
+                  months: (int.tryParse(v) ?? 0).clamp(0, 11),
+                ),
+              ),
+              const SizedBox(height: 10),
+              _NumField(
+                key: const ValueKey('basic'),
                 label: 'الراتب الأساسي (${wizard.country.currencySymbol})',
                 initial:
                     wizard.basicSalary > 0 ? _fmt(wizard.basicSalary) : '',
@@ -467,6 +533,7 @@ class _StepContract extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               _NumField(
+                key: const ValueKey('housing'),
                 label: 'بدل السكن (${wizard.country.currencySymbol})',
                 initial: wizard.housingAllowance > 0
                     ? _fmt(wizard.housingAllowance)
@@ -476,20 +543,6 @@ class _StepContract extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 16),
-        Text('نوع العقد', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        SegmentedButton<EosbContractType>(
-          segments: const [
-            ButtonSegment(value: EosbContractType.fixed, label: Text('محدد')),
-            ButtonSegment(
-              value: EosbContractType.unlimited,
-              label: Text('غير محدد'),
-            ),
-          ],
-          selected: {wizard.contractType},
-          onSelectionChanged: (s) => notifier.setContractType(s.first),
         ),
       ],
     );
@@ -510,114 +563,56 @@ class _StepExtras extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _NumField(
-          label: 'الإجازات المتبقية (أيام)',
-          initial:
-              wizard.accruedLeaveDays > 0 ? '${wizard.accruedLeaveDays}' : '',
-          onChanged: (v) =>
-              notifier.setAccruedLeave((int.tryParse(v) ?? 0).clamp(0, 90)),
-        ),
-        const SizedBox(height: 16),
         GlassSurface(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'تذكرة الطيران (للوافدين)',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              _NumField(
+                key: const ValueKey('leave'),
+                label: 'إجازات متبقية (أيام)',
+                initial: wizard.accruedLeaveDays > 0
+                    ? '${wizard.accruedLeaveDays}'
+                    : '',
+                onChanged: (v) => notifier.setAccruedLeave(
+                  (int.tryParse(v) ?? 0).clamp(0, 90),
+                ),
               ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'مستحق تذكرة سفر؟',
-                  style: GoogleFonts.cairo(fontSize: 14),
-                ),
-                subtitle: Text(
-                  'حسب العقد أو اللائحة الداخلية',
-                  style: GoogleFonts.cairo(fontSize: 11),
-                ),
-                value: wizard.includeFlightTicket,
-                activeThumbColor: AppColors.emerald,
-                onChanged: (v) => notifier.setFlightTicket(include: v),
-              ),
-              if (wizard.includeFlightTicket) ...[
-                _NumField(
-                  label: 'تكلفة التذكرة التقديرية',
-                  initial: wizard.ticketCost > 0
-                      ? '${wizard.ticketCost.round()}'
-                      : '',
-                  onChanged: (v) => notifier.setFlightTicket(
-                    include: true,
-                    cost: double.tryParse(v) ?? 0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SegmentedButton<FlightTicketFrequency>(
-                  segments: [
-                    ButtonSegment(
-                      value: FlightTicketFrequency.yearly,
-                      label: Text(
-                        EosbModel.ticketFrequencyLabel(
-                          FlightTicketFrequency.yearly,
-                        ),
-                        style: GoogleFonts.cairo(fontSize: 11),
-                      ),
-                    ),
-                    ButtonSegment(
-                      value: FlightTicketFrequency.biannual,
-                      label: Text(
-                        EosbModel.ticketFrequencyLabel(
-                          FlightTicketFrequency.biannual,
-                        ),
-                        style: GoogleFonts.cairo(fontSize: 11),
-                      ),
-                    ),
-                  ],
-                  selected: {wizard.ticketFrequency},
-                  onSelectionChanged: (s) =>
-                      notifier.setTicketFrequency(s.first),
-                ),
-              ],
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         GlassSurface(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'إشعار الإنهاء',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'هل تم تقديم الإشعار وفق المدة النظامية؟ (م. 75)',
-                style: GoogleFonts.cairo(fontSize: 11),
-              ),
-              RadioGroup<bool>(
-                groupValue: wizard.noticeProvided,
-                onChanged: (v) {
-                  if (v != null) notifier.setNoticeProvided(v);
-                },
-                child: Column(
-                  children: [
-                    RadioListTile<bool>(
-                      value: true,
-                      activeColor: AppColors.emerald,
-                      title: Text('نعم، تم الإشعار', style: GoogleFonts.cairo()),
-                    ),
-                    RadioListTile<bool>(
-                      value: false,
-                      activeColor: AppColors.emerald,
-                      title: Text('لا، لم يُقدَّم', style: GoogleFonts.cairo()),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: SwitchListTile(
+            title: Text(
+              'تذكرة طيران',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'تضمين تذكرة السفر في التقدير (للوافدين)',
+              style: GoogleFonts.cairo(fontSize: 11),
+            ),
+            value: wizard.includeFlightTicket,
+            activeThumbColor: AppColors.emerald,
+            onChanged: (v) => notifier.setFlightTicket(include: v),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GlassSurface(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: SwitchListTile(
+            title: Text(
+              'هل تم تقديم إشعار الإنهاء؟',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'عدم الإشعار قد يؤثر على التعويضات (م. 75)',
+              style: GoogleFonts.cairo(fontSize: 11),
+            ),
+            value: wizard.noticeProvided,
+            activeThumbColor: AppColors.emerald,
+            onChanged: notifier.setNoticeProvided,
           ),
         ),
       ],
@@ -988,6 +983,7 @@ class _CountryChip extends StatelessWidget {
 
 class _NumField extends StatefulWidget {
   const _NumField({
+    super.key,
     required this.label,
     required this.onChanged,
     this.initial = '',
@@ -1008,15 +1004,6 @@ class _NumFieldState extends State<_NumField> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initial);
-  }
-
-  @override
-  void didUpdateWidget(covariant _NumField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.initial != widget.initial &&
-        widget.initial != _controller.text) {
-      _controller.text = widget.initial;
-    }
   }
 
   @override

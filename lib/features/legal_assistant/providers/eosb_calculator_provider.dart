@@ -52,7 +52,20 @@ class EosbWizardState {
   bool get canProceedStep0 => terminationType != null;
 
   bool get canProceedStep1 =>
-      basicSalary > 0 && (years > 0 || months > 0 || days > 0);
+      basicSalary > 0 && (years > 0 || months > 0);
+
+  /// الخطوة 3 — كل الحقول اختيارية.
+  bool get canProceedStep2 => true;
+
+  String? validationMessageForStep(int step) {
+    return switch (step) {
+      0 when !canProceedStep0 => 'اختر نوع إنهاء الخدمة',
+      1 when basicSalary <= 0 => 'أدخل الراتب الأساسي',
+      1 when years <= 0 && months <= 0 =>
+        'أدخل سنوات الخدمة أو شهوراً إضافية',
+      _ => null,
+    };
+  }
 
   EosbModel toModel() => EosbModel(
         country: country,
@@ -183,15 +196,24 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     state = state.copyWith(noticeProvided: value);
   }
 
+  /// يتحقق من الخطوة الحالية ثم يتقدم أو يعرض النتائج.
+  String? validateCurrentStep() =>
+      state.validationMessageForStep(state.stepIndex);
+
   bool nextStep() {
     if (state.showResults) return false;
-    if (state.stepIndex == 0 && !state.canProceedStep0) return false;
-    if (state.stepIndex == 1 && !state.canProceedStep1) return false;
+    if (validateCurrentStep() != null) return false;
     if (state.stepIndex >= EosbWizardState.totalSteps - 1) {
-      state = state.copyWith(showResults: true);
-      return true;
+      return finishWizard();
     }
     state = state.copyWith(stepIndex: state.stepIndex + 1);
+    return true;
+  }
+
+  /// إنهاء المعالج والانتقال لشاشة النتائج.
+  bool finishWizard() {
+    if (!state.canProceedStep0 || !state.canProceedStep1) return false;
+    state = state.copyWith(showResults: true);
     return true;
   }
 
