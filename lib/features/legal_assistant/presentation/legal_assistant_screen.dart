@@ -28,7 +28,7 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
   final _messages = <ChatMessage>[];
   final _uuid = const Uuid();
 
-  static const _requestTimeout = Duration(seconds: 15);
+  static const _requestTimeout = Duration(seconds: 60);
   static const _retryLabel = 'تعذر الاتصال بالمساعد. إعادة المحاولة';
 
   bool _isLoading = false;
