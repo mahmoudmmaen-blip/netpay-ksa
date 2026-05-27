@@ -191,10 +191,18 @@ class LegalAiService {
     return Uri.parse(_apiUrl);
   }
 
+  bool get _usesProxyEndpoint {
+    if (!kIsWeb) return false;
+    final endpoint = _messagesEndpoint.toString();
+    return endpoint.isNotEmpty && !endpoint.contains('api.anthropic.com');
+  }
+
   Map<String, String> get _requestHeaders => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        if (ApiKeys.hasAnthropicApiKey) 'x-api-key': ApiKeys.anthropicApiKey,
+        // When using a proxy (Cloudflare Worker), the Worker holds the key.
+        if (!_usesProxyEndpoint && ApiKeys.hasAnthropicApiKey)
+          'x-api-key': ApiKeys.anthropicApiKey,
         'anthropic-version': _apiVersion,
         // لا يُحل CORS — Anthropic لا يسمح بـ browser origin؛ البروكسي فقط.
         if (kIsWeb) 'X-Requested-With': 'XMLHttpRequest',

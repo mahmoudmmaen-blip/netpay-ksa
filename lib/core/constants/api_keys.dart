@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:netgulf/core/constants/api_keys.local.dart';
 
 /// مفاتيح API وإعدادات النقل — Web / Mobile.
 abstract final class ApiKeys {
@@ -21,8 +22,11 @@ abstract final class ApiKeys {
   /// `flutter run -d chrome --dart-define=ANTHROPIC_PROXY_URL=http://localhost:8787/v1/messages`
   ///
   /// Anthropic لا يسمح باستدعاءات المتصفح مباشرة؛ البروكسي ضروري للوضع الحي على Web.
-  static const String anthropicProxyUrl =
-      String.fromEnvironment('ANTHROPIC_PROXY_URL');
+  static String get anthropicProxyUrl {
+    final env = const String.fromEnvironment('ANTHROPIC_PROXY_URL').trim();
+    if (env.isNotEmpty) return env;
+    return kLocalProxyUrl.trim();
+  }
 
   static bool get hasAnthropicApiKey => anthropicApiKey.trim().isNotEmpty;
 
@@ -33,9 +37,11 @@ abstract final class ApiKeys {
   static bool get anthropicBlockedByBrowserCors =>
       kIsWeb && !hasAnthropicProxy;
 
-  /// اتصال حي ممكن (Mobile مباشرة، أو Web عبر بروكسي).
+  /// اتصال حي ممكن:
+  /// - Mobile: مباشرة عبر المفتاح
+  /// - Web: عبر البروكسي (Worker) حتى بدون مفتاح محلي
   static bool get canUseLiveAnthropic =>
-      hasAnthropicApiKey && !anthropicBlockedByBrowserCors;
+      (hasAnthropicProxy || hasAnthropicApiKey) && !anthropicBlockedByBrowserCors;
 
   /// رسالة للمطوّر/المستخدم عند غياب المفتاح.
   static const String anthropicKeyMissingMessage =
