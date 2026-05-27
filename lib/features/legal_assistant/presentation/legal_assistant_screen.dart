@@ -35,10 +35,12 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
   String? _failedMessage;
 
   static const _exampleQuestions = [
-    'عقدي ستين وهمشي بعد سنه',
+    'وهمشوني بعد 3 سنين — إيه حقوقي؟',
     'كم نهاية خدمتي بعد 7 سنين؟',
-    'إيه حقوقي في الإجازة السنوية والتذكرة؟',
-    'الفرق بين GOSI القديم والجديد',
+    'كم نسبة GOSI 2026؟',
+    'إيه حقوقي في الإجازة المرضية؟',
+    'شغال في الإمارات — كم مستحقاتي؟',
+    'فصلوني بدون إشعار — هل أستحق تعويض؟',
   ];
 
   @override
