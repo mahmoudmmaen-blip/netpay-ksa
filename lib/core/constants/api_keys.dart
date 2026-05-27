@@ -5,23 +5,11 @@ import 'package:netgulf/core/constants/api_keys.local.dart';
 abstract final class ApiKeys {
   ApiKeys._();
 
-  /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...` (non-Web)
-  static String get anthropicApiKey {
-    if (kIsWeb) {
-      return const String.fromEnvironment(
-        'ANTHROPIC_API_KEY',
-        defaultValue: '',
-      );
-    }
-    return const String.fromEnvironment('ANTHROPIC_API_KEY');
-  }
+  /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...`
+  static String get anthropicApiKey =>
+      const String.fromEnvironment('ANTHROPIC_API_KEY', defaultValue: '');
 
-  /// اختياري — بروكسي محلي يضيف CORS headers ويُمرّر الطلب لـ Anthropic.
-  ///
-  /// مثال:
-  /// `flutter run -d chrome --dart-define=ANTHROPIC_PROXY_URL=http://localhost:8787/v1/messages`
-  ///
-  /// Anthropic لا يسمح باستدعاءات المتصفح مباشرة؛ البروكسي ضروري للوضع الحي على Web.
+  /// بروكسي Cloudflare Worker (أو محلي) — يتجاوز CORS على Web.
   static String get anthropicProxyUrl {
     const env = String.fromEnvironment('ANTHROPIC_PROXY_URL');
     return env.isNotEmpty ? env : kLocalProxyUrl;
@@ -29,30 +17,31 @@ abstract final class ApiKeys {
 
   static bool get hasAnthropicApiKey => anthropicApiKey.trim().isNotEmpty;
 
-  static bool get hasAnthropicProxy =>
-      anthropicProxyUrl.trim().isNotEmpty;
+  static bool get hasAnthropicProxy => anthropicProxyUrl.trim().isNotEmpty;
 
-  /// Web بدون بروكسي — CORS يمنع الاتصال المباشر بـ api.anthropic.com.
+  /// Web بدون بروكسي — لا يمكن الاتصال المباشر بـ api.anthropic.com.
   static bool get anthropicBlockedByBrowserCors =>
       kIsWeb && !hasAnthropicProxy;
 
-  /// اتصال حي ممكن:
-  /// - عبر البروكسي (Worker) حتى بدون مفتاح محلي
-  /// - أو Mobile مباشرة عبر المفتاح (عند عدم توفر بروكسي)
-  static bool get canUseLiveAnthropic =>
-      hasAnthropicProxy || (hasAnthropicApiKey && !anthropicBlockedByBrowserCors);
+  /// وضع حي:
+  /// - بروكسي مضبوط (Worker) — لا يحتاج مفتاحاً في التطبيق
+  /// - أو مفتاح `--dart-define` على Android/iOS/Desktop
+  static bool get canUseLiveAnthropic {
+    if (hasAnthropicProxy) return true;
+    if (!hasAnthropicApiKey) return false;
+    return !anthropicBlockedByBrowserCors;
+  }
 
-  /// رسالة للمطوّر/المستخدم عند غياب المفتاح.
   static const String anthropicKeyMissingMessage =
-      'المساعد الذكي الكامل غير مفعّل بعد. جرّب الوضع التجريبي أدناه، '
-      'أو أضف المفتاح عند التشغيل:\n'
-      'flutter run --dart-define=ANTHROPIC_API_KEY=your_key';
-
-  /// رسالة Web — CORS / بروكسي.
-  static const String anthropicWebCorsMessage =
-      'على Chrome/Web لا يمكن استدعاء Anthropic مباشرة من المتصفح (CORS). '
-      'يُستخدم الوضع التجريبي تلقائياً.\n\n'
-      'للاختبار الحي: شغّل بروكسي محلي ثم:\n'
+      'المساعد الذكي غير مفعّل.\n'
+      'أضف المفتاح عند التشغيل:\n'
+      'flutter run --dart-define=ANTHROPIC_API_KEY=your_key\n\n'
+      'أو استخدم بروكسي Worker على Web:\n'
       'flutter run -d chrome '
-      '--dart-define=ANTHROPIC_PROXY_URL=http://localhost:8787/v1/messages';
+      '--dart-define=ANTHROPIC_PROXY_URL=https://your-worker.workers.dev';
+
+  static const String anthropicWebCorsMessage =
+      'على Chrome/Web يجب استخدام بروكسي Worker (CORS).\n'
+      'أضف:\n'
+      '--dart-define=ANTHROPIC_PROXY_URL=https://netgulf-proxy.mahmoud-mma-en.workers.dev';
 }

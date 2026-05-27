@@ -17,7 +17,7 @@ class LegalAiReply {
   final bool isDemo;
 }
 
-/// استثناءات المساعد القانوني.
+/// استثناءات المساعد القانوني — رسالة عربية واضحة للمستخدم.
 class LegalAiException implements Exception {
   LegalAiException(this.message);
   final String message;
@@ -26,87 +26,57 @@ class LegalAiException implements Exception {
   String toString() => message;
 }
 
-/// خدمة Claude — أسئلة قانونية (السعودية + الإمارات).
+/// خدمة Claude — قانون العمل السعودي والإماراتي.
 class LegalAiService {
   LegalAiService({http.Client? httpClient})
       : _http = httpClient ?? http.Client();
 
-  static const String _apiUrl = 'https://api.anthropic.com/v1/messages';
+  static const String _anthropicMessagesUrl =
+      'https://api.anthropic.com/v1/messages';
   static const String _model = 'claude-3-5-sonnet-20240620';
   static const String _apiVersion = '2023-06-01';
   static const Duration _httpTimeout = Duration(seconds: 60);
+  static const int _maxTokens = 1500;
 
   static const String systemPrompt = '''
-أنت "المساعد القانوني لـ NetGulf" — خبير متخصص في قانون العمل السعودي والإماراتي.
+أنت "المساعد القانوني لـ NetGulf" — خبير في قانون العمل السعودي والإماراتي.
 
 ## شخصيتك
-- متخصص قانوني دقيق ومحترف
-- تفهم العربية الفصحى والعامية المصرية والخليجية
-- تفهم الأخطاء الإملائية والزبرد: "وهمشوني"=فصل، "طردوني"=فصل تعسفي، "شيلوني"=أنهوا خدمته، "عقدي خلص"=انتهى العقد
-- ترد بأسلوب منظم مع ذكر المواد القانونية الدقيقة
+- دقيق ومحترف، ترد بالعربية الفصحى البسيطة
+- تفهم العامية: "وهمشوني/همشوني"=فصل، "طردوني"=فصل تعسفي، "شيلوني"=إنهاء خدمة، "عقدي خلص"=انتهاء العقد
+- تذكر المواد القانونية عند الإمكان
 
-## قانون العمل السعودي
+## السعودية — ملخص
+- نهاية الخدمة (84-85): حسب المدة وسبب الإنهاء؛ الوعاء: أساسي + سكن
+- GOSI 2026: موظف ~9.75% | صاحب عمل ~11.75% | غير سعودي: 2% مهني على صاحب العمل
+- إجازة سنوية: 21/30 يوم | مرضية: 30 كامل + 60 نصف + 30 بدون أجر
+- إشعار إنهاء: 60 يوم (غير محدد) | فترة تجربة: 90 يوم
 
-### نهاية الخدمة (المادة 84 و85)
-- أقل من سنتين: لا مكافأة
-- 2 إلى أقل من 5 سنوات: ثلث الأجر عن كل سنة (استقالة) / نصف الأجر (فصل)  
-- 5 إلى أقل من 10 سنوات: ثلثا الأجر عن كل سنة (استقالة) / الأجر كاملاً (فصل)
-- 10 سنوات فأكثر: الأجر كاملاً عن كل سنة (استقالة أو فصل)
-- وعاء الحساب: الراتب الأساسي + بدل السكن فقط
-
-### GOSI 2026 (مرحلة انتقالية)
-- موظف: 9.75% | صاحب عمل: 11.75%
-- 2027: موظف 10% | صاحب عمل 12.25%
-- غير سعودي: 2% تأمين مهني على صاحب العمل فقط
-
-### الإجازات (المادة 109)
-- سنوية: 21 يوم (أقل من 5 سنوات) / 30 يوم (5 سنوات فأكثر)
-- مرضية: 30 يوم أجر كامل + 60 يوم نصف أجر + 30 يوم بدون أجر
-- أمومة: 10 أسابيع بأجر كامل
-
-### حقوق أخرى
-- إشعار إنهاء العقد: 60 يوم (غير محدد المدة)
-- فصل تعسفي: تعويض لا يقل عن أجر شهرين عن كل سنة خدمة
-- فترة التجربة: 90 يوم قابلة للتمديد مرة واحدة
-
-## قانون العمل الإماراتي (القانون 33 لسنة 2021)
-
-### نهاية الخدمة
-- 21 يوم أجر أساسي عن كل سنة للخمس سنوات الأولى
-- 30 يوم عن كل سنة إضافية بعد 5 سنوات
-- الحد الأقصى: أجر سنتين كاملتين
-- لا فرق بين استقالة وفصل (تعديل 2022)
-
-### GPSSA (للمواطنين)
-- موظف: 5% | صاحب عمل: 12.5% | حكومة: 2.5%
-
-### الإجازات
-- سنوية: 30 يوم بعد سنة كاملة
-- مرضية: 15 يوم أجر كامل + 30 يوم نصف أجر + 45 يوم بدون أجر
-- أمومة: 60 يوم
-- إشعار الإنهاء: شهر واحد كحد أدنى
+## الإمارات — ملخص
+- نهاية خدمة: 21 يوم/سنة (5 سنوات أولى) ثم 30 يوم؛ حد أقصى سنتان أجر
+- GPSSA مواطنين: 5% موظف + 12.5% صاحب عمل
+- إجازة سنوية: 30 يوم بعد سنة
 
 ## طريقة الرد
-1. افهم السؤال حتى لو فيه أخطاء إملائية أو عامية
-2. حدد الحق بوضوح (نعم/لا/يعتمد على...)
-3. اذكر المادة القانونية المرجعية
-4. اشرح الحساب بالأرقام إذا أمكن
-5. أضف تنبيهاً مختصراً أن الإجابة استشارة عامة وليست رأياً قانونياً ملزماً
+1. افهم السؤال رغم الأخطاء الإملائية
+2. حدد الحق (نعم/لا/يعتمد)
+3. اذكر المادة إن أمكن
+4. أرقام ومثال حسابي عند الحاجة
+5. تنبيه مختصر: استشارة عامة وليست رأياً قانونياً ملزماً
 
 ## حدودك
-- أنت مرشد قانوني عام، لست محامياً
-- لقضايا معقدة انصح بمراجعة محامٍ أو وزارة الموارد البشرية
+مرشد عام ولست محامياً؛ للقضايا المعقدة راجع محامياً أو الجهة الرسمية.
 ''';
 
   final http.Client _http;
 
-  /// اتصال حي — Mobile مباشرة، أو Web عبر بروكسي CORS.
   bool get isLiveMode => ApiKeys.canUseLiveAnthropic;
 
-  /// Web بدون بروكسي — ردود تجريبية بسبب CORS.
-  bool get isWebMockOverride => ApiKeys.anthropicBlockedByBrowserCors;
+  bool get isWebMockOverride =>
+      !isLiveMode && ApiKeys.anthropicBlockedByBrowserCors;
 
-  /// الأسئلة المتبقية اليوم.
+  bool get _viaProxy => ApiKeys.hasAnthropicProxy;
+
   Future<int> getRemainingQuestionsToday() async {
     final used = await _questionsUsedToday();
     return (AppConstants.legalAiDailyQuestionLimit - used)
@@ -116,19 +86,20 @@ class LegalAiService {
   Future<bool> canAskQuestion() async =>
       await getRemainingQuestionsToday() > 0;
 
-  /// يرسل سؤالاً — Claude إن وُجد المفتاح، وإلا رد تجريبي.
   Future<LegalAiReply> ask({
     required String question,
     required List<ChatMessage> history,
   }) async {
     debugPrint('=== LEGAL AI ASK STARTED === Question: $question');
-    debugPrint('=== Live Mode: ${ApiKeys.canUseLiveAnthropic} | Key length: ${ApiKeys.anthropicApiKey.length}');
-    debugPrint('=== LegalAI DEBUG: isLiveMode=$isLiveMode, isWebMock=$isWebMockOverride, key=${ApiKeys.anthropicApiKey.isEmpty ? "(empty)" : ApiKeys.anthropicApiKey.substring(0, ApiKeys.anthropicApiKey.length.clamp(0, 10))}');
+    debugPrint(
+      '=== Live: ${ApiKeys.canUseLiveAnthropic} | Proxy: ${ApiKeys.hasAnthropicProxy} | '
+      'KeyLen: ${ApiKeys.anthropicApiKey.length}',
+    );
+
     final remaining = await getRemainingQuestionsToday();
     if (remaining <= 0) {
       throw LegalAiException(
-        'استنفدت ${AppConstants.legalAiDailyQuestionLimit} أسئلة اليوم. '
-        'حاول غداً.',
+        'استنفدت ${AppConstants.legalAiDailyQuestionLimit} أسئلة اليوم. حاول غداً.',
       );
     }
 
@@ -138,82 +109,111 @@ class LegalAiService {
     }
 
     if (!isLiveMode) {
-      await Future<void>.delayed(const Duration(milliseconds: 700));
+      debugPrint('=== LEGAL AI: demo mode (no proxy/key or Web CORS)');
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       await _recordQuestionUsed();
       return LegalAiReply(
-        text: _demoReply(trimmed),
+        text: buildLegalAiPlaceholderReply(trimmed),
         isDemo: true,
       );
     }
 
     try {
-      final reply = await _callAnthropic(trimmed, history);
+      final reply = await _callAnthropic(trimmed, history)
+          .timeout(_httpTimeout);
       await _recordQuestionUsed();
       return LegalAiReply(text: reply, isDemo: false);
+    } on TimeoutException {
+      debugPrint('=== LEGAL AI TIMEOUT (60s)');
+      throw LegalAiException(
+        'انتهت مهلة الاتصال (60 ثانية). تحقق من الإنترنت وحاول مرة أخرى.',
+      );
     } on LegalAiException {
       rethrow;
-    } on TimeoutException catch (e) {
-      debugPrint('=== LegalAI TIMEOUT in ask(): $e');
-      throw LegalAiException(
-        'انتهت مهلة الاتصال بالمساعد (60 ثانية). حاول مرة أخرى.',
-      );
     } on http.ClientException catch (e) {
-      if (kIsWeb) {
-        await _recordQuestionUsed();
-        return LegalAiReply(
-          text: _webCorsFallbackReply(trimmed, detail: e.message),
-          isDemo: true,
-        );
-      }
+      debugPrint('=== LEGAL AI NETWORK: $e');
       throw LegalAiException(
-        'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
+        'تعذر الاتصال بالخادم. تحقق من الإنترنت أو إعدادات البروكسي.',
       );
-    } catch (e) {
-      debugPrint('LegalAI Error: $e');
-      if (kIsWeb) {
-        await _recordQuestionUsed();
-        return LegalAiReply(
-          text: _webCorsFallbackReply(trimmed),
-          isDemo: true,
-        );
-      }
+    } catch (e, stack) {
+      debugPrint('=== LEGAL AI ERROR: $e');
+      debugPrint('=== STACK: $stack');
       throw LegalAiException(
-        'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
+        'حدث خطأ غير متوقع. حاول مرة أخرى لاحقاً.',
       );
     }
   }
 
-  /// رد تجريبي — البanner في الشاشة يشرح CORS على Web.
-  String _demoReply(String question) => buildLegalAiPlaceholderReply(question);
-
-  String _webCorsFallbackReply(String question, {String? detail}) {
-    final body = buildLegalAiPlaceholderReply(question);
-    final extra = detail != null && detail.isNotEmpty
-        ? '\n(تفاصيل: $detail)'
-        : '';
-    return 'تعذر الاتصال بـ Anthropic من المتصفح — CORS.$extra\n\n'
-        '${ApiKeys.anthropicWebCorsMessage}\n\n---\n\n$body';
-  }
-
   Uri get _messagesEndpoint {
-    final proxy = ApiKeys.anthropicProxyUrl.trim();
-    if (proxy.isNotEmpty) return Uri.parse(proxy);
-    return Uri.parse(_apiUrl);
+    if (_viaProxy) {
+      final raw = ApiKeys.anthropicProxyUrl.trim();
+      final uri = Uri.parse(raw);
+      if (uri.path.isEmpty || uri.path == '/') {
+        return uri.replace(path: '/v1/messages');
+      }
+      if (!uri.path.endsWith('/messages')) {
+        return uri.replace(
+          path: '${uri.path.replaceAll(RegExp(r'/$'), '')}/v1/messages',
+        );
+      }
+      return uri;
+    }
+    return Uri.parse(_anthropicMessagesUrl);
   }
 
-  Map<String, String> get _requestHeaders => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        // Worker handles authentication; never send x-api-key from the app.
-        'anthropic-version': _apiVersion,
-        // لا يُحل CORS — Anthropic لا يسمح بـ browser origin؛ البروكسي فقط.
-        if (kIsWeb) 'X-Requested-With': 'XMLHttpRequest',
-      };
+  Map<String, String> get _requestHeaders {
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'anthropic-version': _apiVersion,
+    };
+    // البروكسي (Worker) يحتفظ بالمفتاح — التطبيق لا يرسله على Web.
+    if (!_viaProxy && ApiKeys.hasAnthropicApiKey) {
+      headers['x-api-key'] = ApiKeys.anthropicApiKey;
+    }
+    return headers;
+  }
 
   Future<String> _callAnthropic(
     String question,
     List<ChatMessage> history,
   ) async {
+    final messages = _buildMessagePayload(history, question);
+    final body = jsonEncode({
+      'model': _model,
+      'max_tokens': _maxTokens,
+      'system': systemPrompt,
+      'messages': messages,
+    });
+
+    final endpoint = _messagesEndpoint;
+    debugPrint('=== LEGAL AI POST: $endpoint');
+    debugPrint('=== LEGAL AI MODEL: $_model | viaProxy: $_viaProxy');
+
+    final response = await _http
+        .post(
+          endpoint,
+          headers: _requestHeaders,
+          body: body,
+        )
+        .timeout(_httpTimeout);
+
+    debugPrint('=== LEGAL AI STATUS: ${response.statusCode}');
+    debugPrint(
+      '=== LEGAL AI BODY: ${response.body.substring(0, response.body.length.clamp(0, 300))}',
+    );
+
+    if (response.statusCode != 200) {
+      throw LegalAiException(_messageForHttpStatus(response));
+    }
+
+    return _extractAssistantText(response.body);
+  }
+
+  List<Map<String, String>> _buildMessagePayload(
+    List<ChatMessage> history,
+    String question,
+  ) {
     final messages = <Map<String, String>>[];
     for (final m in history) {
       if (m.isError) continue;
@@ -223,35 +223,12 @@ class LegalAiService {
       });
     }
     messages.add({'role': 'user', 'content': question});
+    return messages;
+  }
 
-    final body = jsonEncode({
-      'model': _model,
-      'max_tokens': 1500,
-      'system': systemPrompt,
-      'messages': messages,
-    });
-
-    debugPrint('=== LegalAI CALLING: $_apiUrl');
-    debugPrint('=== LegalAI KEY LENGTH: ${ApiKeys.anthropicApiKey.length}');
-
+  String _extractAssistantText(String responseBody) {
     try {
-      final response = await _http
-          .post(
-            _messagesEndpoint,
-            headers: _requestHeaders,
-            body: body,
-          )
-          .timeout(_httpTimeout);
-
-      debugPrint('=== LegalAI STATUS: ${response.statusCode}');
-      debugPrint('=== LegalAI BODY: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
-
-      if (response.statusCode != 200) {
-        final err = _parseError(response.body);
-        throw LegalAiException(err);
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = jsonDecode(responseBody) as Map<String, dynamic>;
       final content = data['content'];
       if (content is! List || content.isEmpty) {
         throw LegalAiException('رد فارغ من المساعد.');
@@ -263,34 +240,42 @@ class LegalAiService {
           return text.trim();
         }
       }
-      throw LegalAiException('تعذر قراءة رد المساعد.');
-    } on TimeoutException catch (e) {
-      debugPrint('=== LegalAI TIMEOUT in _callAnthropic: $e');
-      throw LegalAiException(
-        'انتهت مهلة الاتصال بالمساعد. حاول مرة أخرى.',
-      );
-    } catch (e, stack) {
-      debugPrint('=== LegalAI EXCEPTION: $e');
-      debugPrint('=== LegalAI STACK: $stack');
+    } catch (e) {
       if (e is LegalAiException) rethrow;
-      throw LegalAiException(
-        'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
-      );
+      debugPrint('=== LEGAL AI PARSE ERROR: $e');
     }
+    throw LegalAiException('تعذر قراءة رد المساعد. حاول مرة أخرى.');
   }
 
-  String _parseError(String body) {
+  String _messageForHttpStatus(http.Response response) {
+    final parsed = _tryParseApiErrorMessage(response.body);
+    if (parsed != null && parsed.isNotEmpty) return parsed;
+
+    return switch (response.statusCode) {
+      401 => 'مفتاح API غير صالح. تحقق من إعدادات البروكسي أو --dart-define.',
+      403 => 'رفض الوصول. تحقق من صلاحيات المفتاح أو البروكسي.',
+      404 => 'النموذج أو المسار غير موجود (404). تحقق من إعدادات Worker والنموذج.',
+      429 => 'تم تجاوز حد الطلبات. انتظر قليلاً ثم حاول مرة أخرى.',
+      500 || 502 || 503 || 504 =>
+        'الخادم غير متاح مؤقتاً. حاول بعد دقائق.',
+      _ => 'خطأ من الخادم (${response.statusCode}). حاول لاحقاً.',
+    };
+  }
+
+  String? _tryParseApiErrorMessage(String body) {
     try {
       final map = jsonDecode(body) as Map<String, dynamic>;
       final err = map['error'];
       if (err is Map<String, dynamic>) {
         final msg = err['message'];
-        if (msg is String && msg.isNotEmpty) return msg;
+        if (msg is String && msg.trim().isNotEmpty) return msg.trim();
       }
+      final msg = map['message'];
+      if (msg is String && msg.trim().isNotEmpty) return msg.trim();
     } catch (_) {
       // ignore
     }
-    return 'خطأ من الخادم (${body.length > 120 ? '${body.substring(0, 120)}...' : body})';
+    return null;
   }
 
   Future<int> _questionsUsedToday() async {
