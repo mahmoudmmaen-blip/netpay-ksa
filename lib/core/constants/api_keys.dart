@@ -40,7 +40,7 @@ abstract final class ApiKeys {
   /// - عبر البروكسي (Worker) حتى بدون مفتاح محلي
   /// - أو Mobile مباشرة عبر المفتاح (عند عدم توفر بروكسي)
   static bool get canUseLiveAnthropic =>
-      (hasAnthropicProxy || hasAnthropicApiKey) && !anthropicBlockedByBrowserCors;
+      hasAnthropicProxy || (hasAnthropicApiKey && !anthropicBlockedByBrowserCors);
 
   /// رسالة للمطوّر/المستخدم عند غياب المفتاح.
   static const String anthropicKeyMissingMessage =

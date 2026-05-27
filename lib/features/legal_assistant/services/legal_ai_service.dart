@@ -158,7 +158,8 @@ class LegalAiService {
       throw LegalAiException(
         'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LegalAI Error: $e');
       if (kIsWeb) {
         await _recordQuestionUsed();
         return LegalAiReply(
@@ -185,24 +186,15 @@ class LegalAiService {
   }
 
   Uri get _messagesEndpoint {
-    if (kIsWeb && ApiKeys.hasAnthropicProxy) {
-      return Uri.parse(ApiKeys.anthropicProxyUrl.trim());
-    }
+    final proxy = ApiKeys.anthropicProxyUrl.trim();
+    if (proxy.isNotEmpty) return Uri.parse(proxy);
     return Uri.parse(_apiUrl);
-  }
-
-  bool get _usesProxyEndpoint {
-    if (!kIsWeb) return false;
-    final endpoint = _messagesEndpoint.toString();
-    return endpoint.isNotEmpty && !endpoint.contains('api.anthropic.com');
   }
 
   Map<String, String> get _requestHeaders => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        // When using a proxy (Cloudflare Worker), the Worker holds the key.
-        if (!_usesProxyEndpoint && ApiKeys.hasAnthropicApiKey)
-          'x-api-key': ApiKeys.anthropicApiKey,
+        // Worker handles authentication; never send x-api-key from the app.
         'anthropic-version': _apiVersion,
         // لا يُحل CORS — Anthropic لا يسمح بـ browser origin؛ البروكسي فقط.
         if (kIsWeb) 'X-Requested-With': 'XMLHttpRequest',
@@ -236,7 +228,7 @@ class LegalAiService {
           headers: _requestHeaders,
           body: body,
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode != 200) {
       final err = _parseError(response.body);
