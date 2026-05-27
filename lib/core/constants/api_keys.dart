@@ -23,9 +23,8 @@ abstract final class ApiKeys {
   ///
   /// Anthropic لا يسمح باستدعاءات المتصفح مباشرة؛ البروكسي ضروري للوضع الحي على Web.
   static String get anthropicProxyUrl {
-    final env = const String.fromEnvironment('ANTHROPIC_PROXY_URL').trim();
-    if (env.isNotEmpty) return env;
-    return kLocalProxyUrl.trim();
+    const env = String.fromEnvironment('ANTHROPIC_PROXY_URL');
+    return env.isNotEmpty ? env : kLocalProxyUrl;
   }
 
   static bool get hasAnthropicApiKey => anthropicApiKey.trim().isNotEmpty;
@@ -38,8 +37,8 @@ abstract final class ApiKeys {
       kIsWeb && !hasAnthropicProxy;
 
   /// اتصال حي ممكن:
-  /// - Mobile: مباشرة عبر المفتاح
-  /// - Web: عبر البروكسي (Worker) حتى بدون مفتاح محلي
+  /// - عبر البروكسي (Worker) حتى بدون مفتاح محلي
+  /// - أو Mobile مباشرة عبر المفتاح (عند عدم توفر بروكسي)
   static bool get canUseLiveAnthropic =>
       (hasAnthropicProxy || hasAnthropicApiKey) && !anthropicBlockedByBrowserCors;
 
