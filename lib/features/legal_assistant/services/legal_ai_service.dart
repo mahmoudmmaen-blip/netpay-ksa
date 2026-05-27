@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:netgulf/core/constants/api_keys.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
@@ -44,8 +45,11 @@ class LegalAiService {
 
   final http.Client _http;
 
-  /// مفتاح Anthropic مضبوط — اتصال حقيقي بـ Claude.
-  bool get isLiveMode => ApiKeys.hasAnthropicApiKey;
+  /// اتصال حي — Mobile مباشرة، أو Web عبر بروكسي CORS.
+  bool get isLiveMode => ApiKeys.canUseLiveAnthropic;
+
+  /// Web بدون بروكسي — ردود تجريبية بسبب CORS.
+  bool get isWebMockOverride => ApiKeys.anthropicBlockedByBrowserCors;
 
   /// الأسئلة المتبقية اليوم.
   Future<int> getRemainingQuestionsToday() async {
@@ -79,7 +83,7 @@ class LegalAiService {
       await Future<void>.delayed(const Duration(milliseconds: 700));
       await _recordQuestionUsed();
       return LegalAiReply(
-        text: buildLegalAiPlaceholderReply(trimmed),
+        text: _demoReply(trimmed),
         isDemo: true,
       );
     }
@@ -90,12 +94,58 @@ class LegalAiService {
       return LegalAiReply(text: reply, isDemo: false);
     } on LegalAiException {
       rethrow;
+    } on http.ClientException catch (e) {
+      if (kIsWeb) {
+        await _recordQuestionUsed();
+        return LegalAiReply(
+          text: _webCorsFallbackReply(trimmed, detail: e.message),
+          isDemo: true,
+        );
+      }
+      throw LegalAiException(
+        'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
+      );
     } catch (_) {
+      if (kIsWeb) {
+        await _recordQuestionUsed();
+        return LegalAiReply(
+          text: _webCorsFallbackReply(trimmed),
+          isDemo: true,
+        );
+      }
       throw LegalAiException(
         'تعذر الاتصال بالمساعد. تحقق من الإنترنت وحاول لاحقاً.',
       );
     }
   }
+
+  /// رد تجريبي — البanner في الشاشة يشرح CORS على Web.
+  String _demoReply(String question) => buildLegalAiPlaceholderReply(question);
+
+  String _webCorsFallbackReply(String question, {String? detail}) {
+    final body = buildLegalAiPlaceholderReply(question);
+    final extra = detail != null && detail.isNotEmpty
+        ? '\n(تفاصيل: $detail)'
+        : '';
+    return 'تعذر الاتصال بـ Anthropic من المتصفح — CORS.$extra\n\n'
+        '${ApiKeys.anthropicWebCorsMessage}\n\n---\n\n$body';
+  }
+
+  Uri get _messagesEndpoint {
+    if (kIsWeb && ApiKeys.hasAnthropicProxy) {
+      return Uri.parse(ApiKeys.anthropicProxyUrl.trim());
+    }
+    return Uri.parse(_apiUrl);
+  }
+
+  Map<String, String> get _requestHeaders => {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (ApiKeys.hasAnthropicApiKey) 'x-api-key': ApiKeys.anthropicApiKey,
+        'anthropic-version': _apiVersion,
+        // لا يُحل CORS — Anthropic لا يسمح بـ browser origin؛ البروكسي فقط.
+        if (kIsWeb) 'X-Requested-With': 'XMLHttpRequest',
+      };
 
   Future<String> _callAnthropic(
     String question,
@@ -121,12 +171,8 @@ class LegalAiService {
 
     final response = await _http
         .post(
-          Uri.parse(_apiUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ApiKeys.anthropicApiKey,
-            'anthropic-version': _apiVersion,
-          },
+          _messagesEndpoint,
+          headers: _requestHeaders,
           body: body,
         )
         .timeout(const Duration(seconds: 15));

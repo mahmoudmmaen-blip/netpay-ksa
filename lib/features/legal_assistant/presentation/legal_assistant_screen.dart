@@ -137,6 +137,7 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
   Widget build(BuildContext context) {
     final remainingAsync = ref.watch(legalAiRemainingProvider);
     final isLive = ref.watch(legalAiLiveModeProvider);
+    final isWebMock = ref.watch(legalAiWebMockProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasUserMessages = _messages.any((m) => m.isUser);
 
@@ -165,7 +166,9 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
                   label: Text(
                     isLive
                         ? 'متبقي: $n/${AppConstants.legalAiDailyQuestionLimit}'
-                        : 'تجريبي · $n/${AppConstants.legalAiDailyQuestionLimit}',
+                        : isWebMock
+                            ? 'Web · تجريبي · $n/${AppConstants.legalAiDailyQuestionLimit}'
+                            : 'تجريبي · $n/${AppConstants.legalAiDailyQuestionLimit}',
                     style: GoogleFonts.cairo(fontSize: 11),
                   ),
                   backgroundColor: AppColors.emerald.withValues(alpha: 0.12),
@@ -184,7 +187,10 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         isDark: isDark,
         child: Column(
           children: [
-            if (!isLive) const _ActivateAiCard(),
+            if (isWebMock)
+              const _WebCorsDevCard()
+            else if (!isLive)
+              const _ActivateAiCard(),
             Expanded(
               child: Stack(
                 children: [
@@ -346,6 +352,80 @@ class _ExampleQuestionsBar extends StatelessWidget {
             onPressed: enabled ? () => onTap(q) : null,
           );
         },
+      ),
+    );
+  }
+}
+
+/// بطاقة Web — CORS يمنع الاتصال المباشر؛ وضع تجريبي تلقائي.
+class _WebCorsDevCard extends StatelessWidget {
+  const _WebCorsDevCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topRight,
+            end: Alignment.bottomLeft,
+            colors: [
+              AppColors.info.withValues(alpha: 0.14),
+              AppColors.emerald.withValues(alpha: 0.1),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.info.withValues(alpha: 0.35)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.info.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.language_rounded,
+                  color: AppColors.info,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'وضع Chrome/Web — تجريبي (CORS)',
+                      style: GoogleFonts.cairo(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.info,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      ApiKeys.anthropicWebCorsMessage,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        height: 1.45,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.78),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

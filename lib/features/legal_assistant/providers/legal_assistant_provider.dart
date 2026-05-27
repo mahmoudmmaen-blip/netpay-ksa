@@ -15,3 +15,7 @@ final legalAiRemainingProvider = FutureProvider<int>((ref) async {
 final legalAiLiveModeProvider = Provider<bool>((ref) {
   return ref.watch(legalAiServiceProvider).isLiveMode;
 });
+
+final legalAiWebMockProvider = Provider<bool>((ref) {
+  return ref.watch(legalAiServiceProvider).isWebMockOverride;
+});
