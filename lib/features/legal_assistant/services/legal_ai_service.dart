@@ -206,7 +206,6 @@ class LegalAiService {
     List<ChatMessage> history,
   ) async {
     final messages = <Map<String, String>>[];
-
     for (final m in history) {
       if (m.isError) continue;
       messages.add({
@@ -223,35 +222,44 @@ class LegalAiService {
       'messages': messages,
     });
 
-    final response = await _http
-        .post(
-          _messagesEndpoint,
-          headers: _requestHeaders,
-          body: body,
-        )
-        .timeout(const Duration(seconds: 30));
+    debugPrint('=== LegalAI CALLING: $_apiUrl');
+    debugPrint('=== LegalAI KEY LENGTH: ${ApiKeys.anthropicApiKey.length}');
 
-    debugPrint('=== LegalAI RESPONSE: status=${response.statusCode}, body=${response.body.substring(0, response.body.length.clamp(0, 200))}');
-    if (response.statusCode != 200) {
-      final err = _parseError(response.body);
-      throw LegalAiException(err);
-    }
+    try {
+      final response = await _http
+          .post(
+            _messagesEndpoint,
+            headers: _requestHeaders,
+            body: body,
+          )
+          .timeout(const Duration(seconds: 30));
 
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final content = data['content'];
-    if (content is! List || content.isEmpty) {
-      throw LegalAiException('رد فارغ من المساعد.');
-    }
+      debugPrint('=== LegalAI STATUS: ${response.statusCode}');
+      debugPrint('=== LegalAI BODY: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
 
-    final first = content.first;
-    if (first is Map<String, dynamic>) {
-      final text = first['text'];
-      if (text is String && text.trim().isNotEmpty) {
-        return text.trim();
+      if (response.statusCode != 200) {
+        final err = _parseError(response.body);
+        throw LegalAiException(err);
       }
-    }
 
-    throw LegalAiException('تعذر قراءة رد المساعد.');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final content = data['content'];
+      if (content is! List || content.isEmpty) {
+        throw LegalAiException('رد فارغ من المساعد.');
+      }
+      final first = content.first;
+      if (first is Map<String, dynamic>) {
+        final text = first['text'];
+        if (text is String && text.trim().isNotEmpty) {
+          return text.trim();
+        }
+      }
+      throw LegalAiException('تعذر قراءة رد المساعد.');
+    } catch (e, stack) {
+      debugPrint('=== LegalAI EXCEPTION: $e');
+      debugPrint('=== LegalAI STACK: $stack');
+      rethrow;
+    }
   }
 
   String _parseError(String body) {
