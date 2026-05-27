@@ -147,14 +147,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final items = <HomeQuickActionItem>[
       HomeQuickActionItem(
-        title: 'نهاية الخدمة',
-        icon: Icons.card_giftcard_outlined,
-        onTap: () => context.push(AppRoutes.eosb),
+        title: 'المساعد القانوني',
+        icon: Icons.balance_rounded,
+        highlighted: true,
+        onTap: () => context.push(AppRoutes.legal),
       ),
       HomeQuickActionItem(
-        title: 'المساعد القانوني',
-        icon: Icons.smart_toy_rounded,
-        highlighted: true,
+        title: 'نهاية الخدمة',
+        icon: Icons.card_giftcard_outlined,
         onTap: () => context.push(AppRoutes.legal),
       ),
       HomeQuickActionItem(

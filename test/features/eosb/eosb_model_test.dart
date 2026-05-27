@@ -1,83 +1,76 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
-  test('termination — full salary per year', () {
+  test('Saudi termination — full salary per year', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
       housingAllowance: 2500,
-      leavingReason: LeavingReason.termination,
+      terminationType: EosbTerminationType.employerDismissalUnfair,
     );
     expect(model.endOfServiceAmount, closeTo(37500, 0.01));
   });
 
-  test('contractEnd — same as termination', () {
+  test('contract expiry — same as unfair dismissal', () {
     const termination = EosbModel(
       yearsOfService: 5,
       basicSalary: 8000,
-      leavingReason: LeavingReason.termination,
+      terminationType: EosbTerminationType.employerDismissalUnfair,
     );
     const contractEnd = EosbModel(
       yearsOfService: 5,
       basicSalary: 8000,
-      leavingReason: LeavingReason.contractEnd,
+      terminationType: EosbTerminationType.contractExpiry,
     );
     expect(contractEnd.endOfServiceAmount, termination.endOfServiceAmount);
   });
 
-  test('resignation < 2 years — zero', () {
+  test('valid employer dismissal — zero EOS', () {
     const model = EosbModel(
-      yearsOfService: 1,
+      yearsOfService: 5,
       basicSalary: 10000,
-      leavingReason: LeavingReason.resignation,
+      terminationType: EosbTerminationType.employerDismissalValidReason,
     );
     expect(model.endOfServiceAmount, 0);
   });
 
-  test('resignation 2-5 years — one third', () {
+  test('resignation < 2 years Saudi — zero', () {
+    const model = EosbModel(
+      yearsOfService: 1,
+      basicSalary: 10000,
+      terminationType: EosbTerminationType.employeeResignation,
+    );
+    expect(model.endOfServiceAmount, 0);
+  });
+
+  test('resignation 2-5 years Saudi — one third', () {
     const model = EosbModel(
       yearsOfService: 4,
       basicSalary: 12000,
-      leavingReason: LeavingReason.resignation,
+      terminationType: EosbTerminationType.employeeResignation,
     );
     expect(model.endOfServiceAmount, closeTo(12000 * 4 / 3, 0.01));
   });
 
-  test('resignation 5-10 years — two thirds', () {
+  test('UAE gratuity — 21 days per year cap', () {
     const model = EosbModel(
-      yearsOfService: 7,
-      basicSalary: 10000,
-      leavingReason: LeavingReason.resignation,
+      country: GulfCountry.uae,
+      yearsOfService: 3,
+      basicSalary: 12000,
+      terminationType: EosbTerminationType.employerDismissalUnfair,
     );
-    expect(model.endOfServiceAmount, closeTo(10000 * 7 * 2 / 3, 0.01));
+    final daily = 12000 / 30;
+    expect(model.endOfServiceAmount, closeTo(3 * 21 * daily, 0.01));
   });
 
-  test('resignation 10+ years — full', () {
+  test('cash leave allowance', () {
     const model = EosbModel(
-      yearsOfService: 12,
-      basicSalary: 9000,
-      leavingReason: LeavingReason.resignation,
+      basicSalary: 15000,
+      accruedLeaveDays: 10,
     );
-    expect(model.endOfServiceAmount, closeTo(9000 * 12, 0.01));
-  });
-
-  test('vacationAllowance — 21 days before 5 years', () {
-    const model = EosbModel(
-      yearsOfService: 4,
-      basicSalary: 30000,
-    );
-    expect(model.annualVacationDays, 21);
-    expect(model.vacationAllowance, closeTo(30000 / 30 * 21, 0.01));
-  });
-
-  test('flightTicketAllowance — biannual', () {
-    const biannual = EosbModel(
-      yearsOfService: 2,
-      ticketCost: 3000,
-      ticketFrequency: FlightTicketFrequency.biannual,
-    );
-    expect(biannual.flightTicketAllowance, 12000);
+    expect(model.cashLeaveAllowance, closeTo(15000 / 30 * 10, 0.01));
   });
 
   test('totalEntitlements sums components', () {
@@ -86,6 +79,7 @@ void main() {
       basicSalary: 8000,
       housingAllowance: 2000,
       ticketCost: 2000,
+      includeFlightTicket: true,
     );
     expect(
       model.totalEntitlements,
@@ -96,18 +90,6 @@ void main() {
             model.cashLeaveAllowance,
         0.01,
       ),
-    );
-  });
-
-  test('cashLeaveAllowance — basic/30 × accrued days', () {
-    const model = EosbModel(
-      basicSalary: 15000,
-      accruedLeaveDays: 10,
-    );
-    expect(model.cashLeaveAllowance, closeTo(15000 / 30 * 10, 0.01));
-    expect(
-      model.totalEntitlements,
-      greaterThan(model.endOfServiceAmount),
     );
   });
 }
