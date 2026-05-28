@@ -1686,21 +1686,21 @@ class _EosbCountryGrid extends StatelessWidget {
   }
 
   static double _childAspectRatio(double width, int columns) {
-    if (width < 340) return 1.05;
-    if (columns == 2) return 1.0;
-    if (width > 520) return 0.9;
-    return 0.88;
+    if (width < 340) return 0.92;
+    if (columns == 2) return 0.88;
+    if (width > 520) return 0.82;
+    return 0.85;
   }
 
   static double _flagSize(double width) {
-    if (width < 340) return 26;
-    if (width > 520) return 30;
-    return 28;
+    if (width < 340) return 34;
+    if (width > 520) return 42;
+    return 38;
   }
 
   static double _nameFontSize(double width) {
-    if (width < 340) return 12;
-    return 11.5;
+    if (width < 340) return 12.5;
+    return 12;
   }
 
   @override
@@ -1730,48 +1730,67 @@ class _EosbCountryGrid extends StatelessWidget {
               HapticFeedback.selectionClick();
               onSelected(country);
             },
-            borderRadius: BorderRadius.circular(14),
-            child: AnimatedContainer(
+            borderRadius: BorderRadius.circular(16),
+            child: AnimatedScale(
+              scale: isSelected ? 1.03 : 1.0,
               duration: const Duration(milliseconds: 260),
               curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.emerald
+                        : Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.25),
+                    width: isSelected ? 3 : 1,
+                  ),
+                  gradient: isSelected
+                      ? LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            AppColors.emerald
+                                .withValues(alpha: isDark ? 0.38 : 0.2),
+                            AppColors.emeraldDark
+                                .withValues(alpha: isDark ? 0.18 : 0.08),
+                          ],
+                        )
+                      : null,
                   color: isSelected
-                      ? AppColors.emerald
+                      ? null
                       : Theme.of(context)
                           .colorScheme
-                          .outline
-                          .withValues(alpha: 0.3),
-                  width: isSelected ? 2.5 : 1,
-                ),
-                gradient: isSelected
-                    ? LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.emerald.withValues(alpha: isDark ? 0.28 : 0.14),
-                          AppColors.emeraldDark.withValues(alpha: isDark ? 0.12 : 0.05),
+                          .surface
+                          .withValues(alpha: isDark ? 0.4 : 0.7),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppColors.emerald.withValues(alpha: 0.35),
+                            blurRadius: 16,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 5),
+                          ),
+                          BoxShadow(
+                            color: AppColors.emeraldDark
+                                .withValues(alpha: 0.12),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
-                      )
-                    : null,
-                color: isSelected
-                    ? null
-                    : Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: isDark ? 0.35 : 0.65),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.emerald.withValues(alpha: 0.22),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
-              ),
+                ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1795,15 +1814,16 @@ class _EosbCountryGrid extends StatelessWidget {
                     ),
                   ),
                   if (isSelected) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     const Icon(
                       Icons.check_circle_rounded,
                       color: AppColors.emerald,
-                      size: 16,
+                      size: 18,
                     ),
                   ],
                 ],
               ),
+            ),
             ),
           ),
         );
@@ -1913,8 +1933,6 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
                 currency: currency,
                 isDark: widget.isDark,
               ),
-              const SizedBox(height: 10),
-              const _ResultsApproximationNote(),
               const SizedBox(height: 8),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 280),
@@ -1995,6 +2013,8 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              const _ResultsBottomDisclaimer(),
               const SizedBox(height: 12),
               const _LegalDisclaimer(),
             ],
@@ -2968,37 +2988,60 @@ class _EosbTextField extends StatelessWidget {
   }
 }
 
-/// تنبيه تقريبية تحت إجمالي النتائج.
-class _ResultsApproximationNote extends StatelessWidget {
-  const _ResultsApproximationNote();
+/// تنبيه تقريبية بارز — أسفل شاشة النتائج.
+class _ResultsBottomDisclaimer extends StatelessWidget {
+  const _ResultsBottomDisclaimer();
 
   @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.emerald.withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.emerald.withValues(alpha: isDark ? 0.2 : 0.1),
+            AppColors.warning.withValues(alpha: isDark ? 0.12 : 0.06),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.emerald.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.gavel_rounded,
-            size: 20,
-            color: Theme.of(context)
-                .colorScheme
-                .onSurface
-                .withValues(alpha: 0.5),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.emerald.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.gavel_rounded,
+              size: 22,
+              color: AppColors.emerald,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               EosbConstants.approximationDisclaimerAr,
               style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.45,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.65),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),

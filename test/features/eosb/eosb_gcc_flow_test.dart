@@ -152,11 +152,15 @@ void main() {
   test('approximation disclaimer constant is defined', () {
     expect(
       EosbConstants.approximationDisclaimerAr,
-      contains('استشارة قانونية رسمية'),
+      contains('استشارة قانونية'),
     );
     expect(
       EosbConstants.approximationDisclaimerAr,
       contains('محامٍ'),
+    );
+    expect(
+      EosbConstants.approximationDisclaimerAr,
+      contains('الجهات المختصة'),
     );
   });
 }

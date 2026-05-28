@@ -84,15 +84,34 @@ class EosbPdfService {
             (ref) => _legalCard(ref, font, fontBold),
           ),
           pw.SizedBox(height: 16),
-          pw.Center(
-            child: pw.Text(
-              EosbConstants.approximationDisclaimerAr,
-              style: pw.TextStyle(
-                font: font,
-                fontSize: 9,
-                color: PdfColors.grey700,
-              ),
-              textAlign: pw.TextAlign.center,
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(14),
+            decoration: pw.BoxDecoration(
+              color: _surface,
+              borderRadius: pw.BorderRadius.circular(8),
+              border: pw.Border.all(color: _emerald, width: 1.2),
+            ),
+            child: pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  '⚖ ',
+                  style: pw.TextStyle(font: fontBold, fontSize: 12),
+                ),
+                pw.Expanded(
+                  child: pw.Text(
+                    EosbConstants.approximationDisclaimerAr,
+                    style: pw.TextStyle(
+                      font: fontBold,
+                      fontSize: 10,
+                      color: _emeraldDark,
+                      lineSpacing: 4,
+                    ),
+                    textAlign: pw.TextAlign.right,
+                  ),
+                ),
+              ],
             ),
           ),
           pw.SizedBox(height: 24),
