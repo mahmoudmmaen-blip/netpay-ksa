@@ -86,30 +86,34 @@ class EosbPdfService {
           pw.SizedBox(height: 16),
           pw.Container(
             width: double.infinity,
-            padding: const pw.EdgeInsets.all(14),
+            padding: const pw.EdgeInsets.all(16),
             decoration: pw.BoxDecoration(
               color: _surface,
-              borderRadius: pw.BorderRadius.circular(8),
-              border: pw.Border.all(color: _emerald, width: 1.2),
+              borderRadius: pw.BorderRadius.circular(10),
+              border: pw.Border.all(color: _emerald, width: 1.5),
             ),
-            child: pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.stretch,
               children: [
                 pw.Text(
-                  '⚖ ',
-                  style: pw.TextStyle(font: fontBold, fontSize: 12),
-                ),
-                pw.Expanded(
-                  child: pw.Text(
-                    EosbConstants.approximationDisclaimerAr,
-                    style: pw.TextStyle(
-                      font: fontBold,
-                      fontSize: 10,
-                      color: _emeraldDark,
-                      lineSpacing: 4,
-                    ),
-                    textAlign: pw.TextAlign.right,
+                  'تنبيه قانوني',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 11,
+                    color: _emeraldDark,
                   ),
+                  textAlign: pw.TextAlign.right,
+                ),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  EosbConstants.approximationDisclaimerAr,
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 10,
+                    color: PdfColors.grey800,
+                    lineSpacing: 5,
+                  ),
+                  textAlign: pw.TextAlign.right,
                 ),
               ],
             ),

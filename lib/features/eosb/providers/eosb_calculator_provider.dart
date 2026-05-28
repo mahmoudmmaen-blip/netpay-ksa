@@ -382,7 +382,8 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     return finishWizard() ? null : 'تعذّر عرض النتيجة — راجع البيانات';
   }
 
-  /// إنهاء المعالج — حفظ نتيجة الحساب والانتقال لشاشة النتائج.
+  /// إنهاء المعالج — يحفظ [eosbFinalizedResultProvider] ويفعّل [showResults]
+  /// لعرض شاشة النتائج (انتقال تلقائي عبر AnimatedSwitcher).
   bool finishWizard() {
     flushAllInputs();
     final validationError = state.validationBeforeResults();

@@ -120,23 +120,33 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
 
     ref.listen(eosbWizardProvider, (previous, next) {
       if (previous == null || !mounted) return;
+      // انتقال تلقائي من الخطوة 3 → شاشة النتائج بعد نجاح finishWizard.
       if (!previous.showResults && next.showResults) {
         HapticFeedback.mediumImpact();
         final result = ref.read(eosbFinalizedResultProvider);
         if (result == null) return;
         final total = result.totalEntitlements;
         final eos = result.endOfServiceAmount;
+        final sym = next.country.currencySymbol;
         final totalStr =
             NumberFormat.decimalPattern('ar').format(total.round());
         final message = eos <= 0 && total > 0
-            ? 'تم حساب مستحقاتك — الإجمالي $totalStr ${next.country.currencySymbol} '
+            ? 'تم الحساب بنجاح — الإجمالي $totalStr $sym '
                 '(بدون مكافأة نهاية خدمة حسب النظام)'
-            : 'تم حساب مستحقاتك — $totalStr ${next.country.currencySymbol}';
+            : 'تم الحساب بنجاح — الإجمالي $totalStr $sym · ${next.country.nameAr}';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              message,
-              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
             backgroundColor: AppColors.emerald,
             behavior: SnackBarBehavior.floating,
@@ -2189,15 +2199,16 @@ class _ResultsEdgeCaseBanner extends ConsumerWidget {
   }
 }
 
-/// شريط نجاح أعلى شاشة النتائج — يظهر بانتقال سلس.
-class _ResultsSuccessBanner extends StatefulWidget {
+/// شريط نجاح أعلى شاشة النتائج — يظهر عند الانتقال من المعالج.
+class _ResultsSuccessBanner extends ConsumerStatefulWidget {
   const _ResultsSuccessBanner();
 
   @override
-  State<_ResultsSuccessBanner> createState() => _ResultsSuccessBannerState();
+  ConsumerState<_ResultsSuccessBanner> createState() =>
+      _ResultsSuccessBannerState();
 }
 
-class _ResultsSuccessBannerState extends State<_ResultsSuccessBanner>
+class _ResultsSuccessBannerState extends ConsumerState<_ResultsSuccessBanner>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
@@ -2227,6 +2238,11 @@ class _ResultsSuccessBannerState extends State<_ResultsSuccessBanner>
 
   @override
   Widget build(BuildContext context) {
+    final result = ref.watch(eosbFinalizedResultProvider);
+    final countryHint = result != null
+        ? '${result.countryLabel} — '
+        : '';
+
     return FadeTransition(
       opacity: _fade,
       child: SlideTransition(
@@ -2254,18 +2270,19 @@ class _ResultsSuccessBannerState extends State<_ResultsSuccessBanner>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'تم الحساب بنجاح',
+                      'تم إكمال الحساب بنجاح',
                       style: GoogleFonts.cairo(
                         fontWeight: FontWeight.w800,
-                        fontSize: 14,
+                        fontSize: 15,
                         color: AppColors.emerald,
                       ),
                     ),
                     Text(
-                      'راجع التفاصيل أدناه أو صدّر تقرير PDF',
+                      '$countryHintانتقلت لشاشة النتائج — راجع التفاصيل أو صدّر PDF',
                       style: GoogleFonts.cairo(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
+                        height: 1.35,
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
@@ -2411,7 +2428,7 @@ class _InputsSummaryCard extends ConsumerWidget {
   }
 }
 
-/// بطاقة الإجمالي — دخول متحرك ومبلغ متحرك عند التحديث.
+/// بطاقة الإجمالي — تدرج لوني، مبلغ كبير متحرك، نبض خفيف بعد الظهور.
 class _AnimatedTotalHeroCard extends StatefulWidget {
   const _AnimatedTotalHeroCard({
     required this.result,
@@ -2428,32 +2445,44 @@ class _AnimatedTotalHeroCard extends StatefulWidget {
 }
 
 class _AnimatedTotalHeroCardState extends State<_AnimatedTotalHeroCard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _entryCtrl;
+  late final AnimationController _pulseCtrl;
   late final Animation<double> _entryScale;
   late final Animation<double> _entryFade;
+  late final Animation<double> _pulseScale;
 
   @override
   void initState() {
     super.initState();
     _entryCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 700),
+    );
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
     );
     final curve = CurvedAnimation(
       parent: _entryCtrl,
       curve: Curves.easeOutBack,
     );
-    _entryScale = Tween<double>(begin: 0.88, end: 1).animate(curve);
+    _entryScale = Tween<double>(begin: 0.85, end: 1).animate(curve);
     _entryFade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut),
     );
-    _entryCtrl.forward();
+    _pulseScale = Tween<double>(begin: 1, end: 1.025).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+    _entryCtrl.forward().then((_) {
+      if (mounted) _pulseCtrl.repeat(reverse: true);
+    });
   }
 
   @override
   void dispose() {
     _entryCtrl.dispose();
+    _pulseCtrl.dispose();
     super.dispose();
   }
 
@@ -2469,57 +2498,88 @@ class _AnimatedTotalHeroCardState extends State<_AnimatedTotalHeroCard>
         scale: _entryScale,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 22),
+          padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: AppColors.brandGradient,
-            boxShadow: AppColors.premiumCardGlow(isDark: widget.isDark),
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF064E3B),
+                Color(0xFF0D7A5F),
+                Color(0xFF0A5C47),
+              ],
+            ),
+            boxShadow: [
+              ...AppColors.premiumCardGlow(isDark: widget.isDark),
+              BoxShadow(
+                color: AppColors.goldBright.withValues(alpha: 0.2),
+                blurRadius: 24,
+                spreadRadius: -4,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             children: [
               Text(
                 result.countryLabel,
                 style: GoogleFonts.cairo(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.88),
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Text(
                 'إجمالي المستحقات',
                 style: GoogleFonts.cairo(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+                  color: Colors.white.withValues(alpha: 0.95),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: 0.3,
                 ),
               ),
-              const SizedBox(height: 12),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: total),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      widget.currency.format(value),
-                      style: GoogleFonts.cairo(
-                        fontSize: 52,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.goldBright,
-                        height: 1.05,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+              const SizedBox(height: 14),
+              ScaleTransition(
+                scale: _pulseScale,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: total),
+                  duration: const Duration(milliseconds: 1100),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Color(0xFFFFF8DC),
+                            AppColors.goldBright,
+                            Color(0xFFE8C547),
+                          ],
+                        ).createShader(bounds),
+                        child: Text(
+                          widget.currency.format(value),
+                          style: GoogleFonts.cairo(
+                            fontSize: 64,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            height: 1.02,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.35),
+                                blurRadius: 12,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 10),
               Text(
