@@ -537,7 +537,8 @@ class _StepContractState extends ConsumerState<_StepContract> {
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
-    final currency = wizard.country.currencySymbol;
+    final currencySuffix =
+        wizard.country == GulfCountry.saudiArabia ? 'ريال' : 'درهم';
     final showFieldErrors = !wizard.canProceedStep1;
 
     return Column(
@@ -598,8 +599,9 @@ class _StepContractState extends ConsumerState<_StepContract> {
               const SizedBox(height: 12),
               _EosbTextField(
                 controller: _basicCtrl,
-                label: 'الراتب الأساسي ($currency)',
+                label: 'الراتب الأساسي',
                 hint: 'مثال: 12000',
+                suffixText: currencySuffix,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -611,8 +613,9 @@ class _StepContractState extends ConsumerState<_StepContract> {
               const SizedBox(height: 12),
               _EosbTextField(
                 controller: _housingCtrl,
-                label: 'بدل السكن ($currency) (اختياري)',
+                label: 'بدل السكن (اختياري)',
                 hint: 'اتركه فارغاً إن لم يوجد',
+                suffixText: currencySuffix,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
@@ -1062,6 +1065,7 @@ class _EosbTextField extends StatelessWidget {
     required this.label,
     this.hint,
     this.errorText,
+    this.suffixText,
     this.keyboardType,
     this.inputFormatters,
     this.onChanged,
@@ -1071,6 +1075,7 @@ class _EosbTextField extends StatelessWidget {
   final String label;
   final String? hint;
   final String? errorText;
+  final String? suffixText;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
@@ -1089,6 +1094,7 @@ class _EosbTextField extends StatelessWidget {
         labelText: label,
         hintText: hint,
         errorText: errorText,
+        suffixText: suffixText,
         labelStyle: GoogleFonts.cairo(fontSize: 13),
         hintStyle: GoogleFonts.cairo(
           fontSize: 13,
@@ -1096,6 +1102,14 @@ class _EosbTextField extends StatelessWidget {
               .colorScheme
               .onSurface
               .withValues(alpha: 0.45),
+        ),
+        suffixStyle: GoogleFonts.cairo(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: Theme.of(context)
+              .colorScheme
+              .onSurface
+              .withValues(alpha: 0.7),
         ),
         errorStyle: GoogleFonts.cairo(fontSize: 11),
         filled: true,
