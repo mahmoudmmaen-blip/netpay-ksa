@@ -57,8 +57,10 @@ class EosbWizardState {
   /// الخطوة 3 — كل الحقول اختيارية.
   bool get canProceedStep2 => true;
 
-  /// معاينة مباشرة عند اكتمال الخطوتين 1 و 2.
-  bool get canShowLivePreview => canProceedStep0 && canProceedStep1;
+  /// معاينة مباشرة — تظهر بعد اختيار الإنهاء وأي بيانات عقد.
+  bool get canShowLivePreview =>
+      canProceedStep0 &&
+      (canProceedStep1 || basicSalary > 0 || years > 0 || months > 0);
 
   String? get serviceYearsFieldError {
     if (years > 40) return 'عدد السنوات يبدو غير واقعي (الحد الأقصى 40)';
@@ -89,8 +91,12 @@ class EosbWizardState {
   }
 
   /// هل يمكن الانتقال للخطوة التالية أو عرض النتيجة؟
-  bool get canAdvanceFromCurrentStep =>
-      validationMessageForStep(stepIndex) == null;
+  bool get canAdvanceFromCurrentStep {
+    if (stepIndex >= totalSteps - 1) {
+      return validationBeforeResults() == null;
+    }
+    return validationMessageForStep(stepIndex) == null;
+  }
 
   /// التحقق الكامل قبل عرض النتائج.
   String? validationBeforeResults() {
@@ -219,6 +225,9 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     state = state.copyWith(
       includeFlightTicket: include,
       ticketCost: cost ?? state.ticketCost,
+      ticketFrequency: include
+          ? FlightTicketFrequency.yearly
+          : state.ticketFrequency,
     );
   }
 

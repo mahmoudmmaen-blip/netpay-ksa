@@ -287,7 +287,7 @@ class _WizardBottomBar extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (wizard.canShowLivePreview && stepIndex >= 1) const _LivePreviewBar(),
+        if (wizard.canShowLivePreview) const _LivePreviewBar(),
         if (validationMsg != null && !canAdvance)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -331,16 +331,10 @@ class _WizardBottomBar extends ConsumerWidget {
                           );
                           return;
                         }
-                        if (!notifier.nextStep()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'أكمل جميع الخطوات المطلوبة',
-                                style: GoogleFonts.cairo(),
-                              ),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
+                        if (isLastStep) {
+                          notifier.finishWizard();
+                        } else {
+                          notifier.nextStep();
                         }
                       }
                     : null,
@@ -505,18 +499,17 @@ class _StepContractState extends ConsumerState<_StepContract> {
   void initState() {
     super.initState();
     final w = ref.read(eosbWizardProvider);
-    _yearsCtrl = TextEditingController(
-      text: w.years > 0 ? '${w.years}' : '',
-    );
-    _monthsCtrl = TextEditingController(
-      text: w.months > 0 ? '${w.months}' : '',
-    );
+    _yearsCtrl = TextEditingController(text: '${w.years}');
+    _monthsCtrl = TextEditingController(text: '${w.months}');
     _basicCtrl = TextEditingController(
       text: w.basicSalary > 0 ? _fmt(w.basicSalary) : '',
     );
     _housingCtrl = TextEditingController(
       text: w.housingAllowance > 0 ? _fmt(w.housingAllowance) : '',
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _pushToProvider();
+    });
   }
 
   @override
@@ -652,9 +645,14 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   void initState() {
     super.initState();
     final days = ref.read(eosbWizardProvider).accruedLeaveDays;
-    _leaveCtrl = TextEditingController(
-      text: days > 0 ? '$days' : '',
-    );
+    _leaveCtrl = TextEditingController(text: '$days');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(eosbWizardProvider.notifier).setAccruedLeave(
+              int.tryParse(_leaveCtrl.text) ?? 0,
+            );
+      }
+    });
   }
 
   @override
@@ -689,11 +687,11 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: SwitchListTile(
             title: Text(
-              'هل تستحق تذكرة طيران؟',
+              'هل تستحق تذكرة طيران سنوية؟',
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              'للوافدين حسب العقد أو اللائحة',
+              'تذكرة سنوية للوافد حسب العقد أو اللائحة',
               style: GoogleFonts.cairo(fontSize: 11),
             ),
             value: wizard.includeFlightTicket,
