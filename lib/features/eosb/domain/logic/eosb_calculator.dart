@@ -30,6 +30,7 @@ class EosbCalculationResult {
     required this.components,
     required this.legalReferences,
     required this.resignationFactorApplied,
+    this.appliedAwardPercent,
   });
 
   final EosbModel input;
@@ -43,6 +44,9 @@ class EosbCalculationResult {
 
   /// نسبة الاستقالة المطبّقة (null = غير مستخدمة).
   final double? resignationFactorApplied;
+
+  /// نسبة مخصّصة على المكافأة (اتفاق بالتراضي / فصل لسبب مشروع).
+  final double? appliedAwardPercent;
 
   String get countryLabel =>
       '${input.country.flag} ${input.country.nameAr}';
@@ -90,7 +94,6 @@ class EosbCalculator {
 
   static double computeEndOfServiceAward(EosbModel input) {
     if (input.totalServiceYears <= 0) return 0;
-    if (input.isValidEmployerDismissal) return 0;
 
     if (input.country == GulfCountry.uae) {
       return _computeUaeGratuity(input);
@@ -98,48 +101,69 @@ class EosbCalculator {
     return _computeSaudiEndOfService(input);
   }
 
-  /// السعودية — م. 84: نصف شهر (أساسي + سكن) لأول 5 سنوات، شهر كامل بعدها.
-  static double saudiArticle84Base(EosbModel input) {
-    final wage = input.eosWageBase;
-    if (wage <= 0) return 0;
+  // ─── السعودية ───────────────────────────────────────────────────────
+
+  /// فصل تعسفي — مكافأة كاملة: الراتب الأساسي × سنوات الخدمة.
+  static double saudiUnfairDismissalAward(EosbModel input) {
+    if (input.basicSalary <= 0) return 0;
+    return input.basicSalary * input.totalServiceYears;
+  }
+
+  /// م. 84 — نصف الراتب الأساسي لأول 5 سنوات + راتب كامل لكل سنة بعدها.
+  static double saudiArticle84OnBasic(EosbModel input) {
+    if (input.basicSalary <= 0) return 0;
     final y = input.totalServiceYears;
     final first5 = y.clamp(0.0, 5.0);
     final after5 = (y - 5).clamp(0.0, 100.0);
-    return (wage * 0.5 * first5) + (wage * after5);
+    return (input.basicSalary * 0.5 * first5) + (input.basicSalary * after5);
   }
 
   static double _computeSaudiEndOfService(EosbModel input) {
-    final base = saudiArticle84Base(input);
-    if (base <= 0) return 0;
+    if (input.basicSalary <= 0) return 0;
+
+    final unfairFull = saudiUnfairDismissalAward(input);
+    final art84 = saudiArticle84OnBasic(input);
 
     return switch (input.terminationType) {
-      // فصل تعسفي: مكافأة كاملة بلا خصم نسب الاستقالة (م. 84 — لا تُطبَّق م. 85)
-      EosbTerminationType.employerDismissalUnfair => base,
-      EosbTerminationType.employerDismissalValidReason => 0,
+      EosbTerminationType.employerDismissalUnfair => unfairFull,
+      EosbTerminationType.employerDismissalValidReason => unfairFull * 0.5,
       EosbTerminationType.employeeResignation =>
-        base * saudiResignationFactor(input.totalServiceYears),
+        art84 * saudiResignationFactor(input.totalServiceYears),
       EosbTerminationType.contractExpiry =>
-        _saudiContractExpiryAward(input, base),
-      EosbTerminationType.mutualAgreement => base,
-      EosbTerminationType.retirementOrDeath => base,
+        _saudiContractExpiryAward(input, art84),
+      EosbTerminationType.mutualAgreement =>
+        art84 * (input.mutualAgreementPercent / 100),
+      EosbTerminationType.retirementOrDeath => art84,
     };
   }
 
-  /// انتهاء عقد: محدد المدة = م. 84 عند انتهاء المدة؛ غير محدد = م. 84 كاملة.
-  static double _saudiContractExpiryAward(EosbModel input, double base) {
+  /// انتهاء عقد: أقل من سنة في عقد محدد → نصف م. 84؛ وإلا كامل.
+  static double _saudiContractExpiryAward(EosbModel input, double art84) {
     if (input.contractType == EosbContractType.fixed &&
         input.totalServiceYears < 1) {
-      return 0;
+      return art84 * 0.5;
     }
-    return base;
+    return art84;
   }
 
-  /// م. 85 — نسب الاستقالة.
+  /// م. 85 — نسب الاستقالة على أساس م. 84.
   static double saudiResignationFactor(double years) {
     if (years < 2) return 0;
     if (years < 5) return 1 / 3;
     if (years < 10) return 2 / 3;
     return 1;
+  }
+
+  static double? _saudiAppliedPercent(EosbModel input) {
+    return switch (input.terminationType) {
+      EosbTerminationType.employerDismissalValidReason => 50.0,
+      EosbTerminationType.mutualAgreement => input.mutualAgreementPercent,
+      EosbTerminationType.contractExpiry when
+            input.contractType == EosbContractType.fixed &&
+                input.totalServiceYears < 1 =>
+        50.0,
+      _ => null,
+    };
   }
 
   // ─── الإمارات — م. 132 / 51 ───────────────────────────────────────
@@ -167,24 +191,46 @@ class EosbCalculator {
     if (base <= 0) return 0;
 
     return switch (input.terminationType) {
-      EosbTerminationType.employerDismissalValidReason => 0,
+      EosbTerminationType.employerDismissalUnfair => base,
+      EosbTerminationType.employerDismissalValidReason => base * 0.5,
       EosbTerminationType.employeeResignation =>
         base * uaeResignationFactor(input.totalServiceYears),
-      EosbTerminationType.contractExpiry => base,
-      EosbTerminationType.mutualAgreement => base,
+      EosbTerminationType.contractExpiry =>
+        input.contractType == EosbContractType.fixed &&
+                input.totalServiceYears < 1
+            ? base * 0.5
+            : base,
+      EosbTerminationType.mutualAgreement =>
+        base * (input.mutualAgreementPercent / 100),
       EosbTerminationType.retirementOrDeath => base,
-      _ => base,
     };
+  }
+
+  static double? _uaeAppliedPercent(EosbModel input) {
+    return switch (input.terminationType) {
+      EosbTerminationType.employerDismissalValidReason => 50.0,
+      EosbTerminationType.mutualAgreement => input.mutualAgreementPercent,
+      EosbTerminationType.contractExpiry when
+            input.contractType == EosbContractType.fixed &&
+                input.totalServiceYears < 1 =>
+        50.0,
+      _ => null,
+    };
+  }
+
+  static double? appliedAwardPercent(EosbModel input) {
+    if (input.country == GulfCountry.uae) {
+      return _uaeAppliedPercent(input);
+    }
+    return _saudiAppliedPercent(input);
   }
 
   // ─── بدلات إضافية ───────────────────────────────────────────────────
 
-  /// بدل الإجازات المتبقية — (الراتب الشهري ÷ 30) × أيام متبقية.
+  /// بدل الإجازات المتبقية — (الراتب ÷ 30) × أيام متبقية.
   static double computeCashLeaveAllowance(EosbModel input) {
-    if (input.accruedLeaveDays <= 0) return 0;
-    final daily = input.leaveDailyWage;
-    if (daily <= 0) return 0;
-    return daily * input.accruedLeaveDays;
+    if (input.accruedLeaveDays <= 0 || input.basicSalary <= 0) return 0;
+    return (input.basicSalary / 30) * input.accruedLeaveDays;
   }
 
   /// بدل إجازة سنوية تقديري — 21 أو 30 يوم حسب مدة الخدمة.
@@ -193,16 +239,22 @@ class EosbCalculator {
     return input.dailyWage * input.annualVacationDays;
   }
 
+  /// تكلفة التذكرة الفعلية (تقدير تلقائي إن لم يُدخل المستخدم مبلغاً).
+  static double resolveTicketUnitCost(EosbModel input) {
+    if (!input.includeFlightTicket) return 0;
+    if (input.ticketCost > 0) return input.ticketCost;
+    return defaultYearlyTicketEstimate(input.country);
+  }
+
   /// تذكرة طيران — تقدير سنوي × سنوات الخدمة.
   static double computeFlightTicketAllowance(EosbModel input) {
-    if (!input.includeFlightTicket ||
-        input.ticketCost <= 0 ||
-        input.totalServiceYears <= 0) {
+    if (!input.includeFlightTicket || input.totalServiceYears <= 0) {
       return 0;
     }
+    final unit = resolveTicketUnitCost(input);
     final multiplier =
         input.ticketFrequency == FlightTicketFrequency.biannual ? 2.0 : 1.0;
-    return input.ticketCost * multiplier * input.totalServiceYears;
+    return unit * multiplier * input.totalServiceYears;
   }
 
   // ─── مراجع قانونية ──────────────────────────────────────────────────
@@ -220,9 +272,9 @@ class EosbCalculator {
     if (input.terminationType == EosbTerminationType.employerDismissalUnfair) {
       refs.add(
         const EosbLegalReference(
-          article: 'المادة 84 — فصل تعسفي',
+          article: 'المادة 85 — فصل تعسفي',
           summary:
-              'يستحق العامل مكافأة نهاية الخدمة كاملة دون تطبيق نسب الاستقالة: نصف شهر أجر (أساسي + سكن) عن كل سنة من أول 5 سنوات، وشهر أجر كامل عن كل سنة بعدها.',
+              'مكافأة كاملة: الراتب الأساسي × عدد سنوات الخدمة (دون خصم نسب الاستقالة).',
         ),
       );
     } else {
@@ -230,7 +282,7 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'المادة 84 — حساب المكافأة',
           summary:
-              'نصف شهر أجر (أساسي + بدل سكن) عن كل سنة من أول 5 سنوات، وشهر أجر كامل عن كل سنة بعدها.',
+              'نصف الراتب الأساسي عن كل سنة من أول 5 سنوات، وراتب أساسي كامل عن كل سنة بعد السنة الخامسة.',
         ),
       );
     }
@@ -240,7 +292,27 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'المادة 85 — الاستقالة',
           summary:
-              'أقل من سنتين: لا مكافأة | من 2 إلى 5: ثلث المكافأة | من 5 إلى 10: ثلثان | 10 سنوات فأكثر: المكافأة كاملة.',
+              'تُطبَّق على أساس المادة 84: أقل من سنتين (0) | 2–5 (ثلث) | 5–10 (ثلثان) | 10+ (كامل).',
+        ),
+      );
+    }
+
+    if (input.terminationType == EosbTerminationType.employerDismissalValidReason) {
+      refs.add(
+        const EosbLegalReference(
+          article: 'المادة 80 — فصل لسبب مشروع',
+          summary:
+              'نصف المكافأة المستحقة (50% من الراتب الأساسي × سنوات الخدمة) — راجع سبب الفصل مع الموارد البشرية.',
+        ),
+      );
+    }
+
+    if (input.terminationType == EosbTerminationType.mutualAgreement) {
+      refs.add(
+        EosbLegalReference(
+          article: 'اتفاق بالتراضي',
+          summary:
+              'نسبة متفق عليها: ${input.mutualAgreementPercent.round()}% من مكافأة المادة 84 — يمكن تعديلها حسب الاتفاق.',
         ),
       );
     }
@@ -251,9 +323,10 @@ class EosbCalculator {
           article: input.contractType == EosbContractType.fixed
               ? 'انتهاء عقد محدد المدة — المادة 74'
               : 'انتهاء عقد غير محدد — المادة 75',
-          summary: input.contractType == EosbContractType.fixed
-              ? 'عند انتهاء مدة العقد المحدد دون تجديد، تُحسب المكافأة وفق المادة 84 إذا استوفى العامل مدة الخدمة.'
-              : 'إنهاء عقد غير محدد المدة يستوجب احتساب المكافأة وفق المادة 84 مع مراعاة إشعار الإنهاء.',
+          summary: input.contractType == EosbContractType.fixed &&
+                  input.totalServiceYears < 1
+              ? 'خدمة أقل من سنة: غالباً نصف مكافأة المادة 84.'
+              : 'انتهاء المدة أو الإنهاء: مكافأة كاملة وفق المادة 84.',
         ),
       );
     }
@@ -263,7 +336,7 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'المادة 109 — الإجازة السنوية',
           summary:
-              'يستحق العامل أجر أيام إجازة لم يُستخدمها عند انتهاء الخدمة: (الراتب الشهري ÷ 30) × الأيام المتبقية.',
+              '(الراتب ÷ 30) × أيام الإجازة المتبقية عند انتهاء الخدمة.',
         ),
       );
     }
@@ -273,17 +346,7 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'تذكرة السفر — العقد / اللائحة',
           summary:
-              'إن نص العقد أو اللائحة على تذكرة سنوية للعامل وعائلته، يُحتسب بدل تقديري حسب تكلفة الوجهة ومدة الخدمة.',
-        ),
-      );
-    }
-
-    if (input.isValidEmployerDismissal) {
-      refs.add(
-        const EosbLegalReference(
-          article: 'المادة 80 — فصل لسبب مشروع',
-          summary:
-              'قد يُسقط الفصل لسبب مشروع حق المكافأة — راجع سبب الإنهاء مع الموارد البشرية أو مستشار قانوني.',
+              'تقدير تلقائي حسب الدولة ومدة الخدمة عند عدم إدخال تكلفة يدوياً.',
         ),
       );
     }
@@ -293,7 +356,7 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'المادة 75 — إشعار الإنهاء',
           summary:
-              'عدم الالتزام بمدة الإشعار قد يترتب عليه تعويض إضافي — تحقق من نوع العقد ومدة الإشعار.',
+              'عدم الالتزام بمدة الإشعار قد يترتب عليه تعويض إضافي — تحقق من نوع العقد.',
         ),
       );
     }
@@ -306,21 +369,40 @@ class EosbCalculator {
       const EosbLegalReference(
         article: 'المادة 132 — قانون العمل الاتحادي',
         summary:
-            'يستحق العامل مكافأة نهاية الخدمة عند إنهاء العقد أو انتهائه، وفق أحكام المادة 51.',
+            'يستحق العامل مكافأة نهاية الخدمة عند إنهاء العقد أو انتهائه.',
       ),
       const EosbLegalReference(
         article: 'المادة 51 — قيمة المكافأة',
         summary:
-            '21 يوم أجر أساسي عن كل سنة من أول 5 سنوات، و30 يوماً عن كل سنة بعدها — بحد أقصى أجر سنتين.',
+            '21 يوم أجر أساسي (أول 5 سنوات) و30 يوماً (بعدها) — بحد أقصى أجر سنتين.',
       ),
     ];
+
+    if (input.terminationType == EosbTerminationType.employerDismissalValidReason) {
+      refs.add(
+        const EosbLegalReference(
+          article: 'إنهاء لسبب مشروع',
+          summary: 'نصف مكافأة نهاية الخدمة المستحقة وفق المادة 51.',
+        ),
+      );
+    }
 
     if (input.isResignation) {
       refs.add(
         const EosbLegalReference(
           article: 'المرسوم الاتحادي رقم 33 لسنة 2021',
           summary:
-              'الاستقالة: أقل من سنة (0) | 1–3 سنوات (0) | 3–5 سنوات (ثلث) | 5+ (كامل).',
+              'الاستقالة: أقل من 3 سنوات (0) | 3–5 (ثلث) | 5+ (كامل).',
+        ),
+      );
+    }
+
+    if (input.terminationType == EosbTerminationType.mutualAgreement) {
+      refs.add(
+        EosbLegalReference(
+          article: 'اتفاق بالتراضي',
+          summary:
+              'نسبة ${input.mutualAgreementPercent.round()}% من المكافأة حسب الاتفاق.',
         ),
       );
     }
@@ -329,18 +411,18 @@ class EosbCalculator {
       refs.add(
         const EosbLegalReference(
           article: 'المادة 75 — الإجازة السنوية',
-          summary:
-              'يُصرف للعامل أجر أيام الإجازة المتبقية عند انتهاء الخدمة.',
+          summary: '(الراتب ÷ 30) × أيام الإجازة المتبقية.',
         ),
       );
     }
 
     if (input.includeFlightTicket) {
+      final est = defaultYearlyTicketEstimate(GulfCountry.uae).round();
       refs.add(
-        const EosbLegalReference(
-          article: 'تذكرة السفر — العقد',
+        EosbLegalReference(
+          article: 'تذكرة السفر',
           summary:
-              'تقدير تذكرة العودة للوطن حسب ما ينص عليه عقد العمل أو عُرف المهنة في القطاع.',
+              'تقدير تلقائي: $est ${input.country.currencySymbol}/سنة عند عدم إدخال تكلفة.',
         ),
       );
     }
@@ -356,6 +438,8 @@ class EosbCalculator {
     required double flightTicketValue,
     required double totalEntitlements,
   }) {
+    final ticketUnit = resolveTicketUnitCost(input);
+
     final components = <EosbComponentItem>[
       EosbComponentItem(
         id: 'eos',
@@ -369,7 +453,7 @@ class EosbCalculator {
           id: 'leave',
           titleAr: 'بدل الإجازات المتبقية',
           subtitleAr:
-              '${input.accruedLeaveDays} يوم · أجر يومي ${input.leaveDailyWage.toStringAsFixed(0)}',
+              '${input.accruedLeaveDays} يوم · (${input.basicSalary.round()} ÷ 30) × ${input.accruedLeaveDays}',
           amount: remainingLeavePay,
         ),
       if (vacationEntitlementPay > 0)
@@ -377,24 +461,24 @@ class EosbCalculator {
           id: 'vacation',
           titleAr: 'بدل إجازة سنوية (تقديري)',
           subtitleAr:
-              '${input.annualVacationDays} يوم · ${input.totalServiceYears.toStringAsFixed(1)} سنة خدمة',
+              '${input.annualVacationDays} يوم · ${input.totalServiceYears.toStringAsFixed(1)} سنة',
           amount: vacationEntitlementPay,
         ),
       if (input.includeFlightTicket)
         EosbComponentItem(
           id: 'ticket',
           titleAr: 'تذكرة طيران (تقدير)',
-          subtitleAr: _ticketSubtitle(input, flightTicketValue),
+          subtitleAr: _ticketSubtitle(input, flightTicketValue, ticketUnit),
           amount: flightTicketValue,
         ),
     ];
 
-    double? factor;
+    double? resignationFactor;
     if (input.isResignation && endOfServiceAward > 0) {
-      factor = input.country == GulfCountry.uae
+      resignationFactor = input.country == GulfCountry.uae
           ? uaeResignationFactor(input.totalServiceYears)
           : saudiResignationFactor(input.totalServiceYears);
-      if (factor == 0) factor = null;
+      if (resignationFactor == 0) resignationFactor = null;
     }
 
     return EosbCalculationResult(
@@ -406,44 +490,60 @@ class EosbCalculator {
       totalEntitlements: totalEntitlements,
       components: components,
       legalReferences: buildLegalReferences(input),
-      resignationFactorApplied: factor,
+      resignationFactorApplied: resignationFactor,
+      appliedAwardPercent: appliedAwardPercent(input),
     );
   }
 
-  String _ticketSubtitle(EosbModel input, double amount) {
+  String _ticketSubtitle(
+    EosbModel input,
+    double amount,
+    double unitCost,
+  ) {
     if (amount <= 0) {
-      return 'تقدير غير متاح — تحقق من مدة الخدمة والتكلفة';
+      return 'تقدير غير متاح — فعّل التذكرة وأدخل مدة الخدمة';
     }
     final freq = EosbModel.ticketFrequencyLabel(input.ticketFrequency);
-    final cost = input.ticketCost.round();
+    final estimated = input.ticketCost <= 0;
+    final cost = unitCost.round();
     final years = input.totalServiceYears.toStringAsFixed(1);
-    return '$freq · $cost ${input.country.currencySymbol} × $years سنة';
+    final prefix = estimated ? 'تقدير تلقائي' : 'يدوي';
+    return '$prefix · $freq · $cost ${input.country.currencySymbol} × $years سنة';
   }
 
   String _eosSubtitle(EosbModel input, double amount) {
-    if (amount <= 0 && input.isValidEmployerDismissal) {
-      return 'فصل لسبب مشروع — قد لا يستحق (م. 80)';
-    }
-    if (input.isResignation) {
-      final f = input.country == GulfCountry.uae
-          ? uaeResignationFactor(input.totalServiceYears)
-          : saudiResignationFactor(input.totalServiceYears);
-      if (f == 0) return 'استقالة — أقل من الحد الأدنى للمدة';
-      if (f < 1) {
-        return 'استقالة — ${(f * 100).round()}% من مكافأة المادة 84';
-      }
-      return 'استقالة — مكافأة كاملة (م. 84 + 85)';
+    if (amount <= 0 && input.isResignation) {
+      final f = saudiResignationFactor(input.totalServiceYears);
+      if (f == 0) return 'استقالة — أقل من سنتين (م. 85)';
     }
     if (input.country == GulfCountry.uae) {
-      return 'م. 51/132 — 21/30 يوم أجر أساسي · حد أقصى سنتان';
+      if (input.terminationType == EosbTerminationType.employerDismissalValidReason) {
+        return 'فصل لسبب مشروع — 50% من م. 51';
+      }
+      return 'م. 51/132 — 21/30 يوم · حد سنتان';
     }
-    if (input.terminationType == EosbTerminationType.employerDismissalUnfair) {
-      return 'فصل تعسفي — مكافأة كاملة (م. 84) دون خصم الاستقالة';
-    }
-    if (input.terminationType == EosbTerminationType.contractExpiry) {
-      final type = EosbModel.contractTypeLabel(input.contractType);
-      return 'انتهاء عقد ($type) — المادة 84';
-    }
-    return 'م. 84 — وعاء: أساسي + سكن';
+
+    return switch (input.terminationType) {
+      EosbTerminationType.employerDismissalUnfair =>
+        'فصل تعسفي — أساسي × ${input.totalServiceYears.toStringAsFixed(1)} سنة (م. 85)',
+      EosbTerminationType.employerDismissalValidReason =>
+        'فصل لسبب مشروع — 50% من المكافأة',
+      EosbTerminationType.employeeResignation => () {
+        final f = saudiResignationFactor(input.totalServiceYears);
+        if (f == 0) return 'استقالة — لا مكافأة';
+        if (f < 1) return 'م. 84 + ${(f * 100).round()}% (م. 85)';
+        return 'م. 84 كاملة + م. 85';
+      }(),
+      EosbTerminationType.contractExpiry => () {
+        final half = input.contractType == EosbContractType.fixed &&
+            input.totalServiceYears < 1;
+        return half
+            ? 'انتهاء عقد — نصف م. 84 (أقل من سنة)'
+            : 'انتهاء عقد — م. 84 كاملة';
+      }(),
+      EosbTerminationType.mutualAgreement =>
+        'اتفاق بالتراضي — ${input.mutualAgreementPercent.round()}% من م. 84',
+      EosbTerminationType.retirementOrDeath => 'تقاعد/وفاة — م. 84 كاملة',
+    };
   }
 }

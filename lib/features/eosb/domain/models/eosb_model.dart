@@ -3,19 +3,19 @@ import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 
 /// سبب إنهاء علاقة العمل — السعودية والإمارات.
 enum EosbTerminationType {
-  /// فصل تعسفي / بدون سبب مشروع — مكافأة كاملة (م. 84)
+  /// فصل تعسفي — مكافأة كاملة (أساسي × سنوات)
   employerDismissalUnfair,
 
-  /// فصل لسبب مشروع (م. 80) — غالباً لا مكافأة
+  /// فصل لسبب مشروع — نصف المكافأة
   employerDismissalValidReason,
 
-  /// استقالة — نسب مخفّضة (م. 85 / قانون الإمارات)
+  /// استقالة — م. 84 + م. 85
   employeeResignation,
 
-  /// انتهاء مدة عقد محدد
+  /// انتهاء مدة عقد
   contractExpiry,
 
-  /// اتفاق بالتراضي
+  /// اتفاق بالتراضي — نسبة قابلة للتخصيص
   mutualAgreement,
 
   /// تقاعد أو وفاة
@@ -75,6 +75,7 @@ class EosbModel {
     this.ticketFrequency = FlightTicketFrequency.yearly,
     this.accruedLeaveDays = 0,
     this.noticeProvided = true,
+    this.mutualAgreementPercent = 100,
   });
 
   static const _calc = EosbCalculator();
@@ -94,12 +95,14 @@ class EosbModel {
   final FlightTicketFrequency ticketFrequency;
   final bool noticeProvided;
 
+  /// نسبة الاتفاق بالتراضي (0–100) على أساس م. 84 / م. 51.
+  final double mutualAgreementPercent;
+
   double get totalServiceYears =>
       yearsOfService +
       (monthsOfService.clamp(0, 11) / 12.0) +
       (daysOfService.clamp(0, 364) / 365.0);
 
-  /// وعاء المكافأة — السعودية: أساسي + سكن | الإمارات: الأساسي.
   double get eosWageBase => country == GulfCountry.uae
       ? basicSalary
       : basicSalary + housingAllowance;
@@ -109,8 +112,9 @@ class EosbModel {
 
   double get dailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
 
-  /// أجر اليوم لبدل الإجازات المتبقية — الراتب الشهري ÷ 30.
-  double get leaveDailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
+  /// تكلفة التذكرة المستخدمة في الحساب (تقدير تلقائي إن لزم).
+  double get effectiveTicketCost =>
+      EosbCalculator.resolveTicketUnitCost(this);
 
   int get annualVacationDays => totalServiceYears >= 5 ? 30 : 21;
 
@@ -120,13 +124,22 @@ class EosbModel {
   bool get isValidEmployerDismissal =>
       terminationType == EosbTerminationType.employerDismissalValidReason;
 
-  /// مكافأة نظرية كاملة قبل تطبيق نسبة الاستقالة (للعرض في النتائج).
+  bool get isMutualAgreement =>
+      terminationType == EosbTerminationType.mutualAgreement;
+
+  /// المكافأة النظرية قبل خصومات الاستقالة (للعرض).
   double get fullEndOfServiceBase {
     if (totalServiceYears <= 0) return 0;
     if (country == GulfCountry.uae) {
       return basicSalary > 0 ? EosbCalculator.uaeFullGratuity(this) : 0;
     }
-    return eosWageBase > 0 ? EosbCalculator.saudiArticle84Base(this) : 0;
+    return switch (terminationType) {
+      EosbTerminationType.employerDismissalUnfair =>
+        EosbCalculator.saudiUnfairDismissalAward(this),
+      EosbTerminationType.employerDismissalValidReason =>
+        EosbCalculator.saudiUnfairDismissalAward(this) * 0.5,
+      _ => EosbCalculator.saudiArticle84OnBasic(this),
+    };
   }
 
   double get resignationAwardFactor => country == GulfCountry.uae
@@ -211,6 +224,7 @@ class EosbModel {
     FlightTicketFrequency? ticketFrequency,
     int? accruedLeaveDays,
     bool? noticeProvided,
+    double? mutualAgreementPercent,
   }) {
     return EosbModel(
       country: country ?? this.country,
@@ -227,6 +241,8 @@ class EosbModel {
       ticketFrequency: ticketFrequency ?? this.ticketFrequency,
       accruedLeaveDays: accruedLeaveDays ?? this.accruedLeaveDays,
       noticeProvided: noticeProvided ?? this.noticeProvided,
+      mutualAgreementPercent:
+          mutualAgreementPercent ?? this.mutualAgreementPercent,
     );
   }
 
@@ -243,6 +259,5 @@ class EosbModel {
         FlightTicketFrequency.biannual => 'نصف سنوي (مرتين)',
       };
 
-  /// نتيجة الحساب الكاملة من المحرك الموحّد.
   EosbCalculationResult calculate() => _calc.calculateEndOfService(this);
 }

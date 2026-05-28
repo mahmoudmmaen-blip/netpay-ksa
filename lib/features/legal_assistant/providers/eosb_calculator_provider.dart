@@ -24,6 +24,7 @@ class EosbWizardState {
     this.ticketCost = 0,
     this.ticketFrequency = FlightTicketFrequency.yearly,
     this.noticeProvided = true,
+    this.mutualAgreementPercent = 100,
     this.showResults = false,
   });
 
@@ -43,6 +44,7 @@ class EosbWizardState {
   final double ticketCost;
   final FlightTicketFrequency ticketFrequency;
   final bool noticeProvided;
+  final double mutualAgreementPercent;
   final bool showResults;
 
   static const int totalSteps = 3;
@@ -57,10 +59,8 @@ class EosbWizardState {
   /// الخطوة 3 — كل الحقول اختيارية.
   bool get canProceedStep2 => true;
 
-  /// معاينة مباشرة — تظهر بعد اختيار الإنهاء وأي بيانات عقد.
-  bool get canShowLivePreview =>
-      canProceedStep0 &&
-      (canProceedStep1 || basicSalary > 0 || years > 0 || months > 0);
+  /// معاينة مباشرة — فور اختيار نوع الإنهاء (تتحدث مع كل حقل).
+  bool get canShowLivePreview => canProceedStep0;
 
   String? get serviceYearsFieldError {
     if (years > 40) return 'عدد السنوات يبدو غير واقعي (الحد الأقصى 40)';
@@ -127,6 +127,7 @@ class EosbWizardState {
         ticketFrequency: ticketFrequency,
         accruedLeaveDays: accruedLeaveDays,
         noticeProvided: noticeProvided,
+        mutualAgreementPercent: mutualAgreementPercent,
       );
 
   EosbWizardState copyWith({
@@ -146,6 +147,7 @@ class EosbWizardState {
     double? ticketCost,
     FlightTicketFrequency? ticketFrequency,
     bool? noticeProvided,
+    double? mutualAgreementPercent,
     bool? showResults,
   }) {
     return EosbWizardState(
@@ -166,6 +168,8 @@ class EosbWizardState {
       ticketCost: ticketCost ?? this.ticketCost,
       ticketFrequency: ticketFrequency ?? this.ticketFrequency,
       noticeProvided: noticeProvided ?? this.noticeProvided,
+      mutualAgreementPercent:
+          mutualAgreementPercent ?? this.mutualAgreementPercent,
       showResults: showResults ?? this.showResults,
     );
   }
@@ -253,6 +257,12 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void setNoticeProvided(bool value) {
     state = state.copyWith(noticeProvided: value);
+  }
+
+  void setMutualAgreementPercent(double percent) {
+    state = state.copyWith(
+      mutualAgreementPercent: percent.clamp(0, 100),
+    );
   }
 
   /// يتحقق من الخطوة الحالية ثم يتقدم أو يعرض النتائج.

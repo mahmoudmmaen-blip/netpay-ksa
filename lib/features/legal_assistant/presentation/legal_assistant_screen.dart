@@ -781,6 +781,52 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
             onChanged: (v) => notifier.setFlightTicket(include: v),
           ),
         ),
+        if (wizard.terminationType == EosbTerminationType.mutualAgreement) ...[
+          const SizedBox(height: 12),
+          GlassSurface(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'نسبة الاتفاق على المكافأة',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      '${wizard.mutualAgreementPercent.round()}%',
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.emerald,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: wizard.mutualAgreementPercent,
+                  min: 0,
+                  max: 100,
+                  divisions: 20,
+                  activeColor: AppColors.emerald,
+                  label: '${wizard.mutualAgreementPercent.round()}%',
+                  onChanged: notifier.setMutualAgreementPercent,
+                ),
+                Text(
+                  'تُطبَّق على أساس المادة 84 (السعودية) أو 51 (الإمارات)',
+                  style: GoogleFonts.cairo(
+                    fontSize: 11,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         GlassSurface(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -925,6 +971,7 @@ class _InputsSummaryCard extends ConsumerWidget {
     final m = result.input;
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
+    final awardPct = result.appliedAwardPercent;
     final rows = <(String, String)>[
       ('الدولة', '${m.country.flag} ${m.country.nameAr}'),
       ('نوع الإنهاء', m.terminationSummary),
@@ -941,12 +988,18 @@ class _InputsSummaryCard extends ConsumerWidget {
         ('بدلات أخرى', '${m.otherAllowances.round()} $currency'),
       if (factor != null)
         ('نسبة الاستقالة (م. 85)', '${(factor * 100).round()}%'),
+      if (awardPct != null)
+        ('نسبة المكافأة المطبّقة', '${awardPct.round()}%'),
+      if (m.isMutualAgreement)
+        ('اتفاق بالتراضي', '${m.mutualAgreementPercent.round()}%'),
       if (m.accruedLeaveDays > 0)
         ('إجازات متبقية', '${m.accruedLeaveDays} يوم'),
       if (m.includeFlightTicket)
         (
           'تذكرة طيران',
-          'تقدير ${m.ticketCost.round()} $currency · ${EosbModel.ticketFrequencyLabel(m.ticketFrequency)}',
+          '${m.ticketCost > 0 ? "يدوي" : "تقدير تلقائي"} '
+          '${m.effectiveTicketCost.round()} $currency · '
+          '${EosbModel.ticketFrequencyLabel(m.ticketFrequency)}',
         ),
       (
         'إشعار الإنهاء',
