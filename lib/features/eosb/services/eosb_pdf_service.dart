@@ -21,8 +21,12 @@ class EosbPdfService {
   static const PdfColor _surface = PdfColor.fromInt(0xFFF0FBF7);
   static const PdfColor _border = PdfColor.fromInt(0xFFE2E8F0);
 
+  /// إنشاء بايتات PDF — للاختبار والتصدير.
+  static Future<List<int>> buildPdfBytes(EosbCalculationResult result) =>
+      _buildBytes(result);
+
   static Future<void> exportAndShare(EosbCalculationResult result) async {
-    final bytes = await _buildBytes(result);
+    final bytes = await buildPdfBytes(result);
     await Printing.sharePdf(
       bytes: Uint8List.fromList(bytes),
       filename:

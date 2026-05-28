@@ -2655,7 +2655,8 @@ class _SaveCalculationButtonState extends State<_SaveCalculationButton> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'تم حفظ الحساب — راجعه من سجل نهاية الخدمة',
+              'تم حفظ حساب ${widget.result.input.country.nameAr} — '
+              'راجعه من سجل نهاية الخدمة',
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppColors.emerald,

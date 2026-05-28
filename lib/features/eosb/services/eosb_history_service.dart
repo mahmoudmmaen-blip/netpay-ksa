@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:netgulf/core/bootstrap/app_initializer.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
@@ -105,6 +107,25 @@ abstract final class EosbHistoryService {
   static const _storageKey = 'eosb_history_entries';
   static const _maxEntries = 50;
 
+  /// للاختبارات — صندوق Hive بديل عن [AppInitializer.historyBox].
+  @visibleForTesting
+  static Box<dynamic>? testHistoryBoxOverride;
+
+  static Box<dynamic>? get _historyBox =>
+      testHistoryBoxOverride ?? AppInitializer.historyBox;
+
+  @visibleForTesting
+  static void setHistoryBoxForTesting(Box<dynamic>? box) {
+    testHistoryBoxOverride = box;
+  }
+
+  @visibleForTesting
+  static Future<void> clearAllForTesting() async {
+    final box = _historyBox;
+    if (box == null) return;
+    await box.delete(_storageKey);
+  }
+
   static Map<String, dynamic> _modelSnapshot(EosbModel m) => {
         'country': m.country.name,
         'yearsOfService': m.yearsOfService,
@@ -124,7 +145,7 @@ abstract final class EosbHistoryService {
       };
 
   static Future<bool> save(EosbCalculationResult result) async {
-    final box = AppInitializer.historyBox;
+    final box = _historyBox;
     if (box == null) return false;
 
     final m = result.input;
@@ -148,7 +169,7 @@ abstract final class EosbHistoryService {
   }
 
   static Future<bool> delete(String id) async {
-    final box = AppInitializer.historyBox;
+    final box = _historyBox;
     if (box == null) return false;
     final next = loadAll().where((e) => e.id != id).toList();
     await _persist(next);
@@ -169,7 +190,7 @@ abstract final class EosbHistoryService {
   }
 
   static List<EosbHistoryEntry> loadAll() {
-    final box = AppInitializer.historyBox;
+    final box = _historyBox;
     if (box == null) return [];
 
     final raw = box.get(_storageKey);
@@ -182,7 +203,7 @@ abstract final class EosbHistoryService {
   }
 
   static Future<void> _persist(List<EosbHistoryEntry> entries) async {
-    final box = AppInitializer.historyBox;
+    final box = _historyBox;
     if (box == null) return;
     await box.put(_storageKey, entries.map((e) => e.toMap()).toList());
   }
