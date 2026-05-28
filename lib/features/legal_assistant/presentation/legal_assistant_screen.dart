@@ -63,12 +63,20 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
       if (previous == null || !mounted) return;
       if (!previous.showResults && next.showResults) {
         HapticFeedback.mediumImpact();
-        final total = ref.read(eosbResultsProvider).totalEntitlements;
+        final result = ref.read(eosbFinalizedResultProvider) ??
+            ref.read(eosbResultsProvider);
+        final total = result?.totalEntitlements ?? 0;
+        final eos = result?.endOfServiceAmount ?? 0;
+        final totalStr =
+            NumberFormat.decimalPattern('ar').format(total.round());
+        final message = eos <= 0 && total > 0
+            ? 'تم حساب مستحقاتك — الإجمالي $totalStr ${next.country.currencySymbol} '
+                '(بدون مكافأة نهاية خدمة حسب النظام)'
+            : 'تم حساب مستحقاتك — $totalStr ${next.country.currencySymbol}';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'تم حساب مستحقاتك — ${NumberFormat.decimalPattern('ar').format(total.round())} '
-              '${next.country.currencySymbol}',
+              message,
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppColors.emerald,
@@ -459,7 +467,10 @@ class _WizardBottomBar extends ConsumerWidget {
                   onPressed: canAdvance
                       ? () {
                           if (isLastStep) {
-                            eosbTryFinishAndShowResults(context, ref);
+                            notifier.flushAllInputs();
+                            if (eosbTryFinishAndShowResults(context, ref)) {
+                              HapticFeedback.mediumImpact();
+                            }
                             return;
                           }
                           notifier.flushAllInputs();
@@ -881,8 +892,13 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   }
 
   @override
-  void dispose() {
+  void deactivate() {
     _pushLeaveToProvider();
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
     ref
         .read(eosbWizardProvider.notifier)
         .unregisterInputSync(_pushLeaveToProvider);
@@ -990,7 +1006,12 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           const SizedBox(height: 16),
           _StepFinishButton(
             enabled: wizard.validationBeforeResults() == null,
-            onPressed: () => eosbTryFinishAndShowResults(context, ref),
+            onPressed: () {
+              notifier.flushAllInputs();
+              if (eosbTryFinishAndShowResults(context, ref)) {
+                HapticFeedback.mediumImpact();
+              }
+            },
           ),
         ],
       ],
@@ -1099,9 +1120,8 @@ class _EosbLivePreviewCard extends ConsumerWidget {
     final wizard = ref.watch(eosbWizardProvider);
     final previewKey = ref.watch(eosbLivePreviewKeyProvider);
     final result = ref.watch(eosbCalculatorProvider);
-    ref.watch(eosbResultsProvider);
     final eosAward = ref.watch(eosbEndOfServiceAwardProvider);
-    final lines = ref.watch(eosbPreviewLinesProvider);
+    final lines = EosbPreviewLine.fromResult(result);
     final model = result.input;
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
@@ -1323,6 +1343,8 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
             children: [
               const _ResultsSuccessBanner(),
               const SizedBox(height: 12),
+              const _ResultsEdgeCaseBanner(),
+              const SizedBox(height: 12),
               _TotalHeroCard(
                 result: result,
                 currency: currency,
@@ -1504,6 +1526,48 @@ class _EditWizardButton extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// تنبيه عند حالات خاصة (مثلاً استقالة إماراتية أقل من 3 سنوات).
+class _ResultsEdgeCaseBanner extends ConsumerWidget {
+  const _ResultsEdgeCaseBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final result = ref.watch(eosbResultsProvider);
+    final m = result.input;
+    final showUaeResignationZero = m.country == GulfCountry.uae &&
+        m.terminationType == EosbTerminationType.employeeResignation &&
+        result.endOfServiceAmount <= 0 &&
+        (result.resignationFactorApplied ?? 0) <= 0;
+
+    if (!showUaeResignationZero) {
+      return const SizedBox.shrink();
+    }
+
+    return GlassSurface(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: Colors.amber.shade700, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'استقالة قبل إتمام 3 سنوات في الإمارات — لا تستحق مكافأة '
+              'نهاية الخدمة (م. 51). قد يظهر في الإجمالي بدل إجازة أو تذكرة فقط.',
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+                color: Colors.amber.shade900,
+              ),
+            ),
           ),
         ],
       ),
@@ -1965,9 +2029,25 @@ class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
   }
 
   Future<void> _exportPdf(BuildContext context) async {
-    final EosbCalculationResult result =
-        ref.read(eosbFinalizedResultProvider) ?? ref.read(eosbResultsProvider);
-    if (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0) {
+    var result = ref.read(eosbFinalizedResultProvider);
+    if (result == null && ref.read(eosbWizardProvider).showResults) {
+      final err = ref.read(eosbWizardProvider.notifier).tryFinishWizard();
+      if (err != null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      result = ref.read(eosbFinalizedResultProvider);
+    }
+    result ??= ref.read(eosbResultsProvider);
+    if (result == null ||
+        (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

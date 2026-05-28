@@ -485,11 +485,16 @@ final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
   return EosbCalculator.calculateEndOfServiceAward(wizard.toModel());
 });
 
-/// بنود المعاينة المباشرة — متزامنة مع [eosbResultsProvider].
+/// بنود المعاينة المباشرة — حية في المعالج، مجمّدة على النتائج.
 final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
-  ref.watch(eosbWizardProvider); // أي تغيير في المعالج
-  final result = ref.watch(eosbResultsProvider);
-  return EosbPreviewLine.fromResult(result);
+  final wizard = ref.watch(eosbWizardProvider);
+  if (!wizard.showResults) {
+    return EosbPreviewLine.fromResult(ref.watch(eosbCalculatorProvider));
+  }
+  final finalized = ref.watch(eosbFinalizedResultProvider);
+  return EosbPreviewLine.fromResult(
+    finalized ?? ref.watch(eosbCalculatorProvider),
+  );
 });
 
 /// مفتاح إعادة بناء المعاينة — يتغير مع كل مدخل.
