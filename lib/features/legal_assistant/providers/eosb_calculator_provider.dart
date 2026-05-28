@@ -105,7 +105,13 @@ class EosbWizardState {
   String? validationBeforeResults() {
     for (var i = 0; i < totalSteps; i++) {
       final msg = validationMessageForStep(i);
-      if (msg != null) return msg;
+      if (msg != null) {
+        return switch (i) {
+          0 => msg,
+          1 => 'الخطوة 2 — $msg',
+          _ => msg,
+        };
+      }
     }
     return null;
   }
@@ -357,26 +363,8 @@ final eosbWizardProvider =
 /// يقرأ كل المدخلات: الدولة، الإنهاء، المدة، الرواتب، العقد، الإجازات،
 /// التذكرة، الإشعار، ونسبة الاتفاق بالتراضي.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
-  final w = ref.watch(eosbWizardProvider);
-  final model = EosbModel(
-    country: w.country,
-    yearsOfService: w.years,
-    monthsOfService: w.months.clamp(0, 11),
-    daysOfService: w.days.clamp(0, 364),
-    basicSalary: w.basicSalary,
-    housingAllowance: w.housingAllowance,
-    otherAllowances: w.otherAllowances,
-    contractType: w.contractType,
-    terminationType:
-        w.resolvedTermination ?? EosbTerminationType.employerDismissalUnfair,
-    ticketCost: w.ticketCost,
-    includeFlightTicket: w.includeFlightTicket,
-    ticketFrequency: w.ticketFrequency,
-    accruedLeaveDays: w.accruedLeaveDays,
-    noticeProvided: w.noticeProvided,
-    mutualAgreementPercent: w.mutualAgreementPercent,
-  );
-  return eosbEngine.calculateEndOfService(model);
+  final wizard = ref.watch(eosbWizardProvider);
+  return eosbEngine.calculateEndOfService(wizard.toModel());
 });
 
 /// بنود المعاينة المباشرة (عربي + مبلغ).
@@ -413,6 +401,10 @@ class EosbPreviewLine {
           labelAr: 'تذكرة طيران (تقدير)',
           amount: result.flightTicketAllowance,
         ),
+      EosbPreviewLine(
+        labelAr: 'الإجمالي المستحق',
+        amount: result.totalEntitlements,
+      ),
     ];
   }
 }

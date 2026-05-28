@@ -484,6 +484,12 @@ class EosbCalculator {
           subtitleAr: _ticketSubtitle(input, flightTicketValue, ticketUnit),
           amount: flightTicketValue,
         ),
+      EosbComponentItem(
+        id: 'total',
+        titleAr: 'الإجمالي المستحق',
+        subtitleAr: 'مكافأة + إجازات + تذكرة (إن وُجدت)',
+        amount: totalEntitlements,
+      ),
     ];
 
     double? resignationFactor;

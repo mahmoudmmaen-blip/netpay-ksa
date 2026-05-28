@@ -335,10 +335,13 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
     final canAdvance = wizard.canAdvanceFromCurrentStep;
-    final validationMsg = wizard.validationMessageForStep(stepIndex);
+    final validationMsg = isLastStep
+        ? wizard.validationBeforeResults()
+        : wizard.validationMessageForStep(stepIndex);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -877,6 +880,22 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
         ],
         const SizedBox(height: 12),
         GlassSurface(
+          padding: const EdgeInsets.all(14),
+          child: Text(
+            'بعد الضغط على «عرض النتيجة» ستظهر شاشة التفاصيل الكاملة '
+            'مع المراجع القانونية وإمكانية التصدير PDF.',
+            style: GoogleFonts.cairo(
+              fontSize: 12,
+              height: 1.45,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.65),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        GlassSurface(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: SwitchListTile(
             title: Text(
@@ -1047,7 +1066,12 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                         key: ValueKey('${line.labelAr}_${line.amount}'),
                         style: GoogleFonts.cairo(
                           fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: line.labelAr == 'الإجمالي المستحق'
+                              ? FontWeight.w800
+                              : FontWeight.w700,
+                          color: line.labelAr == 'الإجمالي المستحق'
+                              ? AppColors.emerald
+                              : null,
                         ),
                       ),
                     ),
@@ -1420,6 +1444,7 @@ class _ComponentCard extends StatelessWidget {
         'vacation' => Icons.beach_access_rounded,
         'leave' => Icons.event_available_rounded,
         'ticket' => Icons.flight_rounded,
+        'total' => Icons.summarize_rounded,
         _ => Icons.payments_rounded,
       };
 }
