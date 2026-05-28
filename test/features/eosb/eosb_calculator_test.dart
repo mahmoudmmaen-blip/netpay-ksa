@@ -50,7 +50,7 @@ void main() {
       basicSalary: 12000,
       terminationType: EosbTerminationType.employeeResignation,
     );
-    final result = calc.calculate(model);
+    final result = calc.calculateEndOfService(model);
     expect(result.resignationFactorApplied, closeTo(1 / 3, 0.001));
   });
 }

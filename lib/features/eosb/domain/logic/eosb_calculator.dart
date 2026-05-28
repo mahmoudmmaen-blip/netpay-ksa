@@ -88,10 +88,6 @@ class EosbCalculator {
     );
   }
 
-  /// @deprecated استخدم [calculateEndOfService]
-  EosbCalculationResult calculate(EosbModel input) =>
-      calculateEndOfService(input);
-
   // ─── مكافأة نهاية الخدمة (نقطة الدخول الموحّدة) ─────────────────────
 
   /// حساب مكافأة نهاية الخدمة حسب [EosbModel.terminationType] والدولة.
@@ -109,10 +105,6 @@ class EosbCalculator {
       GulfCountry.saudiArabia => _saudiEndOfServiceByTermination(input),
     };
   }
-
-  /// @deprecated استخدم [calculateEndOfServiceAward]
-  static double computeEndOfServiceAward(EosbModel input) =>
-      calculateEndOfServiceAward(input);
 
   // ─── السعودية — نظام العمل ─────────────────────────────────────────
 

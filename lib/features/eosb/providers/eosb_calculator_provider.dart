@@ -427,13 +427,6 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
-  /// مكافأة نهاية الخدمة فقط — [EosbCalculator.calculateEndOfServiceAward].
-  double calculateEndOfServiceAward() =>
-      EosbCalculator.calculateEndOfServiceAward(state.toModel());
-
-  /// حساب كامل من الحالة الحالية (معاينة مباشرة).
-  EosbCalculationResult calculateEndOfService() =>
-      eosbEngine.calculateEndOfService(state.toModel());
 }
 
 /// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
