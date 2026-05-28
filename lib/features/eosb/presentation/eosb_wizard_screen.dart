@@ -18,16 +18,21 @@ import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart'
 // ─── EOSB Wizard UI only (مكافأة نهاية الخدمة — السعودية والإمارات) ───
 // 3-step wizard → live preview → results + PDF. No other feature flows here.
 
-/// إنهاء المعالج → شاشة النتائج (انتقال تلقائي + شريط نجاح).
+/// إنهاء الخطوة 3 → الانتقال التلقائي لشاشة النتائج (بعد التحقق).
 bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
+  ref.read(eosbWizardProvider.notifier).flushAllInputs();
   final error = ref.read(eosbWizardProvider.notifier).tryFinishWizard();
-  if (error == null) return true;
+  if (error == null) {
+    // showResults=true يُفعّل AnimatedSwitcher في [EosbWizardScreen] فوراً.
+    return true;
+  }
 
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(error, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
       backgroundColor: AppColors.error,
       behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 3),
     ),
   );
   return false;
@@ -73,10 +78,10 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
       if (previous == null || !mounted) return;
       if (!previous.showResults && next.showResults) {
         HapticFeedback.mediumImpact();
-        final result = ref.read(eosbFinalizedResultProvider) ??
-            ref.read(eosbResultsProvider);
-        final total = result?.totalEntitlements ?? 0;
-        final eos = result?.endOfServiceAmount ?? 0;
+        final result = ref.read(eosbFinalizedResultProvider);
+        if (result == null) return;
+        final total = result.totalEntitlements;
+        final eos = result.endOfServiceAmount;
         final totalStr =
             NumberFormat.decimalPattern('ar').format(total.round());
         final message = eos <= 0 && total > 0
@@ -262,9 +267,22 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
         ),
         Expanded(
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
+            duration: const Duration(milliseconds: 320),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              final offset = Tween<Offset>(
+                begin: const Offset(0.06, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ));
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: offset, child: child),
+              );
+            },
             child: SingleChildScrollView(
               key: ValueKey<int>(step),
               controller: _scrollController,
@@ -272,7 +290,10 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
               child: switch (step) {
                 0 => _StepTermination(key: const ValueKey('s0')),
                 1 => _StepContract(key: const ValueKey('s1')),
-                _ => _StepExtras(key: const ValueKey('s2')),
+                _ => _StepExtras(
+                    key: const ValueKey('s2'),
+                    onFinish: () => eosbTryFinishAndShowResults(context, ref),
+                  ),
               },
             ),
           ),
@@ -405,7 +426,7 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
     final canAdvance = wizard.canAdvanceFromCurrentStep;
@@ -481,7 +502,6 @@ class _WizardBottomBar extends ConsumerWidget {
                   onPressed: canAdvance
                       ? () {
                           if (isLastStep) {
-                            notifier.flushAllInputs();
                             if (eosbTryFinishAndShowResults(context, ref)) {
                               HapticFeedback.mediumImpact();
                             }
@@ -537,12 +557,15 @@ class _WizardBottomBar extends ConsumerWidget {
   }
 }
 
-/// معاينة مباشرة — تتحدث فوراً مع [eosbCalculatorProvider].
-class _LivePreviewBar extends StatelessWidget {
+/// شريط المعاينة المباشرة — يُعاد بناؤه فور أي تغيير في المدخلات.
+class _LivePreviewBar extends ConsumerWidget {
   const _LivePreviewBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(eosbWizardProvider);
+    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbLivePreviewKeyProvider);
     return const Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
       child: _EosbLivePreviewCard(),
@@ -590,7 +613,7 @@ class _StepTermination extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final groupValue = wizard.resolvedTermination;
 
@@ -634,10 +657,6 @@ class _StepTermination extends ConsumerWidget {
             percent: wizard.mutualAgreementPercent,
             onChanged: notifier.setMutualAgreementPercent,
           ),
-        ],
-        if (wizard.canShowLivePreview) ...[
-          const SizedBox(height: 16),
-          const _EosbLivePreviewCard(),
         ],
       ],
     );
@@ -729,7 +748,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -869,10 +888,6 @@ class _StepContractState extends ConsumerState<_StepContract> {
             ],
           ),
         ),
-        if (wizard.canShowLivePreview) ...[
-          const SizedBox(height: 16),
-          const _EosbLivePreviewCard(),
-        ],
       ],
     );
   }
@@ -882,7 +897,9 @@ class _StepContractState extends ConsumerState<_StepContract> {
 }
 
 class _StepExtras extends ConsumerStatefulWidget {
-  const _StepExtras({super.key});
+  const _StepExtras({super.key, required this.onFinish});
+
+  final bool Function() onFinish;
 
   @override
   ConsumerState<_StepExtras> createState() => _StepExtrasState();
@@ -929,7 +946,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -1012,20 +1029,26 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
             onChanged: notifier.setNoticeProvided,
           ),
         ),
-        if (wizard.canShowLivePreview) ...[
-          const SizedBox(height: 16),
-          const _EosbLivePreviewCard(),
-        ],
         if (wizard.canAdvanceFromCurrentStep) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _StepFinishButton(
             enabled: wizard.validationBeforeResults() == null,
             onPressed: () {
-              notifier.flushAllInputs();
-              if (eosbTryFinishAndShowResults(context, ref)) {
-                HapticFeedback.mediumImpact();
-              }
+              final ok = widget.onFinish();
+              if (ok) HapticFeedback.mediumImpact();
+              return ok;
             },
+          ),
+        ] else if (wizard.validationBeforeResults() != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            wizard.validationBeforeResults()!,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.error,
+            ),
           ),
         ],
       ],
@@ -1033,7 +1056,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   }
 }
 
-/// زر إنهاء سريع داخل الخطوة 3 — نفس منطق الشريط السفلي.
+/// زر إنهاء سريع داخل الخطوة 3 — ينقل تلقائياً لشاشة النتائج.
 class _StepFinishButton extends StatelessWidget {
   const _StepFinishButton({
     required this.enabled,
@@ -1041,14 +1064,14 @@ class _StepFinishButton extends StatelessWidget {
   });
 
   final bool enabled;
-  final VoidCallback onPressed;
+  final bool Function() onPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: FilledButton.icon(
-        onPressed: enabled ? onPressed : null,
+        onPressed: enabled ? () => onPressed() : null,
         icon: const Icon(Icons.calculate_rounded, size: 22),
         label: Text(
           'عرض النتيجة الآن',
@@ -1134,7 +1157,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
     final wizard = ref.watch(eosbWizardProvider);
     final previewKey = ref.watch(eosbLivePreviewKeyProvider);
     final result = ref.watch(eosbCalculatorProvider);
-    final eosAward = ref.watch(eosbEndOfServiceAwardProvider);
+    final eosAward = result.endOfServiceAmount;
     final lines = EosbPreviewLine.fromResult(result);
     final model = result.input;
     final currency = NumberFormat.currency(
@@ -1693,7 +1716,9 @@ class _InputsSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = ref.watch(eosbResultsProvider);
+    final result = forResults
+        ? ref.watch(eosbResultsProvider)
+        : ref.watch(eosbCalculatorProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
