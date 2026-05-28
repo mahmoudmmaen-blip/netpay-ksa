@@ -495,6 +495,21 @@ class _StepContractState extends ConsumerState<_StepContract> {
   late final TextEditingController _basicCtrl;
   late final TextEditingController _housingCtrl;
 
+  static int _parseNonNegativeInt(String raw) {
+    final t = raw.trim();
+    final v = int.tryParse(t) ?? 0;
+    if (v < 0) return 0;
+    return v;
+  }
+
+  static double _parseNonNegativeDouble(String raw) {
+    // Allow user to paste formatted numbers: "12,000" / "12 000"
+    final t = raw.replaceAll(',', '').replaceAll(' ', '').trim();
+    final v = double.tryParse(t) ?? 0;
+    if (v < 0) return 0;
+    return v;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -524,12 +539,12 @@ class _StepContractState extends ConsumerState<_StepContract> {
   void _pushToProvider() {
     final notifier = ref.read(eosbWizardProvider.notifier);
     notifier.setServiceDuration(
-      years: int.tryParse(_yearsCtrl.text) ?? 0,
-      months: (int.tryParse(_monthsCtrl.text) ?? 0).clamp(0, 11),
+      years: _parseNonNegativeInt(_yearsCtrl.text),
+      months: _parseNonNegativeInt(_monthsCtrl.text),
     );
     notifier.setSalaries(
-      basic: double.tryParse(_basicCtrl.text) ?? 0,
-      housing: double.tryParse(_housingCtrl.text) ?? 0,
+      basic: _parseNonNegativeDouble(_basicCtrl.text),
+      housing: _parseNonNegativeDouble(_housingCtrl.text),
     );
   }
 
@@ -605,7 +620,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d., ]')),
                 ],
                 errorText: showFieldErrors ? wizard.basicSalaryFieldError : null,
                 onChanged: (_) => _pushToProvider(),
@@ -619,7 +634,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'[\d., ]')),
                 ],
                 onChanged: (_) => _pushToProvider(),
               ),
