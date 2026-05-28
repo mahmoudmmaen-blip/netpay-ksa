@@ -3,29 +3,32 @@ import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
-  test('Saudi termination — Article 84 (half month per year, first 5)', () {
+  test('Saudi unfair dismissal — basic salary only (half × first 5)', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
       housingAllowance: 2500,
       terminationType: EosbTerminationType.employerDismissalUnfair,
     );
-    // وعاء 12500 · 3 سنوات · نصف شهر/سنة = 18750
-    expect(model.endOfServiceAmount, closeTo(18750, 0.01));
+    // (10000 ÷ 2) × 3 = 15000 — السكن لا يُضاف في الفصل التعسفي
+    expect(model.endOfServiceAmount, closeTo(15000, 0.01));
   });
 
-  test('contract expiry — same as unfair dismissal', () {
-    const termination = EosbModel(
-      yearsOfService: 5,
-      basicSalary: 8000,
+  test('contract expiry uses Article 84 wage base (basic + housing)', () {
+    const unfair = EosbModel(
+      yearsOfService: 3,
+      basicSalary: 10000,
+      housingAllowance: 2500,
       terminationType: EosbTerminationType.employerDismissalUnfair,
     );
     const contractEnd = EosbModel(
-      yearsOfService: 5,
-      basicSalary: 8000,
+      yearsOfService: 3,
+      basicSalary: 10000,
+      housingAllowance: 2500,
       terminationType: EosbTerminationType.contractExpiry,
     );
-    expect(contractEnd.endOfServiceAmount, termination.endOfServiceAmount);
+    expect(unfair.endOfServiceAmount, closeTo(15000, 0.01));
+    expect(contractEnd.endOfServiceAmount, closeTo(18750, 0.01));
   });
 
   test('valid employer dismissal — zero EOS', () {

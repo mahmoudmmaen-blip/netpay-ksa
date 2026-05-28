@@ -59,16 +59,19 @@ class EosbCalculator {
   /// يشمل: مكافأة نهاية الخدمة، بدل الإجازات المتبقية، بدل إجازة سنوية،
   /// تذكرة طيران (تقدير)، والإجمالي + المراجع القانونية.
   EosbCalculationResult calculateEndOfService(EosbModel input) {
-    // 1) مكافأة نهاية الخدمة — م. 84/85 (السعودية) أو م. 51 (الإمارات)
+    // 1) مكافأة نهاية الخدمة
+    //    السعودية: فصل تعسفي = (أساسي÷2)×أول5 + أساسي كامل بعدها
+    //              استقالة/انتهاء عقد = م.84 (نصف وعاء أول5) + م.85 للاستقالة
+    //    الإمارات: م.132/51 — 21/30 يوم على الأساسي بحد سنتين أجر
     final endOfServiceAward = input.endOfServiceAmount;
 
-    // 2) بدل الإجازات المتبقية (أيام × أجر يومي من الأساسي)
+    // 2) بدل الإجازات المتبقية — (راتب أساسي ÷ 30) × أيام متبقية
     final remainingLeavePay = input.cashLeaveAllowance;
 
-    // 3) بدل إجازة سنوية تقديري
+    // 3) بدل إجازة سنوية تقديري — 21 أو 30 يوم حسب مدة الخدمة
     final vacationEntitlementPay = input.vacationAllowance;
 
-    // 4) تذكرة طيران — تقدير سنوي × مدة الخدمة
+    // 4) تذكرة طيران — تقدير سنوي × سنوات الخدمة (إن وُجد المفتاح)
     final flightTicketValue = input.flightTicketAllowance;
 
     // 5) إجمالي المستحقات
@@ -177,7 +180,13 @@ class EosbCalculator {
       }
     }
     if (input.country == GulfCountry.uae) {
-      return '21/30 يوم أجر أساسي · حد أقصى سنتان';
+      return 'م. 132/51 — 21/30 يوم أجر أساسي · حد أقصى سنتان';
+    }
+    if (input.terminationType == EosbTerminationType.employerDismissalUnfair) {
+      return 'فصل تعسفي — (أساسي÷2)×أول 5 سنوات، أساسي كامل بعدها';
+    }
+    if (input.terminationType == EosbTerminationType.contractExpiry) {
+      return 'انتهاء عقد — م. 84 (أساسي + سكن)';
     }
     return 'م. 84 — وعاء: أساسي + سكن';
   }

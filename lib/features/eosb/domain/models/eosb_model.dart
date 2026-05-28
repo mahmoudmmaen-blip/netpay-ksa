@@ -114,21 +114,38 @@ class EosbModel {
   bool get isValidEmployerDismissal =>
       terminationType == EosbTerminationType.employerDismissalValidReason;
 
-  /// مكافأة كاملة نظرية قبل نسب الاستقالة.
+  /// مكافأة نظرية كاملة قبل تطبيق نسبة الاستقالة (للعرض في النتائج).
   double get fullEndOfServiceBase {
-    if (totalServiceYears <= 0 || eosWageBase <= 0) return 0;
-    if (country == GulfCountry.uae) return _uaeFullGratuity;
-    return _saudiFullGratuity;
+    if (totalServiceYears <= 0) return 0;
+    if (country == GulfCountry.uae) {
+      return basicSalary > 0 ? _uaeFullGratuity : 0;
+    }
+    return switch (terminationType) {
+      EosbTerminationType.employerDismissalUnfair =>
+        basicSalary > 0 ? _saudiUnfairDismissalAward : 0,
+      _ => eosWageBase > 0 ? _saudiArticle84Base : 0,
+    };
   }
 
-  /// السعودية — م. 84: نصف شهر عن كل سنة (أول 5) وشهر كامل بعدها.
-  double get _saudiFullGratuity {
+  /// السعودية — فصل تعسفي: (راتب أساسي ÷ 2) × سنوات أول 5، راتب أساسي كامل لكل سنة بعدها.
+  double get _saudiUnfairDismissalAward {
+    if (basicSalary <= 0) return 0;
+    final y = totalServiceYears;
+    final first5 = y.clamp(0.0, 5.0);
+    final after5 = (y - 5).clamp(0.0, 100.0);
+    return (basicSalary * 0.5 * first5) + (basicSalary * after5);
+  }
+
+  /// السعودية — م. 84: نصف شهر (أساسي + سكن) لأول 5 سنوات، شهر كامل بعدها.
+  double get _saudiArticle84Base {
+    if (eosWageBase <= 0) return 0;
     final y = totalServiceYears;
     final first5 = y.clamp(0.0, 5.0);
     final after5 = (y - 5).clamp(0.0, 100.0);
     return (eosWageBase * 0.5 * first5) + (eosWageBase * after5);
   }
 
+  /// الإمارات — م. 51 / 132: 21 يوم/سنة (أول 5) و30 يوم/سنة بعدها على الأجر الأساسي.
   double get _uaeFullGratuity {
     if (totalServiceYears < 1) return 0;
     final daily = basicSalary / 30;
@@ -154,25 +171,38 @@ class EosbModel {
   }
 
   double get endOfServiceAmount {
-    if (totalServiceYears <= 0 || eosWageBase <= 0) return 0;
-
+    if (totalServiceYears <= 0) return 0;
     if (isValidEmployerDismissal) return 0;
 
-    final base = fullEndOfServiceBase;
-    if (isResignation) return base * resignationAwardFactor;
+    if (country == GulfCountry.uae) {
+      if (basicSalary <= 0) return 0;
+      final base = _uaeFullGratuity;
+      if (isResignation) return base * resignationAwardFactor;
+      return switch (terminationType) {
+        EosbTerminationType.employerDismissalValidReason => 0,
+        EosbTerminationType.employeeResignation =>
+          base * resignationAwardFactor,
+        _ => base,
+      };
+    }
 
+    // --- السعودية ---
     return switch (terminationType) {
-      EosbTerminationType.employerDismissalUnfair ||
+      // فصل تعسفي: وعاء الراتب الأساسي فقط
+      EosbTerminationType.employerDismissalUnfair => _saudiUnfairDismissalAward,
+      EosbTerminationType.employerDismissalValidReason => 0,
+      // استقالة: م. 84 ثم نسبة م. 85
+      EosbTerminationType.employeeResignation =>
+        _saudiArticle84Base * resignationAwardFactor,
+      // انتهاء عقد / تراضي / تقاعد: م. 84 كاملة (أساسي + سكن)
       EosbTerminationType.contractExpiry ||
       EosbTerminationType.mutualAgreement ||
       EosbTerminationType.retirementOrDeath =>
-        base,
-      EosbTerminationType.employerDismissalValidReason => 0,
-      EosbTerminationType.employeeResignation =>
-        base * resignationAwardFactor,
+        _saudiArticle84Base,
     };
   }
 
+  /// بدل إجازة سنوية تقديري (21 أو 30 يوم حسب مدة الخدمة).
   double get vacationAllowance => dailyWage * annualVacationDays;
 
   double get flightTicketAllowance {
@@ -184,6 +214,7 @@ class EosbModel {
     return ticketCost * multiplier * totalServiceYears;
   }
 
+  /// بدل الإجازات المتبقية — (راتب أساسي ÷ 30) × أيام متبقية.
   double get cashLeaveAllowance {
     if (basicSalary <= 0 || accruedLeaveDays <= 0) return 0;
     return (basicSalary / 30) * accruedLeaveDays;
@@ -234,14 +265,22 @@ class EosbModel {
 
   List<EosbLegalReference> get _saudiLegalRefs {
     final refs = <EosbLegalReference>[
-      const EosbLegalReference(
-        article: 'المادة 84',
-        summary:
-            'مكافأة نهاية الخدمة — نصف شهر أجر (أساسي + سكن) عن كل سنة من أول 5 سنوات، وشهر كامل عن كل سنة بعدها.',
-      ),
+      if (terminationType == EosbTerminationType.employerDismissalUnfair)
+        const EosbLegalReference(
+          article: 'المادة 84 — فصل تعسفي',
+          summary:
+              'مكافأة على الراتب الأساسي: نصف الراتب عن كل سنة من أول 5 سنوات، وراتب أساسي كامل عن كل سنة بعدها.',
+        )
+      else
+        const EosbLegalReference(
+          article: 'المادة 84',
+          summary:
+              'نصف شهر أجر (أساسي + بدل سكن) عن كل سنة من أول 5 سنوات، وشهر أجر كامل عن كل سنة بعدها.',
+        ),
       const EosbLegalReference(
         article: 'المادة 85',
-        summary: 'نسب مكافأة الاستقالة: أقل من سنتين (0)، 2–5 (ثلث)، 5–10 (ثلثان)، 10+ (كامل).',
+        summary:
+            'الاستقالة: أقل من سنتين (0)، من 2 إلى 5 (ثلث المكافأة)، من 5 إلى 10 (ثلثان)، 10+ (كامل).',
       ),
     ];
     if (isValidEmployerDismissal) {
@@ -266,12 +305,14 @@ class EosbModel {
   List<EosbLegalReference> get _uaeLegalRefs {
     return [
       const EosbLegalReference(
-        article: 'المادة 51 — قانون العمل الإماراتي',
-        summary: '21 يوم أجر أساسي عن كل سنة (أول 5 سنوات) و30 يوماً لكل سنة بعدها — بحد أقصى سنتان أجر.',
+        article: 'المادة 132 / 51 — قانون العمل الاتحادي',
+        summary:
+            'مكافأة نهاية الخدمة: 21 يوم أجر أساسي لكل سنة (أول 5 سنوات) و30 يوماً لكل سنة بعدها — بحد أقصى أجر سنتين.',
       ),
       const EosbLegalReference(
-        article: 'المرسوم الاتحادي 33 لسنة 2021',
-        summary: 'استحقاق المكافأة بعد سنة خدمة؛ الاستقالة قبل 3 سنوات قد تُسقط المكافأة أو تخفّضها.',
+        article: 'المرسوم الاتحادي رقم 33 لسنة 2021',
+        summary:
+            'يستحق العامل المكافأة بعد سنة خدمة؛ الاستقالة قبل 3 سنوات قد تُسقطها أو تخفّضها حسب المدة.',
       ),
       if (isResignation)
         const EosbLegalReference(
