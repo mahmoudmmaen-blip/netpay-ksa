@@ -77,6 +77,22 @@ void main() {
     }
   });
 
+  test('resumeEditing returns to wizard and clears finalized result', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setSalaries(basic: 8000);
+    notifier.setServiceDuration(years: 2);
+    notifier.finishWizard();
+    expect(container.read(eosbWizardProvider).showResults, isTrue);
+
+    notifier.resumeEditing(stepIndex: 1);
+    expect(container.read(eosbWizardProvider).showResults, isFalse);
+    expect(container.read(eosbWizardProvider).stepIndex, 1);
+    expect(container.read(eosbFinalizedResultProvider), isNull);
+  });
+
   test('live preview updates when housing changes', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

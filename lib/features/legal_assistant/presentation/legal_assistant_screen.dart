@@ -25,6 +25,20 @@ class LegalAssistantScreen extends ConsumerStatefulWidget {
 }
 
 class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
+  void _onBackFromResults(BuildContext context, WidgetRef ref) {
+    ref.read(eosbWizardProvider.notifier).resumeEditing();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'عدت للمعالج — عدّل البيانات ثم اضغط «عرض النتيجة»',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+        ),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
@@ -71,7 +85,7 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_forward_ios_rounded),
           onPressed: () => wizard.showResults
-              ? ref.read(eosbWizardProvider.notifier).previousStep()
+              ? _onBackFromResults(context, ref)
               : (context.canPop()
                   ? context.pop()
                   : context.go(AppRoutes.home)),
@@ -348,7 +362,7 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
     final canAdvance = wizard.canAdvanceFromCurrentStep;
@@ -366,19 +380,37 @@ class _WizardBottomBar extends ConsumerWidget {
             child: _InputsSummaryCard(),
           ),
         ],
-        if (validationMsg != null && !canAdvance)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: Text(
-              validationMsg,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.error,
-              ),
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: validationMsg != null && !canAdvance
+                ? Text(
+                    validationMsg,
+                    key: ValueKey(validationMsg),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.error,
+                    ),
+                  )
+                : canAdvance && isLastStep
+                    ? Text(
+                        'اضغط «عرض النتيجة» لعرض التفاصيل الكاملة',
+                        key: const ValueKey('hint_finish'),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5),
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('hint_empty')),
           ),
+        ),
         GlassSurface(
           borderRadius: 0,
           blur: 8,
@@ -413,7 +445,7 @@ class _WizardBottomBar extends ConsumerWidget {
                         }
                         if (isLastStep) {
                           if (notifier.finishWizard()) {
-                            HapticFeedback.mediumImpact();
+                            // الانتقال + الاهتزاز عبر ref.listen في الشاشة الرئيسية
                           } else if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -514,7 +546,7 @@ class _StepTermination extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final groupValue = wizard.resolvedTermination;
 
@@ -647,7 +679,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -842,7 +874,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -999,7 +1031,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = ref.watch(eosbCalculatorProvider);
+    final result = ref.watch(eosbResultsProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
@@ -1186,17 +1218,27 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
                 isDark: widget.isDark,
               ),
               const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () =>
-                      ref.read(eosbWizardProvider.notifier).previousStep(),
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: Text(
-                    'تعديل البيانات',
-                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
-                  ),
-                ),
+              _EditWizardButton(
+                onResume: (step) {
+                  ref.read(eosbWizardProvider.notifier).resumeEditing(
+                        stepIndex: step,
+                      );
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        step == 0
+                            ? 'عدت للخطوة 1 — نوع إنهاء الخدمة'
+                            : step == 1
+                                ? 'عدت للخطوة 2 — بيانات العقد'
+                                : 'عدت للخطوة 3 — عدّل التفاصيل ثم «عرض النتيجة»',
+                        style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 4),
               const _InputsSummaryCard(forResults: true),
@@ -1255,6 +1297,86 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
   }
 }
 
+/// تعديل البيانات — العودة للمعالج (الخطوة الحالية أو خطوة محددة).
+class _EditWizardButton extends StatelessWidget {
+  const _EditWizardButton({required this.onResume});
+
+  final void Function(int stepIndex) onResume;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => onResume(EosbWizardState.totalSteps - 1),
+              icon: const Icon(Icons.edit_note_rounded, size: 20),
+              label: Text(
+                'تعديل البيانات',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.emerald,
+                side: const BorderSide(color: AppColors.emerald, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  onPressed: () => onResume(0),
+                  child: Text(
+                    'الخطوة 1',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => onResume(1),
+                  child: Text(
+                    'الخطوة 2',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  onPressed: () => onResume(2),
+                  child: Text(
+                    'الخطوة 3',
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.emerald,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// شريط نجاح أعلى شاشة النتائج.
 class _ResultsSuccessBanner extends StatelessWidget {
   const _ResultsSuccessBanner();
@@ -1304,9 +1426,7 @@ class _InputsSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = forResults || wizard.showResults
-        ? ref.watch(eosbResultsProvider)
-        : ref.watch(eosbCalculatorProvider);
+    final result = ref.watch(eosbResultsProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
@@ -1656,7 +1776,8 @@ class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
   }
 
   Future<void> _exportPdf(BuildContext context) async {
-    final result = ref.read(eosbResultsProvider);
+    final EosbCalculationResult result =
+        ref.read(eosbFinalizedResultProvider) ?? ref.read(eosbResultsProvider);
     if (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

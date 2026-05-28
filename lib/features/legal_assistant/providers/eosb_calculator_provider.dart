@@ -337,13 +337,25 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void previousStep() {
     if (state.showResults) {
-      ref.read(eosbFinalizedResultProvider.notifier).state = null;
-      state = state.copyWith(showResults: false);
+      resumeEditing();
       return;
     }
     if (state.stepIndex > 0) {
       state = state.copyWith(stepIndex: state.stepIndex - 1);
     }
+  }
+
+  /// العودة من شاشة النتائج لتعديل المعالج (الخطوة الحالية أو خطوة محددة).
+  void resumeEditing({int? stepIndex}) {
+    ref.read(eosbFinalizedResultProvider.notifier).state = null;
+    final target = (stepIndex ?? state.stepIndex).clamp(
+      0,
+      EosbWizardState.totalSteps - 1,
+    );
+    state = state.copyWith(
+      showResults: false,
+      stepIndex: target,
+    );
   }
 
   void goToStep(int index) {
@@ -392,12 +404,17 @@ final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
 final eosbFinalizedResultProvider =
     StateProvider<EosbCalculationResult?>((ref) => null);
 
-/// نتيجة العرض: حية في المعالج، مجمّدة بعد إنهاء الخطوة 3.
+/// نتيجة العرض: حية في المعالج (تتزامن فوراً)، مجمّدة بعد إنهاء الخطوة 3.
+///
+/// المعاينة المباشرة وملخص المدخلات يمكنهما الاعتماد عليه دائماً —
+/// أثناء المعالج يعاد توجيهه تلقائياً إلى [eosbCalculatorProvider].
 final eosbResultsProvider = Provider<EosbCalculationResult>((ref) {
   final wizard = ref.watch(eosbWizardProvider);
+  final live = ref.watch(eosbCalculatorProvider);
+  if (!wizard.showResults) return live;
+
   final finalized = ref.watch(eosbFinalizedResultProvider);
-  if (wizard.showResults && finalized != null) return finalized;
-  return ref.watch(eosbCalculatorProvider);
+  return finalized ?? live;
 });
 
 /// مكافأة نهاية الخدمة حسب نوع الإنهاء — للمعاينة السريعة.
@@ -406,10 +423,9 @@ final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
   return EosbCalculator.calculateEndOfServiceAward(wizard.toModel());
 });
 
-/// بنود المعاينة المباشرة — دائماً من الحساب الحي (كل تغيير مدخل).
+/// بنود المعاينة المباشرة — متزامنة مع [eosbResultsProvider].
 final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
-  ref.watch(eosbWizardProvider);
-  final result = ref.watch(eosbCalculatorProvider);
+  final result = ref.watch(eosbResultsProvider);
   return EosbPreviewLine.fromResult(result);
 });
 
