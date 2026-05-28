@@ -39,17 +39,66 @@ bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
 
 /// حاسبة نهاية الخدمة — معالج 3 خطوات، معاينة مباشرة، نتائج، PDF.
 class EosbWizardScreen extends ConsumerStatefulWidget {
-  const EosbWizardScreen({super.key, this.dedicatedEosbBranding = false});
+  const EosbWizardScreen({
+    super.key,
+    this.dedicatedEosbBranding = false,
+    this.historyEntryId,
+  });
 
   /// عند true (مسار `/eosb`) — عنوان الشاشة مخصّص للحاسبة فقط.
   final bool dedicatedEosbBranding;
+
+  /// عند التعيين — يُفتح الحساب المحفوظ من السجل مباشرة على النتائج.
+  final String? historyEntryId;
 
   @override
   ConsumerState<EosbWizardScreen> createState() => _EosbWizardScreenState();
 }
 
 class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final historyId = widget.historyEntryId;
+    if (historyId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final entry = EosbHistoryService.getById(historyId);
+        if (entry == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'لم يُعثر على الحساب المحفوظ',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return;
+        }
+        final ok = ref
+            .read(eosbWizardProvider.notifier)
+            .openFromHistoryEntry(entry);
+        if (!ok && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'تعذّر فتح التفاصيل — أعد الحفظ من شاشة النتائج',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      });
+    }
+  }
+
   void _onBackFromResults(BuildContext context, WidgetRef ref) {
+    if (widget.historyEntryId != null) {
+      context.pop();
+      return;
+    }
     ref.read(eosbWizardProvider.notifier).resumeEditing();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -133,7 +182,9 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
             ),
             Text(
               wizard.showResults
-                  ? 'نتيجة الحساب والتفاصيل'
+                  ? (widget.historyEntryId != null
+                      ? 'تفاصيل حساب محفوظ'
+                      : 'نتيجة الحساب والتفاصيل')
                   : (widget.dedicatedEosbBranding
                       ? 'السعودية · الإمارات — تقدير قانوني'
                       : 'حاسبة نهاية الخدمة الشاملة'),
@@ -2363,12 +2414,17 @@ class _SaveCalculationButtonState extends State<_SaveCalculationButton> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'تم حفظ الحساب في السجل — يمكنك مراجعته من «سجل الحسابات»',
+              'تم حفظ الحساب — راجعه من سجل نهاية الخدمة',
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppColors.emerald,
             behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'السجل',
+              textColor: Colors.white,
+              onPressed: () => context.push(AppRoutes.eosbHistory),
+            ),
           ),
         );
       } else {

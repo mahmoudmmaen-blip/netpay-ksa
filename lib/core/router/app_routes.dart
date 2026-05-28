@@ -10,6 +10,7 @@ abstract final class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String history = '/history';
+  static const String eosbHistory = '/history/eosb';
 
   // ── مسارات مستقبلية ────────────────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ abstract final class AppRoutes {
   static const String onboardingName = 'onboarding';
   static const String homeName = 'home';
   static const String historyName = 'history';
+  static const String eosbHistoryName = 'eosbHistory';
   static const String eosbName = 'eosb';
   static const String comparisonName = 'comparison';
   static const String increaseName = 'increase';

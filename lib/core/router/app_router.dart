@@ -11,6 +11,7 @@ import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart'
 import 'package:netgulf/features/settings/presentation/settings_screen.dart';
 import 'package:netgulf/features/comparison/presentation/comparison_screen.dart';
 import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
+import 'package:netgulf/features/history/presentation/history_screen.dart';
 import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
 import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
 import 'package:netgulf/features/uae/presentation/uae_calculator_screen.dart';
@@ -76,7 +77,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.historyName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const HistoryScreen(),
+          child: const SalaryHistoryScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.eosbHistory,
+        name: AppRoutes.eosbHistoryName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const EosbHistoryScreen(),
         ),
       ),
 
@@ -118,7 +127,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.eosbName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const EosbScreen(),
+          child: EosbScreen(
+            historyEntryId: state.uri.queryParameters['historyId'],
+          ),
         ),
       ),
       GoRoute(

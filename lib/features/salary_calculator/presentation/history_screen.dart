@@ -9,11 +9,13 @@ import 'package:netgulf/core/widgets/premium_badge.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
 import 'package:netgulf/features/salary_calculator/models/salary_record.dart';
+import 'package:go_router/go_router.dart';
+import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/features/salary_calculator/providers/history_notifier.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
-class HistoryScreen extends ConsumerWidget {
-  const HistoryScreen({super.key});
+class SalaryHistoryScreen extends ConsumerWidget {
+  const SalaryHistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,6 +31,12 @@ class HistoryScreen extends ConsumerWidget {
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
         actions: [
+          IconButton(
+            tooltip: 'سجل نهاية الخدمة',
+            icon: const Icon(Icons.card_giftcard_rounded),
+            color: AppColors.emerald,
+            onPressed: () => context.push(AppRoutes.eosbHistory),
+          ),
           if (!isPremium)
             IconButton(
               tooltip: 'ترقية Premium',

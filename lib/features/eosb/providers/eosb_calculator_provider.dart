@@ -3,6 +3,7 @@ import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
+import 'package:netgulf/features/eosb/services/eosb_history_service.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
 
 /// حالة معالج حاسبة نهاية الخدمة.
@@ -427,7 +428,39 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
+  /// فتح حساب محفوظ من السجل — شاشة النتائج مباشرة.
+  bool openFromHistoryEntry(EosbHistoryEntry entry) {
+    final model = entry.toModel();
+    if (model == null) return false;
+
+    final result = eosbEngine.calculateEndOfService(model);
+    ref.read(eosbFinalizedResultProvider.notifier).state = result;
+
+    state = EosbWizardState(
+      stepIndex: EosbWizardState.totalSteps - 1,
+      terminationType: model.terminationType,
+      dismissalIsValidReason: model.terminationType ==
+          EosbTerminationType.employerDismissalValidReason,
+      country: model.country,
+      years: model.yearsOfService,
+      months: model.monthsOfService,
+      days: model.daysOfService,
+      basicSalary: model.basicSalary,
+      housingAllowance: model.housingAllowance,
+      otherAllowances: model.otherAllowances,
+      contractType: model.contractType,
+      accruedLeaveDays: model.accruedLeaveDays,
+      includeFlightTicket: model.includeFlightTicket,
+      ticketCost: model.ticketCost,
+      ticketFrequency: model.ticketFrequency,
+      noticeProvided: model.noticeProvided,
+      mutualAgreementPercent: model.mutualAgreementPercent,
+      showResults: true,
+    );
+    return true;
+  }
 }
+
 
 /// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
 /// - مكافأة نهاية الخدمة (م. 84/85 السعودية · م. 51 الإمارات)
