@@ -685,7 +685,8 @@ class _StepContractState extends ConsumerState<_StepContract> {
       _monthsCtrl.text = '$months';
     }
     notifier.setServiceDuration(
-      years: _parseNonNegativeInt(_yearsCtrl.text),
+      years: _parseNonNegativeInt(_yearsCtrl.text)
+          .clamp(0, EosbWizardState.maxServiceYears),
       months: months,
     );
     notifier.setSalaries(
@@ -1090,6 +1091,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
+    final previewKey = ref.watch(eosbLivePreviewKeyProvider);
     ref.watch(eosbCalculatorProvider);
     final result = ref.watch(eosbResultsProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
@@ -1099,8 +1101,10 @@ class _EosbLivePreviewCard extends ConsumerWidget {
       decimalDigits: 0,
     );
     final needsContractData = !wizard.canProceedStep1;
+    final previewWarning = wizard.livePreviewWarning;
 
     return GlassSurface(
+      key: ValueKey(previewKey),
       highlighted: true,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
@@ -1144,6 +1148,29 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                     .onSurface
                     .withValues(alpha: 0.55),
               ),
+            ),
+          ],
+          if (previewWarning != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  size: 14,
+                  color: Colors.amber.shade700,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    previewWarning,
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.amber.shade800,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
           if (!needsContractData) ...[

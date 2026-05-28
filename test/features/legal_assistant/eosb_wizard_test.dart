@@ -114,6 +114,47 @@ void main() {
     expect(container.read(eosbFinalizedResultProvider), isNull);
   });
 
+  test('edge case: zero salary blocks finish', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setSalaries(basic: 0);
+    notifier.setServiceDuration(years: 2);
+    expect(notifier.tryFinishWizard(), contains('الراتب'));
+  });
+
+  test('edge case: years clamped and salary capped', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setServiceDuration(years: 99, months: 15);
+    notifier.setSalaries(basic: 9_999_999, housing: 500_000);
+    final state = container.read(eosbWizardProvider);
+    expect(state.years, EosbWizardState.maxServiceYears);
+    expect(state.months, lessThanOrEqualTo(11));
+    expect(state.basicSalary, EosbWizardState.maxBasicSalary);
+    expect(state.housingAllowance, EosbWizardState.maxAllowance);
+  });
+
+  test('live preview key changes on mutual agreement percent', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.mutualAgreement);
+    notifier.setSalaries(basic: 10000, housing: 2000);
+    notifier.setServiceDuration(years: 4);
+    notifier.setMutualAgreementPercent(40);
+    final key40 = container.read(eosbLivePreviewKeyProvider);
+    final amount40 = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    notifier.setMutualAgreementPercent(80);
+    final key80 = container.read(eosbLivePreviewKeyProvider);
+    final amount80 = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    expect(key80, isNot(key40));
+    expect(amount80, greaterThan(amount40));
+  });
+
   test('live preview updates when housing changes', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);

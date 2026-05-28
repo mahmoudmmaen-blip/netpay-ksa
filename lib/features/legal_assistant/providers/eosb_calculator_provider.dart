@@ -49,7 +49,26 @@ class EosbWizardState {
 
   static const int totalSteps = 3;
 
+  /// حدود واقعية للمدخلات — تُطبَّق عند الحفظ والحساب.
+  static const double maxBasicSalary = 500_000;
+  static const double maxAllowance = 200_000;
+  static const int maxServiceYears = 40;
+
   EosbTerminationType? get resolvedTermination => terminationType;
+
+  /// مفتاح لإعادة بناء المعاينة المباشرة فور أي تغيير.
+  String get livePreviewKey =>
+      '${terminationType?.index}_$country'
+      '_${years}_${months}_$days'
+      '_${basicSalary.toStringAsFixed(0)}'
+      '_${housingAllowance.toStringAsFixed(0)}'
+      '_${otherAllowances.toStringAsFixed(0)}'
+      '_$contractType'
+      '_$accruedLeaveDays'
+      '_$includeFlightTicket'
+      '_$ticketCost'
+      '_$noticeProvided'
+      '_${mutualAgreementPercent.toStringAsFixed(0)}';
 
   bool get canProceedStep0 => terminationType != null;
 
@@ -63,7 +82,9 @@ class EosbWizardState {
   bool get canShowLivePreview => canProceedStep0;
 
   String? get serviceYearsFieldError {
-    if (years > 40) return 'عدد السنوات يبدو غير واقعي (الحد الأقصى 40)';
+    if (years > maxServiceYears) {
+      return 'عدد السنوات يبدو غير واقعي (الحد الأقصى $maxServiceYears)';
+    }
     if (years <= 0 && months <= 0) {
       return 'أدخل عدد السنوات أو الشهور الإضافية';
     }
@@ -75,9 +96,28 @@ class EosbWizardState {
     return null;
   }
 
-  String? get basicSalaryFieldError => basicSalary <= 0
-      ? 'أدخل الراتب الأساسي (أكبر من صفر)'
-      : null;
+  String? get basicSalaryFieldError {
+    if (basicSalary <= 0) {
+      return 'أدخل الراتب الأساسي (أكبر من صفر)';
+    }
+    if (basicSalary > maxBasicSalary) {
+      return 'الراتب مرتفع جداً — الحد الأقصى '
+          '${maxBasicSalary.round()} ${country.currencySymbol}';
+    }
+    return null;
+  }
+
+  /// تحذير غير مانع يظهر في المعاينة المباشرة.
+  String? get livePreviewWarning {
+    if (!canProceedStep1) return null;
+    if (basicSalary > maxBasicSalary * 0.8) {
+      return 'الراتب مرتفع — تحقق من صحة الأرقام';
+    }
+    if (totalServiceYears >= maxServiceYears) {
+      return 'مدة خدمة طويلة — تم احتساب الحد الأقصى ($maxServiceYears سنة)';
+    }
+    return null;
+  }
 
   String? validationMessageForStep(int step) {
     return switch (step) {
@@ -255,7 +295,7 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void setServiceDuration({int? years, int? months, int? days}) {
     state = state.copyWith(
-      years: (years ?? state.years).clamp(0, 40),
+      years: (years ?? state.years).clamp(0, EosbWizardState.maxServiceYears),
       months: (months ?? state.months).clamp(0, 11),
       days: (days ?? state.days).clamp(0, 364),
     );
@@ -263,9 +303,12 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void setSalaries({double? basic, double? housing, double? other}) {
     state = state.copyWith(
-      basicSalary: basic ?? state.basicSalary,
-      housingAllowance: housing ?? state.housingAllowance,
-      otherAllowances: other ?? state.otherAllowances,
+      basicSalary: (basic ?? state.basicSalary)
+          .clamp(0.0, EosbWizardState.maxBasicSalary),
+      housingAllowance: (housing ?? state.housingAllowance)
+          .clamp(0.0, EosbWizardState.maxAllowance),
+      otherAllowances: (other ?? state.otherAllowances)
+          .clamp(0.0, EosbWizardState.maxAllowance),
     );
   }
 
@@ -443,8 +486,14 @@ final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
 
 /// بنود المعاينة المباشرة — متزامنة مع [eosbResultsProvider].
 final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
+  ref.watch(eosbWizardProvider); // أي تغيير في المعالج
   final result = ref.watch(eosbResultsProvider);
   return EosbPreviewLine.fromResult(result);
+});
+
+/// مفتاح إعادة بناء المعاينة — يتغير مع كل مدخل.
+final eosbLivePreviewKeyProvider = Provider<String>((ref) {
+  return ref.watch(eosbWizardProvider).livePreviewKey;
 });
 
 /// سطر في معاينة/ملخص المستحقات.
