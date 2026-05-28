@@ -21,7 +21,7 @@ extension GulfCountryMeta on GulfCountry {
   String get nameAr => switch (this) {
         GulfCountry.saudiArabia => 'السعودية',
         GulfCountry.uae => 'الإمارات',
-        GulfCountry.oman => 'عُمان',
+        GulfCountry.oman => 'عمان',
         GulfCountry.qatar => 'قطر',
         GulfCountry.bahrain => 'البحرين',
         GulfCountry.kuwait => 'الكويت',

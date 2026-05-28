@@ -13,6 +13,7 @@ import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/eosb_constants.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
+import 'package:netgulf/features/eosb/presentation/widgets/eosb_country_grid.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
 // ─── EOSB Wizard UI (مكافأة نهاية الخدمة — دول الخليج الست) ───
@@ -278,7 +279,7 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
 
   static const _stepSubtitles = [
     'اختر السبب الأقرب لوضعك',
-    'السعودية أو الإمارات · المدة والأجر',
+    'دول الخليج الست · المدة والأجر',
     'إجازات · تذكرة · إشعار الإنهاء',
   ];
 
@@ -843,7 +844,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
       children: [
         Text('الدولة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        _EosbCountryGrid(
+        EosbCountryGrid(
           selected: wizard.country,
           onSelected: notifier.setCountry,
         ),
@@ -1675,171 +1676,6 @@ class _PreviewProportionBar extends StatelessWidget {
               .toList(),
         ),
       ),
-    );
-  }
-}
-
-/// شبكة اختيار الدولة — ٦ دول خليجية، متجاوبة مع عرض الشاشة.
-class _EosbCountryGrid extends StatelessWidget {
-  const _EosbCountryGrid({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final GulfCountry selected;
-  final ValueChanged<GulfCountry> onSelected;
-
-  static int _crossAxisCount(double width) {
-    if (width < 340) return 2;
-    if (width > 520) return 3;
-    return 3;
-  }
-
-  static double _childAspectRatio(double width, int columns) {
-    if (width < 340) return 0.92;
-    if (columns == 2) return 0.88;
-    if (width > 520) return 0.82;
-    return 0.85;
-  }
-
-  static double _flagSize(double width) {
-    if (width < 340) return 34;
-    if (width > 520) return 42;
-    return 38;
-  }
-
-  static double _nameFontSize(double width) {
-    if (width < 340) return 12.5;
-    return 12;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final columns = _crossAxisCount(width);
-        final aspectRatio = _childAspectRatio(width, columns);
-        final flagSize = _flagSize(width);
-        final nameSize = _nameFontSize(width);
-
-        return GridView.count(
-          crossAxisCount: columns,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: aspectRatio,
-          children: GulfCountry.values.map((country) {
-        final isSelected = country == selected;
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelected(country);
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: AnimatedScale(
-              scale: isSelected ? 1.03 : 1.0,
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutCubic,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.emerald
-                        : Theme.of(context)
-                            .colorScheme
-                            .outline
-                            .withValues(alpha: 0.25),
-                    width: isSelected ? 3 : 1,
-                  ),
-                  gradient: isSelected
-                      ? LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            AppColors.emerald
-                                .withValues(alpha: isDark ? 0.38 : 0.2),
-                            AppColors.emeraldDark
-                                .withValues(alpha: isDark ? 0.18 : 0.08),
-                          ],
-                        )
-                      : null,
-                  color: isSelected
-                      ? null
-                      : Theme.of(context)
-                          .colorScheme
-                          .surface
-                          .withValues(alpha: isDark ? 0.4 : 0.7),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.emerald.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 5),
-                          ),
-                          BoxShadow(
-                            color: AppColors.emeraldDark
-                                .withValues(alpha: 0.12),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(country.flag, style: TextStyle(fontSize: flagSize)),
-                  const SizedBox(height: 6),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      country.nameAr,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      style: GoogleFonts.cairo(
-                        fontSize: nameSize,
-                        height: 1.2,
-                        fontWeight:
-                            isSelected ? FontWeight.w800 : FontWeight.w600,
-                        color: isSelected
-                            ? AppColors.emerald
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  if (isSelected) ...[
-                    const SizedBox(height: 6),
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.emerald,
-                      size: 18,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            ),
-          ),
-        );
-          }).toList(),
-        );
-      },
     );
   }
 }
