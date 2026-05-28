@@ -194,18 +194,18 @@ class EosbModel {
         amount: endOfServiceAmount,
         highlight: true,
       ),
+      if (cashLeaveAllowance > 0)
+        EosbBreakdownRow(
+          label: 'بدل الإجازات المتبقية ($accruedLeaveDays يوم)',
+          amount: cashLeaveAllowance,
+        ),
       EosbBreakdownRow(
         label: 'بدل إجازة سنوية تقديري ($annualVacationDays يوم)',
         amount: vacationAllowance,
       ),
-      if (cashLeaveAllowance > 0)
+      if (includeFlightTicket)
         EosbBreakdownRow(
-          label: 'صرف إجازات متبقية ($accruedLeaveDays يوم)',
-          amount: cashLeaveAllowance,
-        ),
-      if (flightTicketAllowance > 0)
-        EosbBreakdownRow(
-          label: 'تذكرة سفر (تقديري)',
+          label: 'تذكرة طيران سنوية (تقدير)',
           amount: flightTicketAllowance,
         ),
       EosbBreakdownRow(
