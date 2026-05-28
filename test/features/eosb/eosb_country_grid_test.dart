@@ -25,12 +25,18 @@ void main() {
     expect(EosbCountryGrid.countries, hasLength(6));
     for (final country in EosbCountryGrid.countries) {
       expect(find.text(country.nameAr), findsOneWidget);
+      expect(find.text(country.nameEn), findsOneWidget);
       expect(find.text(country.flag), findsOneWidget);
+      expect(find.text(country.eosPensionSchemeLabel), findsOneWidget);
     }
+
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
     await tester.tap(find.text('قطر'));
     await tester.pumpAndSettle();
     expect(selected, GulfCountry.qatar);
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.text('الكويت'), findsOneWidget);
+    expect(find.text('البحرين'), findsOneWidget);
   });
 }

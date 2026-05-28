@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شبكة اختيار الدولة في معالج EOSB — الدول الست في مجلس التعاون الخليجي.
+/// شبكة اختيار الدولة في معالج EOSB — الدول الست (عمودان).
 class EosbCountryGrid extends StatelessWidget {
   const EosbCountryGrid({
     super.key,
@@ -15,7 +15,7 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  /// ترتيب العرض الثابت (٦ دول).
+  /// ترتيب العرض — ٦ دول خليجية (ثابت، لا يُفلتر).
   static const List<GulfCountry> countries = [
     GulfCountry.saudiArabia,
     GulfCountry.uae,
@@ -25,23 +25,13 @@ class EosbCountryGrid extends StatelessWidget {
     GulfCountry.kuwait,
   ];
 
-  /// عمودان على الجوال، ٣ على الأجهزة المتوسطة، ٦ على الشاشات العريضة.
-  static int crossAxisCount(double width) {
-    if (width >= 1000) return 6;
-    if (width >= 560) return 3;
-    return 2;
-  }
+  static const int crossAxisCount = 2;
+  static const double spacing = 10;
+  static const double tileHeight = 152;
 
-  static double tileHeight(double width, int columns) {
-    if (columns >= 6) return 104;
-    if (columns == 2) return 118;
-    return 112;
-  }
-
-  static double flagSize(double width) {
-    if (width < 360) return 36;
-    if (width >= 1000) return 32;
-    return 38;
+  static double gridHeight(int countryCount) {
+    final rows = (countryCount / crossAxisCount).ceil();
+    return rows * tileHeight + (rows - 1) * spacing;
   }
 
   @override
@@ -49,32 +39,31 @@ class EosbCountryGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final columns = crossAxisCount(width);
-        final tileH = tileHeight(width, columns);
-        final flagSz = flagSize(width);
+        final cellWidth = (width - spacing) / crossAxisCount;
+        final aspectRatio = cellWidth / tileHeight;
+        final flagSize = width < 360 ? 40.0 : 44.0;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            mainAxisExtent: tileH,
+        return SizedBox(
+          height: gridHeight(countries.length),
+          child: GridView.count(
+            crossAxisCount: crossAxisCount,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            childAspectRatio: aspectRatio,
+            children: countries.map((country) {
+              return _EosbCountryTile(
+                country: country,
+                isSelected: country == selected,
+                flagSize: flagSize,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onSelected(country);
+                },
+              );
+            }).toList(),
           ),
-          itemCount: countries.length,
-          itemBuilder: (context, index) {
-            final country = countries[index];
-            return _EosbCountryTile(
-              country: country,
-              isSelected: country == selected,
-              flagSize: flagSz,
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onSelected(country);
-              },
-            );
-          },
         );
       },
     );
@@ -97,19 +86,22 @@ class _EosbCountryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedScale(
-          scale: isSelected ? 1.02 : 1.0,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
+    return Semantics(
+      label:
+          '${country.flag} ${country.nameAr} ${country.nameEn} · ${country.eosPensionSchemeLabel}',
+      selected: isSelected,
+      button: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -127,9 +119,9 @@ class _EosbCountryTile extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         AppColors.emerald
-                            .withValues(alpha: isDark ? 0.36 : 0.18),
+                            .withValues(alpha: isDark ? 0.38 : 0.2),
                         AppColors.emeraldDark
-                            .withValues(alpha: isDark ? 0.16 : 0.06),
+                            .withValues(alpha: isDark ? 0.18 : 0.08),
                       ],
                     )
                   : null,
@@ -138,97 +130,94 @@ class _EosbCountryTile extends StatelessWidget {
                   : Theme.of(context)
                       .colorScheme
                       .surface
-                      .withValues(alpha: isDark ? 0.45 : 0.75),
+                      .withValues(alpha: isDark ? 0.5 : 0.8),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.emerald.withValues(alpha: 0.32),
+                        color: AppColors.emerald.withValues(alpha: 0.35),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ]
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                  : null,
             ),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 10,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        country.flag,
-                        style: TextStyle(fontSize: flagSize),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      country.flag,
+                      style: TextStyle(fontSize: flagSize),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      country.nameAr,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        fontSize: 13,
+                        height: 1.1,
+                        fontWeight: FontWeight.w800,
+                        color: isSelected
+                            ? AppColors.emerald
+                            : Theme.of(context).colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 2),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          country.nameAr,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          style: GoogleFonts.cairo(
-                            fontSize: 12,
-                            height: 1.1,
-                            fontWeight: isSelected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: isSelected
-                                ? AppColors.emerald
-                                : Theme.of(context).colorScheme.onSurface,
-                          ),
+                    ),
+                    Text(
+                      country.nameEn,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        fontSize: 10,
+                        height: 1.1,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? AppColors.emerald.withValues(alpha: 0.9)
+                            : muted,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (isSelected ? AppColors.emerald : muted)
+                            .withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: (isSelected ? AppColors.emerald : muted)
+                              .withValues(alpha: 0.35),
                         ),
                       ),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          country.nameEn,
-                          maxLines: 1,
-                          style: GoogleFonts.cairo(
-                            fontSize: 9,
-                            height: 1.1,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
+                      child: Text(
+                        country.eosPensionSchemeLabel,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.cairo(
+                          fontSize: 8.5,
+                          height: 1.15,
+                          fontWeight: FontWeight.w700,
+                          color: isSelected ? AppColors.emerald : muted,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 if (isSelected)
-                  PositionedDirectional(
-                    top: 6,
-                    end: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.emerald.withValues(alpha: 0.35),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_rounded,
-                        color: AppColors.emerald,
-                        size: 20,
-                      ),
+                  const PositionedDirectional(
+                    top: 0,
+                    end: 0,
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.emerald,
+                      size: 22,
                     ),
                   ),
               ],

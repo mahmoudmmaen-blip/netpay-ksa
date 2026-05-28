@@ -45,6 +45,16 @@ extension GulfCountryMeta on GulfCountry {
         GulfCountry.kuwait => 'PIFSS',
       };
 
+  /// تسمية نظام التقاعد/العمل في معالج نهاية الخدمة (EOSB).
+  String get eosPensionSchemeLabel => switch (this) {
+        GulfCountry.saudiArabia => 'GOSI',
+        GulfCountry.uae => 'GPSSA / DEWS',
+        GulfCountry.oman => 'Oman Pension',
+        GulfCountry.qatar => 'Qatar Labor Law',
+        GulfCountry.bahrain => 'Bahrain Labor Law',
+        GulfCountry.kuwait => 'Kuwait Labor Law',
+      };
+
   String get currencySymbol => switch (this) {
         GulfCountry.saudiArabia => 'ر.س',
         GulfCountry.uae => 'د.إ',
