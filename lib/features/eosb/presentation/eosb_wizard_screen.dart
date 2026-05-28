@@ -843,6 +843,14 @@ class _StepContractState extends ConsumerState<_StepContract> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('الدولة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text(
+          '٦ دول خليجية — اختر دولة العمل',
+          style: GoogleFonts.cairo(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 8),
         EosbCountryGrid(
           selected: wizard.country,
@@ -1335,7 +1343,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 240),
                   child: Container(
-                    key: ValueKey(total.toStringAsFixed(0)),
+                    key: ValueKey(previewKey),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,

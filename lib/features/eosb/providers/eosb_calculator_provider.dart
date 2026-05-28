@@ -301,6 +301,8 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
       ticketCost: nextTicketCost,
       showResults: false,
     );
+    // مزامنة الدولة العالمية — المعاينة والمراجع القانونية تتحدث فوراً.
+    ref.read(gulfCountryProvider.notifier).setCountry(country);
   }
 
   void setContractType(EosbContractType type) {
