@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شبكة اختيار الدولة في معالج EOSB — الدول الست (عمودان).
+/// شبكة اختيار الدولة في معالج EOSB — يعرض الدول الست دائماً (بدون فلترة).
 class EosbCountryGrid extends StatelessWidget {
   const EosbCountryGrid({
     super.key,
@@ -15,8 +15,8 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  /// ترتيب العرض — ٦ دول خليجية (ثابت، لا يُفلتر).
-  static const List<GulfCountry> countries = [
+  /// القائمة الثابتة — كل دول الخليج الست (لا تستخدم [GulfCountry.values]).
+  static const List<GulfCountry> allCountries = [
     GulfCountry.saudiArabia,
     GulfCountry.uae,
     GulfCountry.oman,
@@ -25,13 +25,20 @@ class EosbCountryGrid extends StatelessWidget {
     GulfCountry.kuwait,
   ];
 
-  static const int crossAxisCount = 2;
-  static const double spacing = 10;
-  static const double tileHeight = 152;
+  /// @deprecated Use [allCountries]
+  static const List<GulfCountry> countries = allCountries;
 
-  static double gridHeight(int countryCount) {
-    final rows = (countryCount / crossAxisCount).ceil();
-    return rows * tileHeight + (rows - 1) * spacing;
+  static const double _spacing = 10;
+  static const double _tileHeight = 152;
+
+  static int _crossAxisCount(double width) {
+    if (width >= 720) return 3;
+    return 2;
+  }
+
+  static double _gridHeight(int itemCount, int columns) {
+    final rows = (itemCount / columns).ceil();
+    return rows * _tileHeight + (rows - 1) * _spacing;
   }
 
   @override
@@ -39,21 +46,25 @@ class EosbCountryGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final cellWidth = (width - spacing) / crossAxisCount;
-        final aspectRatio = cellWidth / tileHeight;
+        final columns = _crossAxisCount(width);
         final flagSize = width < 360 ? 40.0 : 44.0;
 
         return SizedBox(
-          height: gridHeight(countries.length),
-          child: GridView.count(
-            crossAxisCount: crossAxisCount,
+          height: _gridHeight(allCountries.length, columns),
+          child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: aspectRatio,
-            children: countries.map((country) {
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              mainAxisSpacing: _spacing,
+              crossAxisSpacing: _spacing,
+              mainAxisExtent: _tileHeight,
+            ),
+            itemCount: allCountries.length,
+            itemBuilder: (context, index) {
+              final country = allCountries[index];
               return _EosbCountryTile(
+                key: ValueKey(country),
                 country: country,
                 isSelected: country == selected,
                 flagSize: flagSize,
@@ -62,7 +73,7 @@ class EosbCountryGrid extends StatelessWidget {
                   onSelected(country);
                 },
               );
-            }).toList(),
+            },
           ),
         );
       },
@@ -72,6 +83,7 @@ class EosbCountryGrid extends StatelessWidget {
 
 class _EosbCountryTile extends StatelessWidget {
   const _EosbCountryTile({
+    super.key,
     required this.country,
     required this.isSelected,
     required this.flagSize,
