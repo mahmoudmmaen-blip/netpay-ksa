@@ -138,7 +138,7 @@ class EosbModel {
         EosbCalculator.saudiUnfairDismissalAward(this),
       EosbTerminationType.employerDismissalValidReason =>
         EosbCalculator.saudiUnfairDismissalAward(this) * 0.5,
-      _ => EosbCalculator.saudiArticle84Award(this),
+      _ => EosbCalculator.saudiArticle84OnBasic(this),
     };
   }
 
@@ -147,7 +147,7 @@ class EosbModel {
       : EosbCalculator.saudiResignationFactor(totalServiceYears);
 
   double get endOfServiceAmount =>
-      EosbCalculator.computeEndOfServiceAward(this);
+      EosbCalculator.calculateEndOfServiceAward(this);
 
   double get vacationAllowance =>
       EosbCalculator.computeVacationAllowance(this);

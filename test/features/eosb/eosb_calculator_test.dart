@@ -6,6 +6,29 @@ import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 void main() {
   const calc = EosbCalculator();
 
+  test('calculateEndOfServiceAward matches termination routing', () {
+    const unfair = EosbModel(
+      yearsOfService: 2,
+      basicSalary: 8000,
+      terminationType: EosbTerminationType.employerDismissalUnfair,
+    );
+    expect(
+      EosbCalculator.calculateEndOfServiceAward(unfair),
+      EosbCalculator.saudiUnfairDismissalAward(unfair),
+    );
+
+    const resign = EosbModel(
+      yearsOfService: 4,
+      basicSalary: 10000,
+      housingAllowance: 2000,
+      terminationType: EosbTerminationType.employeeResignation,
+    );
+    expect(
+      EosbCalculator.calculateEndOfServiceAward(resign),
+      EosbCalculator.saudiArticle84OnBasic(resign),
+    );
+  });
+
   test('calculateEndOfService returns components and total', () {
     const model = EosbModel(
       yearsOfService: 4,

@@ -66,8 +66,10 @@ class EosbCalculator {
       };
 
   /// حساب كامل لنهاية الخدمة من مدخلات المعالج.
+  ///
+  /// يُستخدم في المعاينة المباشرة وشاشة النتائج عبر [eosbCalculatorProvider].
   EosbCalculationResult calculateEndOfService(EosbModel input) {
-    final endOfServiceAward = computeEndOfServiceAward(input);
+    final endOfServiceAward = calculateEndOfServiceAward(input);
     final remainingLeavePay = computeCashLeaveAllowance(input);
     final vacationEntitlementPay = computeVacationAllowance(input);
     final flightTicketValue = computeFlightTicketAllowance(input);
@@ -90,61 +92,96 @@ class EosbCalculator {
   EosbCalculationResult calculate(EosbModel input) =>
       calculateEndOfService(input);
 
-  // ─── مكافأة نهاية الخدمة ───────────────────────────────────────────
+  // ─── مكافأة نهاية الخدمة (نقطة الدخول الموحّدة) ─────────────────────
 
-  static double computeEndOfServiceAward(EosbModel input) {
+  /// حساب مكافأة نهاية الخدمة حسب [EosbModel.terminationType] والدولة.
+  ///
+  /// **السعودية:** فصل تعسفي (أساسي×سنوات) · فصل مشروع (50%) · م.84 للباقي.
+  /// **الإمارات:** م.51/132 مع تعديلات الإنهاء.
+  ///
+  /// مربوطة بـ Live Preview وResults عبر `eosbCalculatorProvider`.
+  static double calculateEndOfServiceAward(EosbModel input) {
     if (input.totalServiceYears <= 0) return 0;
-
-    if (input.country == GulfCountry.uae) {
-      return _computeUaeGratuity(input);
-    }
-    return _computeSaudiEndOfService(input);
-  }
-
-  // ─── السعودية ───────────────────────────────────────────────────────
-
-  /// فصل تعسفي — مكافأة كاملة: الراتب الأساسي × سنوات الخدمة.
-  static double saudiUnfairDismissalAward(EosbModel input) {
-    if (input.basicSalary <= 0) return 0;
-    return input.basicSalary * input.totalServiceYears;
-  }
-
-  /// م. 84 — نصف أجر (أساسي + سكن) لأول 5 سنوات + أجر كامل لكل سنة بعدها.
-  static double saudiArticle84Award(EosbModel input) {
-    final wage = input.eosWageBase;
-    if (wage <= 0) return 0;
-    final y = input.totalServiceYears;
-    final first5 = y.clamp(0.0, 5.0);
-    final after5 = (y - 5).clamp(0.0, 100.0);
-    return (wage * 0.5 * first5) + (wage * after5);
-  }
-
-  /// @deprecated استخدم [saudiArticle84Award]
-  static double saudiArticle84OnBasic(EosbModel input) =>
-      saudiArticle84Award(input);
-
-  static double _computeSaudiEndOfService(EosbModel input) {
     if (input.basicSalary <= 0) return 0;
 
-    final unfairFull = saudiUnfairDismissalAward(input);
-    final art84 = saudiArticle84Award(input);
-
-    return switch (input.terminationType) {
-      // 100% — راتب أساسي × سنوات
-      EosbTerminationType.employerDismissalUnfair => unfairFull,
-      // 50% من المكافأة الكاملة
-      EosbTerminationType.employerDismissalValidReason => unfairFull * 0.5,
-      // م. 84: 50% أول 5 سنوات + 100% بعدها
-      EosbTerminationType.employeeResignation => art84,
-      EosbTerminationType.contractExpiry =>
-        _saudiContractExpiryAward(input, art84),
-      EosbTerminationType.mutualAgreement =>
-        art84 * (input.mutualAgreementPercent / 100),
-      EosbTerminationType.retirementOrDeath => art84,
+    return switch (input.country) {
+      GulfCountry.uae => _uaeEndOfServiceByTermination(input),
+      GulfCountry.saudiArabia => _saudiEndOfServiceByTermination(input),
     };
   }
 
-  /// انتهاء عقد: أقل من سنة في عقد محدد → نصف م. 84؛ وإلا كامل.
+  /// @deprecated استخدم [calculateEndOfServiceAward]
+  static double computeEndOfServiceAward(EosbModel input) =>
+      calculateEndOfServiceAward(input);
+
+  // ─── السعودية — نظام العمل ─────────────────────────────────────────
+
+  /// **فصل تعسفي (م.85 عملياً / مكافأة كاملة)**
+  ///
+  /// 100% من الراتب الأساسي × سنوات الخدمة:
+  /// `الراتب الأساسي × إجمالي سنوات الخدمة`
+  static double saudiUnfairDismissalAward(EosbModel input) {
+    if (input.basicSalary <= 0 || input.totalServiceYears <= 0) return 0;
+    return input.basicSalary * input.totalServiceYears;
+  }
+
+  /// **المادة 84 — أساس حساب المكافأة العادية**
+  ///
+  /// وعاء الأجر = أساسي + بدل سكن.
+  /// - أول 5 سنوات: **50%** من وعاء الأجر عن كل سنة
+  /// - بعد 5 سنوات: **100%** من وعاء الأجر عن كل سنة
+  ///
+  /// مثال: 10,000 أساسي + 2,500 سكن، 7 سنوات:
+  /// `(12,500×0.5×5) + (12,500×2) = 56,250`
+  static double saudiArticle84OnBasic(EosbModel input) {
+    final wage = input.eosWageBase; // أساسي + سكن
+    if (wage <= 0 || input.totalServiceYears <= 0) return 0;
+
+    final years = input.totalServiceYears;
+    final first5Years = years.clamp(0.0, 5.0);
+    final yearsAfter5 = (years - 5.0).clamp(0.0, 100.0);
+
+    final first5Component = wage * 0.5 * first5Years;
+    final after5Component = wage * 1.0 * yearsAfter5;
+
+    return first5Component + after5Component;
+  }
+
+  /// اسم بديل لـ [saudiArticle84OnBasic] — نفس صيغة المادة 84.
+  static double saudiArticle84Award(EosbModel input) =>
+      saudiArticle84OnBasic(input);
+
+  /// توجيه مكافأة السعودية حسب [EosbTerminationType].
+  static double _saudiEndOfServiceByTermination(EosbModel input) {
+    final unfairFull = saudiUnfairDismissalAward(input);
+    final article84 = saudiArticle84OnBasic(input);
+
+    return switch (input.terminationType) {
+      // فصل تعسفي — 100% (راتب أساسي × سنوات)
+      EosbTerminationType.employerDismissalUnfair => unfairFull,
+
+      // فصل لسبب مشروع (م.80) — نصف المكافأة التعسفية المحتسبة
+      EosbTerminationType.employerDismissalValidReason => unfairFull * 0.5,
+
+      // استقالة — المادة 84 كاملة (قد تُخفّض بم.85 في أنظمة أخرى؛ هنا صيغة 84)
+      EosbTerminationType.employeeResignation => article84,
+
+      // انتهاء عقد — م.84 مع قواعد العقد المحدد
+      EosbTerminationType.contractExpiry =>
+        _saudiContractExpiryAward(input, article84),
+
+      // اتفاق بالتراضي — نسبة يحددها المستخدم على أساس م.84
+      EosbTerminationType.mutualAgreement =>
+        article84 * (input.mutualAgreementPercent / 100.0),
+
+      // تقاعد / وفاة — م.84 كاملة
+      EosbTerminationType.retirementOrDeath => article84,
+    };
+  }
+
+  /// **انتهاء عقد (م.74 محدد / م.75 غير محدد)**
+  ///
+  /// عقد محدد المدة وأقل من سنة خدمة → نصف مكافأة المادة 84.
   static double _saudiContractExpiryAward(EosbModel input, double art84) {
     if (input.contractType == EosbContractType.fixed &&
         input.totalServiceYears < 1) {
@@ -153,7 +190,7 @@ class EosbCalculator {
     return art84;
   }
 
-  /// م. 85 — نسب الاستقالة على أساس م. 84.
+  /// **المادة 85 — نسب الاستقالة** (للمرجع؛ UAE تستخدمها في الحساب).
   static double saudiResignationFactor(double years) {
     if (years < 2) return 0;
     if (years < 5) return 1 / 3;
@@ -174,8 +211,9 @@ class EosbCalculator {
     };
   }
 
-  // ─── الإمارات — م. 132 / 51 ───────────────────────────────────────
+  // ─── الإمارات — قانون العمل الاتحادي ───────────────────────────────
 
+  /// **المادة 51 — مكافأة أساسية (21/30 يوم أجر × سنوات، حد سنتين)**
   static double uaeFullGratuity(EosbModel input) {
     if (input.basicSalary <= 0 || input.totalServiceYears < 1) return 0;
     final daily = input.basicSalary / 30;
@@ -193,7 +231,8 @@ class EosbCalculator {
     return 1;
   }
 
-  static double _computeUaeGratuity(EosbModel input) {
+  /// توجيه مكافأة الإمارات حسب نوع الإنهاء (م.132 + م.51).
+  static double _uaeEndOfServiceByTermination(EosbModel input) {
     if (input.basicSalary <= 0) return 0;
     final base = uaeFullGratuity(input);
     if (base <= 0) return 0;
