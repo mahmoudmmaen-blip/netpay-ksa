@@ -304,6 +304,11 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
       otherAllowances: salary.otherAllowances,
     );
   }
+
+  /// حساب نهاية الخدمة من الحالة الحالية للمعالج (معاينة مباشرة + نتائج).
+  EosbCalculationResult calculateEndOfService() {
+    return eosbEngine.calculateEndOfService(state.toModel());
+  }
 }
 
 /// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
@@ -316,10 +321,10 @@ final eosbWizardProvider =
   EosbWizardNotifier.new,
 );
 
-/// نتيجة الحساب الكاملة من الحالة الحالية — تتحدث فوراً مع أي تغيير في المعالج.
+/// نتيجة الحساب الكاملة — تتحدث فوراً مع أي تغيير في المعالج.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
-  final wizard = ref.watch(eosbWizardProvider);
-  return eosbEngine.calculate(wizard.toModel());
+  ref.watch(eosbWizardProvider);
+  return ref.read(eosbWizardProvider.notifier).calculateEndOfService();
 });
 
 /// بنود المعاينة المباشرة (عربي + مبلغ).

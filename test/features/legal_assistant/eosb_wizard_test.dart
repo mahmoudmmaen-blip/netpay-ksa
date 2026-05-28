@@ -21,7 +21,10 @@ void main() {
     expect(notifier.nextStep(), isTrue); // → step 1
     expect(notifier.nextStep(), isTrue); // → step 2
     expect(notifier.nextStep(), isTrue); // → results
-    final result = container.read(eosbCalculatorProvider);
+    final result = notifier.calculateEndOfService();
     expect(result.endOfServiceAmount, greaterThan(0));
+    expect(result.totalEntitlements, greaterThan(0));
+    expect(container.read(eosbCalculatorProvider).totalEntitlements,
+        result.totalEntitlements);
   });
 }

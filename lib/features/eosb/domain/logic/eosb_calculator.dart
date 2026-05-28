@@ -54,12 +54,56 @@ class EosbCalculationResult {
 class EosbCalculator {
   const EosbCalculator();
 
-  EosbCalculationResult calculate(EosbModel input) {
-    final eos = input.endOfServiceAmount;
-    final vacation = input.vacationAllowance;
-    final leave = input.cashLeaveAllowance;
-    final ticket = input.flightTicketAllowance;
-    final total = input.totalEntitlements;
+  /// حساب كامل لنهاية الخدمة من مدخلات المعالج.
+  ///
+  /// يشمل: مكافأة نهاية الخدمة، بدل الإجازات المتبقية، بدل إجازة سنوية،
+  /// تذكرة طيران (تقدير)، والإجمالي + المراجع القانونية.
+  EosbCalculationResult calculateEndOfService(EosbModel input) {
+    // 1) مكافأة نهاية الخدمة — م. 84/85 (السعودية) أو م. 51 (الإمارات)
+    final endOfServiceAward = input.endOfServiceAmount;
+
+    // 2) بدل الإجازات المتبقية (أيام × أجر يومي من الأساسي)
+    final remainingLeavePay = input.cashLeaveAllowance;
+
+    // 3) بدل إجازة سنوية تقديري
+    final vacationEntitlementPay = input.vacationAllowance;
+
+    // 4) تذكرة طيران — تقدير سنوي × مدة الخدمة
+    final flightTicketValue = input.flightTicketAllowance;
+
+    // 5) إجمالي المستحقات
+    final totalEntitlements = endOfServiceAward +
+        remainingLeavePay +
+        vacationEntitlementPay +
+        flightTicketValue;
+
+    return _buildResult(
+      input: input,
+      endOfServiceAward: endOfServiceAward,
+      remainingLeavePay: remainingLeavePay,
+      vacationEntitlementPay: vacationEntitlementPay,
+      flightTicketValue: flightTicketValue,
+      totalEntitlements: totalEntitlements,
+    );
+  }
+
+  /// @deprecated استخدم [calculateEndOfService]
+  EosbCalculationResult calculate(EosbModel input) =>
+      calculateEndOfService(input);
+
+  EosbCalculationResult _buildResult({
+    required EosbModel input,
+    required double endOfServiceAward,
+    required double remainingLeavePay,
+    required double vacationEntitlementPay,
+    required double flightTicketValue,
+    required double totalEntitlements,
+  }) {
+    final eos = endOfServiceAward;
+    final vacation = vacationEntitlementPay;
+    final leave = remainingLeavePay;
+    final ticket = flightTicketValue;
+    final total = totalEntitlements;
 
     final components = <EosbComponentItem>[
       EosbComponentItem(

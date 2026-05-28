@@ -6,14 +6,15 @@ import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 void main() {
   const calc = EosbCalculator();
 
-  test('calculate returns components and total', () {
+  test('calculateEndOfService returns components and total', () {
     const model = EosbModel(
       yearsOfService: 4,
       basicSalary: 10000,
       housingAllowance: 2000,
       terminationType: EosbTerminationType.contractExpiry,
     );
-    final result = calc.calculate(model);
+    final result = calc.calculateEndOfService(model);
+    expect(result.endOfServiceAmount, greaterThan(0));
     expect(result.totalEntitlements, model.totalEntitlements);
     expect(result.components, isNotEmpty);
     expect(result.legalReferences, isNotEmpty);
