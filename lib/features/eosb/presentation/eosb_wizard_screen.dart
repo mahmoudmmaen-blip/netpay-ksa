@@ -2096,7 +2096,6 @@ class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
       }
       result = ref.read(eosbFinalizedResultProvider);
     }
-    result ??= ref.read(eosbFinalizedResultProvider);
     if (result == null ||
         (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
