@@ -451,51 +451,57 @@ class _WizardBottomBar extends ConsumerWidget {
                 ),
               ),
               const Spacer(),
-              FilledButton.icon(
-                onPressed: canAdvance
-                    ? () {
-                        if (isLastStep) {
-                          eosbTryFinishAndShowResults(context, ref);
-                          return;
-                        }
-                        notifier.flushAllInputs();
-                        final error = ref
-                            .read(eosbWizardProvider)
-                            .validationMessageForStep(stepIndex);
-                        if (error != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                error,
-                                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              Tooltip(
+                message: canAdvance
+                    ? (isLastStep ? 'عرض النتيجة الكاملة' : 'الانتقال للخطوة التالية')
+                    : (validationMsg ?? wizard.guidanceForStep(stepIndex)),
+                child: FilledButton.icon(
+                  onPressed: canAdvance
+                      ? () {
+                          if (isLastStep) {
+                            eosbTryFinishAndShowResults(context, ref);
+                            return;
+                          }
+                          notifier.flushAllInputs();
+                          final error = ref
+                              .read(eosbWizardProvider)
+                              .validationMessageForStep(stepIndex);
+                          if (error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  error,
+                                  style:
+                                      GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                                ),
+                                backgroundColor: AppColors.error,
+                                behavior: SnackBarBehavior.floating,
                               ),
-                              backgroundColor: AppColors.error,
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                          return;
+                            );
+                            return;
+                          }
+                          if (notifier.nextStep()) {
+                            HapticFeedback.selectionClick();
+                          }
                         }
-                        if (notifier.nextStep()) {
-                          HapticFeedback.selectionClick();
-                        }
-                      }
-                    : null,
-                icon: Icon(
-                  isLastStep ? Icons.calculate_rounded : Icons.arrow_back_rounded,
-                  size: 18,
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.emerald,
-                  disabledBackgroundColor:
-                      AppColors.emerald.withValues(alpha: 0.35),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                      : null,
+                  icon: Icon(
+                    isLastStep ? Icons.calculate_rounded : Icons.arrow_back_rounded,
+                    size: 18,
                   ),
-                ),
-                label: Text(
-                  isLastStep ? 'عرض النتيجة' : 'التالي',
-                  style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    disabledBackgroundColor:
+                        AppColors.emerald.withValues(alpha: 0.35),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  label: Text(
+                    isLastStep ? 'عرض النتيجة' : 'التالي',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -1092,9 +1098,11 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
     final previewKey = ref.watch(eosbLivePreviewKeyProvider);
-    ref.watch(eosbCalculatorProvider);
-    final result = ref.watch(eosbResultsProvider);
+    final result = ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
+    final eosAward = ref.watch(eosbEndOfServiceAwardProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
+    final model = result.input;
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
       symbol: result.input.country.currencySymbol,
@@ -1174,6 +1182,17 @@ class _EosbLivePreviewCard extends ConsumerWidget {
             ),
           ],
           if (!needsContractData) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${model.terminationSummary} · '
+              '${model.totalServiceYears.toStringAsFixed(1)} سنة · '
+              'مكافأة محسوبة: ${currency.format(eosAward)}',
+              style: GoogleFonts.cairo(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.emerald.withValues(alpha: 0.85),
+              ),
+            ),
             const SizedBox(height: 8),
             ...lines.map(
               (line) => Padding(

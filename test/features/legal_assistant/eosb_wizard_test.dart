@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
@@ -112,6 +113,22 @@ void main() {
     expect(container.read(eosbWizardProvider).showResults, isFalse);
     expect(container.read(eosbWizardProvider).stepIndex, 1);
     expect(container.read(eosbFinalizedResultProvider), isNull);
+  });
+
+  test('edge case: UAE resignation under 3 years yields zero EOS award', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.employeeResignation);
+    notifier.setCountry(GulfCountry.uae);
+    notifier.setSalaries(basic: 10000);
+    notifier.setServiceDuration(years: 2);
+    expect(container.read(eosbEndOfServiceAwardProvider), 0);
+    expect(notifier.tryFinishWizard(), isNull);
+    expect(
+      container.read(eosbCalculatorProvider).endOfServiceAmount,
+      0,
+    );
   });
 
   test('edge case: zero salary blocks finish', () {

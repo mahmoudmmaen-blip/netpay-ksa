@@ -364,6 +364,7 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     flushAllInputs();
     final validationError = state.validationBeforeResults();
     if (validationError != null) return validationError;
+
     return finishWizard() ? null : 'تعذّر عرض النتيجة — راجع البيانات';
   }
 
