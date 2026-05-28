@@ -72,7 +72,9 @@ class EosbCalculator {
 
   /// حساب كامل لنهاية الخدمة من مدخلات المعالج.
   ///
-  /// يُستخدم في المعاينة المباشرة وشاشة النتائج عبر [eosbCalculatorProvider].
+  /// يُستدعى من [eosbCalculatorProvider] و[finishWizard]:
+  /// - المكافأة: [calculateEndOfServiceAward] → [EosbCountryRules] أو SA/UAE
+  /// - الإجازات والتذكرة: حسب [GulfCountryMeta]
   EosbCalculationResult calculateEndOfService(EosbModel input) {
     final endOfServiceAward = calculateEndOfServiceAward(input);
     final remainingLeavePay = computeCashLeaveAllowance(input);

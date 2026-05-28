@@ -11,7 +11,6 @@ import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
-import 'package:netgulf/features/eosb/domain/logic/eosb_country_rules.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
@@ -1300,7 +1299,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                         ),
                       ),
                       Text(
-                        'تقدير فوري — يتحدث مع كل حقل',
+                        '${model.country.flag} ${model.country.nameAr} · تقدير فوري',
                         style: GoogleFonts.cairo(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
@@ -1673,63 +1672,89 @@ class _EosbCountryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: GulfCountry.values.map((country) {
-        final isSelected = country == selected;
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelected(country);
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isSelected
-                      ? AppColors.emerald
-                      : Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withValues(alpha: 0.35),
-                  width: isSelected ? 2 : 1,
-                ),
-                color: isSelected
-                    ? AppColors.emerald.withValues(alpha: 0.12)
-                    : Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: 0.5),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(country.flag, style: const TextStyle(fontSize: 18)),
-                  const SizedBox(width: 6),
-                  Text(
-                    country.nameAr,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.w800 : FontWeight.w600,
+    const countries = GulfCountry.values;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - 8) / 2;
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: countries.map((country) {
+            final isSelected = country == selected;
+            return SizedBox(
+              width: itemWidth,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onSelected(country);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.emerald
+                            : Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withValues(alpha: 0.35),
+                        width: isSelected ? 2 : 1,
+                      ),
                       color: isSelected
-                          ? AppColors.emerald
-                          : Theme.of(context).colorScheme.onSurface,
+                          ? AppColors.emerald.withValues(alpha: 0.12)
+                          : Theme.of(context)
+                              .colorScheme
+                              .surface
+                              .withValues(alpha: 0.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          country.flag,
+                          style: const TextStyle(fontSize: 22),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            country.nameAr,
+                            style: GoogleFonts.cairo(
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                              color: isSelected
+                                  ? AppColors.emerald
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.emerald,
+                            size: 18,
+                          ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }

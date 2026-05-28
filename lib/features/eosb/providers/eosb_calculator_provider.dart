@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_country_rules.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/services/eosb_history_service.dart';
 import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dart';
@@ -165,6 +166,13 @@ class EosbWizardState {
   /// مدة الخدمة بالسنوات (مع الشهور الإضافية).
   double get totalServiceYears =>
       years + (months.clamp(0, 11) / 12.0) + (days.clamp(0, 364) / 365.0);
+
+  /// قواعد الدولة النشطة (عُمان، قطر، البحرين، الكويت) — null للسعودية/الإمارات.
+  EosbCountryRules? get activeCountryRules =>
+      EosbCountryRules.forCountry(country);
+
+  /// شارة الإطار القانوني في المعالج والنتائج.
+  String get countryLawSummary => country.eosLawChipAr;
 
   EosbModel toModel() => EosbModel(
         country: country,
@@ -462,9 +470,9 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 }
 
 
-/// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
-/// - مكافأة نهاية الخدمة (م. 84/85 السعودية · م. 51 الإمارات)
-/// - بدل إجازة سنوية · إجازات متبقية · تذكرة طيران (تقدير)
+/// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويستدعي
+/// [EosbCalculator.calculateEndOfService] الذي يوجّه لكل دولة خليجية
+/// ([EosbCountryRules] أو منطق السعودية/الإمارات المدمج).
 const eosbEngine = EosbCalculator();
 
 final eosbWizardProvider =
@@ -473,9 +481,22 @@ final eosbWizardProvider =
 );
 
 /// نتيجة حية — تتحدث فوراً مع أي تغيير في المعالج (معاينة + ملخص).
+///
+/// المكافأة تُحسب عبر [EosbCalculator.calculateEndOfServiceAward] حسب الدولة،
+/// والمراجع القانونية من [EosbCountryRules] أو السعودية/الإمارات.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
   final wizard = ref.watch(eosbWizardProvider);
   return eosbEngine.calculateEndOfService(wizard.toModel());
+});
+
+/// قواعد الدولة المختارة في المعالج (null = السعودية أو الإمارات).
+final eosbActiveCountryRulesProvider = Provider<EosbCountryRules?>((ref) {
+  return ref.watch(eosbWizardProvider).activeCountryRules;
+});
+
+/// ملخص الإطار القانوني للدولة النشطة.
+final eosbCountryLawSummaryProvider = Provider<String>((ref) {
+  return ref.watch(eosbWizardProvider).countryLawSummary;
 });
 
 /// نتيجة مُجمّدة عند «عرض النتيجة» — تبقى ثابتة على شاشة النتائج وPDF.

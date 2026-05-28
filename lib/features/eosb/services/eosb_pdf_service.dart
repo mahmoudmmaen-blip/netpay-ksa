@@ -207,6 +207,7 @@ class EosbPdfService {
       child: pw.Column(
         children: [
           _metaRow('الدولة', result.countryLabel, font, fontBold),
+          _metaRow('الإطار القانوني', m.country.eosLawChipAr, font, fontBold),
           _metaRow('سبب الإنهاء', m.terminationSummary, font, fontBold),
           _metaRow(
             'مدة الخدمة',
