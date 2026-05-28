@@ -27,7 +27,7 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
     setState(() {
@@ -88,7 +88,7 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
     }
   }
 
-  void _openDetails(EosbHistoryEntry entry) {
+  Future<void> _openDetails(EosbHistoryEntry entry) async {
     if (!entry.canOpenDetails) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -102,7 +102,8 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
       );
       return;
     }
-    context.push('${AppRoutes.eosb}?historyId=${entry.id}');
+    await context.push('${AppRoutes.eosb}?historyId=${entry.id}');
+    if (mounted) await _load();
   }
 
   @override
@@ -122,6 +123,32 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
           'سجل نهاية الخدمة',
           style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
         ),
+        actions: [
+          if (_entries.isNotEmpty)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.emerald.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.emerald.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Text(
+                    '${_entries.length}',
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.emerald,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: DecoratedBox(
         decoration: BoxDecoration(
@@ -140,7 +167,7 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           children: [
                             SizedBox(
-                              height: MediaQuery.sizeOf(context).height * 0.2,
+                              height: MediaQuery.sizeOf(context).height * 0.18,
                             ),
                             const _EosbHistoryEmptyState(),
                           ],
@@ -150,9 +177,10 @@ class _EosbHistoryScreenState extends State<EosbHistoryScreen> {
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                           itemCount: _entries.length,
                           separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 14),
                           itemBuilder: (context, index) {
-                            return _EosbHistoryCard(
+                            return _EosbHistoryCardAnimated(
+                              index: index,
                               entry: _entries[index],
                               isDark: isDark,
                               onView: () => _openDetails(_entries[index]),
@@ -177,36 +205,45 @@ class _EosbHistoryEmptyState extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 128,
+            height: 128,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
                 colors: [
-                  AppColors.emerald.withValues(alpha: 0.2),
-                  AppColors.emeraldDark.withValues(alpha: 0.08),
+                  AppColors.emerald.withValues(alpha: 0.22),
+                  AppColors.emeraldDark.withValues(alpha: 0.06),
                 ],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.emerald.withValues(alpha: 0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Icon(
-              Icons.folder_open_rounded,
-              size: 56,
-              color: AppColors.emerald.withValues(alpha: 0.65),
+              Icons.history_rounded,
+              size: 60,
+              color: AppColors.emerald.withValues(alpha: 0.7),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           Text(
-            'لا توجد حسابات محفوظة',
+            'لا توجد حسابات محفوظة بعد',
             style: GoogleFonts.cairo(
               fontSize: 20,
               fontWeight: FontWeight.w800,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             'بعد إنهاء حاسبة نهاية الخدمة، اضغط «حفظ الحساب» '
-            'لتجد حساباتك هنا مع إمكانية عرض التفاصيل أو التصدير.',
+            'من شاشة النتائج لتظهر حساباتك هنا.',
             style: GoogleFonts.cairo(
               fontSize: 14,
               height: 1.55,
@@ -217,7 +254,7 @@ class _EosbHistoryEmptyState extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
           FilledButton.icon(
             onPressed: () => context.push(AppRoutes.eosb),
             icon: const Icon(Icons.calculate_rounded),
@@ -227,10 +264,78 @@ class _EosbHistoryEmptyState extends StatelessWidget {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.emerald,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// بطاقة مع دخول متدرّج.
+class _EosbHistoryCardAnimated extends StatefulWidget {
+  const _EosbHistoryCardAnimated({
+    required this.index,
+    required this.entry,
+    required this.isDark,
+    required this.onView,
+    required this.onDelete,
+  });
+
+  final int index;
+  final EosbHistoryEntry entry;
+  final bool isDark;
+  final VoidCallback onView;
+  final VoidCallback onDelete;
+
+  @override
+  State<_EosbHistoryCardAnimated> createState() => _EosbHistoryCardAnimatedState();
+}
+
+class _EosbHistoryCardAnimatedState extends State<_EosbHistoryCardAnimated>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 380 + (widget.index * 40).clamp(0, 200)),
+    );
+    final curve = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _fade = curve;
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.06),
+      end: Offset.zero,
+    ).animate(curve);
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: _EosbHistoryCard(
+          entry: widget.entry,
+          isDark: widget.isDark,
+          onView: widget.onView,
+          onDelete: widget.onDelete,
+        ),
       ),
     );
   }
@@ -259,154 +364,180 @@ class _EosbHistoryCard extends StatelessWidget {
     );
     final flag = entry.countryCode == 'uae' ? '🇦🇪' : '🇸🇦';
 
-    return GlassSurface(
-      highlighted: true,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.emerald.withValues(alpha: isDark ? 0.28 : 0.14),
-                  AppColors.emeraldDark.withValues(alpha: isDark ? 0.12 : 0.05),
-                ],
-              ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(flag, style: const TextStyle(fontSize: 24)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.countryNameAr,
-                        style: GoogleFonts.cairo(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        entry.terminationSummary,
-                        style: GoogleFonts.cairo(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.emerald,
-                        ),
-                      ),
-                      Text(
-                        dateFmt.format(entry.savedAt),
-                        style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.5),
-                        ),
-                      ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onView,
+        borderRadius: BorderRadius.circular(16),
+        child: GlassSurface(
+          highlighted: true,
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                    colors: [
+                      AppColors.emerald.withValues(alpha: isDark ? 0.3 : 0.16),
+                      AppColors.emeraldDark.withValues(alpha: isDark ? 0.14 : 0.06),
                     ],
                   ),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                child: Column(
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(flag, style: const TextStyle(fontSize: 22)),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                entry.countryNameAr,
+                                style: GoogleFonts.cairo(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.emerald.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  entry.terminationSummary,
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.emerald,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
                     Text(
-                      'الإجمالي',
+                      'إجمالي المستحقات',
                       style: GoogleFonts.cairo(
-                        fontSize: 10,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
                             .withValues(alpha: 0.55),
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        currency.format(entry.totalEntitlements),
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 32,
+                          color: AppColors.emerald,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      currency.format(entry.totalEntitlements),
+                      dateFmt.format(entry.savedAt),
                       style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                        color: AppColors.emerald,
+                        fontSize: 11,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-            child: Row(
-              children: [
-                _MiniStat(
-                  label: 'مكافأة',
-                  value: currency.format(entry.endOfServiceAmount),
-                ),
-                const SizedBox(width: 8),
-                _MiniStat(
-                  label: 'الخدمة',
-                  value: '${entry.serviceYears.toStringAsFixed(1)} سنة',
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDelete,
-                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: Text(
-                      'حذف',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                child: Row(
+                  children: [
+                    _MiniStat(
+                      label: 'مكافأة نهاية الخدمة',
+                      value: currency.format(entry.endOfServiceAmount),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.error,
-                      side: BorderSide(
-                        color: AppColors.error.withValues(alpha: 0.5),
+                    const SizedBox(width: 8),
+                    _MiniStat(
+                      label: 'مدة الخدمة',
+                      value: '${entry.serviceYears.toStringAsFixed(1)} سنة',
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 20, indent: 12, endIndent: 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onDelete,
+                        icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                        label: Text(
+                          'حذف',
+                          style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: BorderSide(
+                            color: AppColors.error.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton.icon(
+                        onPressed: onView,
+                        icon: const Icon(Icons.visibility_rounded, size: 18),
+                        label: Text(
+                          'عرض التفاصيل',
+                          style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.emerald,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton.icon(
-                    onPressed: onView,
-                    icon: const Icon(Icons.visibility_rounded, size: 18),
-                    label: Text(
-                      'عرض التفاصيل',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.emerald,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -442,6 +573,8 @@ class _MiniStat extends StatelessWidget {
                     .onSurface
                     .withValues(alpha: 0.5),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               value,
