@@ -1,5 +1,5 @@
 name: netgulf
-description: NetGulf - حاسبة الراتب الصافي — السعودية والإمارات (Offline First)
+description: NetGulf - Full GCC net salary & end-of-service calculator (6 countries, offline)
 publish_to: 'none'
 version: 1.0.1+2          # زد الـ build number
 

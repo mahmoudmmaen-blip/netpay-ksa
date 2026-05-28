@@ -153,7 +153,7 @@ class SettingsScreen extends ConsumerWidget {
               _AboutRow(
                 icon: Icons.email_outlined,
                 label: 'التواصل',
-                value: 'support@netgulf.app',
+                value: AppConstants.supportEmail,
               ),
               const Divider(height: 1, indent: 56),
               ListTile(
@@ -164,9 +164,9 @@ class SettingsScreen extends ConsumerWidget {
                   style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Text(
-                  'Privacy Policy',
+                  AppConstants.privacyPolicyUrl,
                   style: GoogleFonts.cairo(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),

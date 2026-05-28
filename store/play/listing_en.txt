@@ -1,0 +1,34 @@
+TITLE (max 30 characters)
+NetGulf: GCC Salary & EOSB
+
+SHORT DESCRIPTION (max 80 characters)
+GCC net salary & end-of-service — 6 countries, GOSI, PDF, works offline
+
+FULL DESCRIPTION
+NetGulf is your offline-first calculator for Gulf employees and HR teams: net salary, social insurance (GOSI / GPSSA / DEWS), and end-of-service benefit (EOSB) across all six GCC countries.
+
+🇸🇦 Saudi Arabia — GOSI with 2024–2028 phased rates, wage ceiling, SANED
+🇦🇪 UAE — GPSSA & DEWS pension breakdown
+🇴🇲 Oman · 🇶🇦 Qatar · 🇧🇭 Bahrain · 🇰🇼 Kuwait — country-specific gratuity rules
+
+WHAT YOU CAN DO
+• Calculate net salary with allowances and deductions
+• Estimate end-of-service award by contract type and termination reason
+• Live preview while you enter data in the EOSB wizard
+• Export professional Arabic RTL PDF reports
+• Save calculations to history — reopen, compare, delete
+• Share salary summary cards
+• Local notifications for GOSI phase reminders (optional)
+• Dark & light themes — Arabic-first UI
+
+PREMIUM (optional)
+Remove ads, unlimited history, and advanced tools. Free tier includes core calculators with banner ads.
+
+IMPORTANT
+Calculations are estimates for guidance only — not legal advice. Always verify with your contract, employer, and local labour authorities.
+
+OFFLINE FIRST
+Your salary inputs stay on your device. No account required.
+
+Privacy policy: https://netgulf.app/privacy
+Support: support@netgulf.app

@@ -56,6 +56,19 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Text(
+            AppConstants.privacyPolicyUrl,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),

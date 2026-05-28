@@ -11,27 +11,38 @@ abstract final class AppConstants {
 
   static const String appNameAr = 'نتجلف';
   static const String appNameEn = 'NetGulf';
+
+  /// وصف قصير داخل التطبيق (شاشة البداية والإعدادات).
   static const String appTaglineAr =
-      'حاسبة الراتب الصافي — السعودية والإمارات';
+      'حاسبة الراتب الصافي ومكافأة نهاية الخدمة — دول الخليج الست';
   static const String appTaglineEn =
-      'Gulf Net Salary Calculator — KSA & UAE';
+      'Full GCC Net Salary & End-of-Service Calculator';
+
+  /// عنوان Google Play (حد أقصى 30 حرفاً) — انسخ من store/play/listing_*.txt
+  static const String playStoreTitleEn = 'NetGulf: GCC Salary & EOSB';
+  static const String playStoreTitleAr = 'نتجلف: راتب الخليج ونهاية الخدمة';
 
   /// نص الترحيب في شاشة التعريف.
   static const String onboardingWelcomeTitleAr = 'مرحباً بك في NetGulf';
   static const String onboardingWelcomeSubtitleAr =
-      'NetGulf — حاسبة الراتب الصافي للسعودية والإمارات';
+      'حاسبة الراتب الصافي ومكافأة نهاية الخدمة — ست دول خليجية، بدون إنترنت';
   static const String onboardingPensionSubtitleAr =
-      'GOSI للسعودية · GPSSA / DEWS للإمارات — دقة، مراحل، وتنبيهات';
+      'GOSI · GPSSA · DEWS · أنظمة نهاية الخدمة — دقة ومراحل وتنبيهات';
 
   /// معرّف الحزمة — Android & iOS.
   static const String applicationId = 'com.example.netgulf';
 
-  /// سياسة الخصوصية (أصول + رابط للنشر على Play Console).
+  /// سياسة الخصوصية (أصول + رابط Play Console — انشر store/web/privacy.html).
   static const String privacyPolicyAsset = 'assets/privacy_policy.html';
   static const String privacyPolicyUrl = 'https://netgulf.app/privacy';
 
-  static const String appVersion = '1.0.0';
-  static const int appBuildNumber = 1;
+  static const String supportEmail = 'support@netgulf.app';
+  static const String supportUrl = 'https://netgulf.app/support';
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.example.netgulf';
+
+  static const String appVersion = '1.0.1';
+  static const int appBuildNumber = 2;
 
   /// شعار التطبيق — PNG شفاف 512×512.
   static const String logoAsset = 'assets/images/logo.png';

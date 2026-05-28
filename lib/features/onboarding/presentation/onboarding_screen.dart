@@ -25,12 +25,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _OnboardingPageData(
       icon: Icons.calculate_rounded,
       title: AppConstants.onboardingWelcomeTitleAr,
-      subtitle: 'حاسبة الراتب الصافي للسعودية والإمارات — دقيقة، سريعة، وتعمل بالكامل بدون إنترنت',
+      subtitle: 'حاسبة الراتب الصافي لدول الخليج الست — دقيقة، سريعة، وتعمل بالكامل بدون إنترنت',
     ),
     _OnboardingPageData(
       icon: Icons.shield_rounded,
       title: 'حساب التأمينات ونهاية الخدمة',
-      subtitle: 'حسابات دقيقة وفقاً لأنظمة GOSI • GPSSA • DEWS والمادتين 84 و85 من قانون العمل',
+      subtitle: 'GOSI • GPSSA • DEWS ومكافأة نهاية الخدمة لكل دولة خليجية وفق أنظمتها المحلية',
     ),
     _OnboardingPageData(
       icon: Icons.rocket_launch_rounded,
