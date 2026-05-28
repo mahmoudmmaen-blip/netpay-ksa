@@ -1,6 +1,6 @@
-import 'package:netgulf/features/legal_assistant/presentation/legal_assistant_screen.dart';
+import 'eosb_wizard_screen.dart';
 
-/// مسار `/eosb` — حاسبة نهاية الخدمة (معالج EOSB).
+/// مسار `/eosb` — حاسبة نهاية الخدمة (معالج EOSB المستقل).
 class EosbScreen extends EosbWizardScreen {
-  const EosbScreen({super.key});
+  const EosbScreen({super.key}) : super(dedicatedEosbBranding: true);
 }
