@@ -15,6 +15,42 @@ import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
 import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
+/// إنهاء المعالج والانتقال لشاشة النتائج — منطق موحّد.
+bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
+  final notifier = ref.read(eosbWizardProvider.notifier);
+  notifier.flushAllInputs();
+
+  final error = ref.read(eosbWizardProvider).validationBeforeResults();
+  if (error != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(error, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return false;
+  }
+
+  if (notifier.finishWizard()) {
+    return true;
+  }
+
+  if (!context.mounted) return false;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        ref.read(eosbWizardProvider).validationBeforeResults() ??
+            'تعذّر عرض النتيجة — راجع الخطوات 1 و 2',
+        style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+      ),
+      backgroundColor: AppColors.error,
+      behavior: SnackBarBehavior.floating,
+    ),
+  );
+  return false;
+}
+
 /// المساعد القانوني — حاسبة نهاية الخدمة الشاملة (offline).
 class LegalAssistantScreen extends ConsumerStatefulWidget {
   const LegalAssistantScreen({super.key});
@@ -401,20 +437,26 @@ class _WizardBottomBar extends ConsumerWidget {
                       color: AppColors.error,
                     ),
                   )
-                : canAdvance && isLastStep
-                    ? Text(
-                        'اضغط «عرض النتيجة» لعرض التفاصيل الكاملة',
-                        key: const ValueKey('hint_finish'),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.cairo(
-                          fontSize: 11,
-                          color: Theme.of(context)
+                : Text(
+                    validationMsg != null && !canAdvance
+                        ? ''
+                        : isLastStep
+                            ? 'اضغط «عرض النتيجة» للانتقال التلقائي لشاشة النتائج'
+                            : wizard.guidanceForStep(stepIndex),
+                    key: ValueKey('hint_${stepIndex}_$canAdvance'),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      fontWeight:
+                          isLastStep && canAdvance ? FontWeight.w600 : FontWeight.w500,
+                      color: isLastStep && canAdvance
+                          ? AppColors.emerald
+                          : Theme.of(context)
                               .colorScheme
                               .onSurface
                               .withValues(alpha: 0.5),
-                        ),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('hint_empty')),
+                    ),
+                  ),
           ),
         ),
         GlassSurface(
@@ -435,41 +477,29 @@ class _WizardBottomBar extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: canAdvance
                     ? () {
+                        if (isLastStep) {
+                          eosbTryFinishAndShowResults(context, ref);
+                          return;
+                        }
                         notifier.flushAllInputs();
-                        final current = ref.read(eosbWizardProvider);
-                        final error = isLastStep
-                            ? current.validationBeforeResults()
-                            : current.validationMessageForStep(stepIndex);
+                        final error = ref
+                            .read(eosbWizardProvider)
+                            .validationMessageForStep(stepIndex);
                         if (error != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(error, style: GoogleFonts.cairo()),
+                              content: Text(
+                                error,
+                                style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                              ),
                               backgroundColor: AppColors.error,
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
                           return;
                         }
-                        if (isLastStep) {
-                          if (notifier.finishWizard()) {
-                            // الانتقال + الاهتزاز عبر ref.listen في الشاشة الرئيسية
-                          } else if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  ref
-                                          .read(eosbWizardProvider)
-                                          .validationBeforeResults() ??
-                                      'تعذّر عرض النتيجة — راجع البيانات المطلوبة',
-                                  style: GoogleFonts.cairo(),
-                                ),
-                                backgroundColor: AppColors.error,
-                              ),
-                            );
-                          }
-                        } else {
-                          if (notifier.nextStep()) {
-                            HapticFeedback.selectionClick();
-                          }
+                        if (notifier.nextStep()) {
+                          HapticFeedback.selectionClick();
                         }
                       }
                     : null,
@@ -971,22 +1001,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           const SizedBox(height: 16),
           _StepFinishButton(
             enabled: wizard.validationBeforeResults() == null,
-            onPressed: () {
-              final notifier = ref.read(eosbWizardProvider.notifier);
-              notifier.flushAllInputs();
-              if (notifier.finishWizard()) return;
-              final msg = ref.read(eosbWizardProvider).validationBeforeResults();
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    msg ?? 'تعذّر عرض النتيجة — راجع الخطوات 1 و 2',
-                    style: GoogleFonts.cairo(),
-                  ),
-                  backgroundColor: AppColors.error,
-                ),
-              );
-            },
+            onPressed: () => eosbTryFinishAndShowResults(context, ref),
           ),
         ],
       ],
@@ -1288,6 +1303,7 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
               const SizedBox(height: 10),
               _EditWizardButton(
                 onResume: (step) {
+                  HapticFeedback.selectionClick();
                   ref.read(eosbWizardProvider.notifier).resumeEditing(
                         stepIndex: step,
                       );

@@ -104,20 +104,22 @@ class EosbWizardState {
     return isCurrentStepValid;
   }
 
-  /// التحقق الكامل قبل عرض النتائج.
+  /// التحقق الكامل قبل عرض النتائج (الخطوات 1 و 2 إلزاميتان).
   String? validationBeforeResults() {
-    for (var i = 0; i < totalSteps; i++) {
+    for (var i = 0; i < totalSteps - 1; i++) {
       final msg = validationMessageForStep(i);
-      if (msg != null) {
-        return switch (i) {
-          0 => msg,
-          1 => 'الخطوة 2 — $msg',
-          _ => msg,
-        };
-      }
+      if (msg != null) return msg;
     }
     return null;
   }
+
+  /// توجيه عربي لكل خطوة في المعالج.
+  String guidanceForStep(int step) => switch (step) {
+        0 => 'اختر نوع الإنهاء — تبدأ المعاينة فوراً بعد الاختيار',
+        1 => 'أدخل مدة الخدمة والراتب — المعاينة تتحدث مع كل حقل',
+        2 => 'تفاصيل اختيارية — ثم اضغط «عرض النتيجة» للانتقال للنتائج',
+        _ => '',
+      };
 
   /// مدة الخدمة بالسنوات (مع الشهور الإضافية).
   double get totalServiceYears =>
