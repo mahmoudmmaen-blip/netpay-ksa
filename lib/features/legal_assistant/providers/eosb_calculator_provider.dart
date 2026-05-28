@@ -168,6 +168,14 @@ class EosbWizardState {
 }
 
 class EosbWizardNotifier extends Notifier<EosbWizardState> {
+  static double _defaultYearlyTicketEstimate(GulfCountry country) {
+    // تقدير افتراضي (قابل للتعديل لاحقاً بإضافة حقل تكلفة التذكرة).
+    return switch (country) {
+      GulfCountry.saudiArabia => 1500,
+      GulfCountry.uae => 1200,
+    };
+  }
+
   @override
   EosbWizardState build() {
     final country = ref.watch(gulfCountryProvider);
@@ -194,7 +202,10 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
       setTerminationType(type);
 
   void setCountry(GulfCountry country) {
-    state = state.copyWith(country: country);
+    final nextTicketCost = state.includeFlightTicket && state.ticketCost <= 0
+        ? _defaultYearlyTicketEstimate(country)
+        : state.ticketCost;
+    state = state.copyWith(country: country, ticketCost: nextTicketCost);
   }
 
   void setContractType(EosbContractType type) {
@@ -222,12 +233,14 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 
   void setFlightTicket({required bool include, double? cost}) {
+    final resolvedCost = cost ??
+        (include && state.ticketCost <= 0
+            ? _defaultYearlyTicketEstimate(state.country)
+            : state.ticketCost);
     state = state.copyWith(
       includeFlightTicket: include,
-      ticketCost: cost ?? state.ticketCost,
-      ticketFrequency: include
-          ? FlightTicketFrequency.yearly
-          : state.ticketFrequency,
+      ticketCost: resolvedCost,
+      ticketFrequency: include ? FlightTicketFrequency.yearly : state.ticketFrequency,
     );
   }
 
