@@ -15,6 +15,9 @@ import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
 import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
+// ─── EOSB Wizard UI only (مكافأة نهاية الخدمة — السعودية والإمارات) ───
+// 3-step wizard → live preview → results + PDF. No other feature flows here.
+
 /// إنهاء المعالج → شاشة النتائج (انتقال تلقائي + شريط نجاح).
 bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
   final error = ref.read(eosbWizardProvider.notifier).tryFinishWizard();
@@ -30,16 +33,20 @@ bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
   return false;
 }
 
-/// المساعد القانوني — حاسبة نهاية الخدمة الشاملة (offline).
-class LegalAssistantScreen extends ConsumerStatefulWidget {
-  const LegalAssistantScreen({super.key});
+/// حاسبة نهاية الخدمة — معالج 3 خطوات، معاينة مباشرة، نتائج، PDF.
+class EosbWizardScreen extends ConsumerStatefulWidget {
+  const EosbWizardScreen({super.key});
 
   @override
-  ConsumerState<LegalAssistantScreen> createState() =>
-      _LegalAssistantScreenState();
+  ConsumerState<EosbWizardScreen> createState() => _EosbWizardScreenState();
 }
 
-class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
+/// @deprecated Use [EosbWizardScreen].
+class LegalAssistantScreen extends EosbWizardScreen {
+  const LegalAssistantScreen({super.key});
+}
+
+class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
   void _onBackFromResults(BuildContext context, WidgetRef ref) {
     ref.read(eosbWizardProvider.notifier).resumeEditing();
     ScaffoldMessenger.of(context).showSnackBar(

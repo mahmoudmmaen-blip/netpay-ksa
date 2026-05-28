@@ -14,7 +14,6 @@ import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
 import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
 import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
 import 'package:netgulf/features/uae/presentation/uae_calculator_screen.dart';
-import 'package:netgulf/features/legal_assistant/presentation/legal_assistant_screen.dart';
 import 'package:netgulf/features/legal/presentation/privacy_policy_screen.dart';
 import 'package:netgulf/features/splash/presentation/splash_screen.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
@@ -167,7 +166,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.legalName,
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
-          child: const LegalAssistantScreen(),
+          child: const EosbScreen(),
         ),
       ),
     ],
