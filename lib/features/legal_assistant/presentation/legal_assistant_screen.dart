@@ -392,84 +392,14 @@ class _WizardBottomBar extends ConsumerWidget {
 }
 
 /// معاينة مباشرة — تتحدث فوراً مع [eosbCalculatorProvider].
-class _LivePreviewBar extends ConsumerWidget {
+class _LivePreviewBar extends StatelessWidget {
   const _LivePreviewBar();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(eosbCalculatorProvider);
-    final lines = ref.watch(eosbPreviewLinesProvider);
-    final currency = NumberFormat.currency(
-      locale: result.input.country.currencyLocale,
-      symbol: result.input.country.currencySymbol,
-      decimalDigits: 0,
-    );
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: GlassSurface(
-        highlighted: true,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.insights_rounded, color: AppColors.emerald),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'معاينة الإجمالي (تقديرية)',
-                    style: GoogleFonts.cairo(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                Text(
-                  currency.format(result.totalEntitlements),
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    color: AppColors.emerald,
-                  ),
-                ),
-              ],
-            ),
-            if (lines.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              ...lines.map(
-                (line) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          line.labelAr,
-                          style: GoogleFonts.cairo(
-                            fontSize: 11,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.65),
-                          ),
-                        ),
-                      ),
-                      Text(
-                        currency.format(line.amount),
-                        style: GoogleFonts.cairo(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: _EosbLivePreviewCard(),
     );
   }
 }
@@ -501,6 +431,11 @@ const _terminationRadioOptions = <(EosbTerminationType, String, IconData)>[
     'اتفاق بالتراضي',
     Icons.handshake_rounded,
   ),
+  (
+    EosbTerminationType.retirementOrDeath,
+    'تقاعد / وفاة',
+    Icons.elderly_rounded,
+  ),
 ];
 
 class _StepTermination extends ConsumerWidget {
@@ -512,36 +447,52 @@ class _StepTermination extends ConsumerWidget {
     final notifier = ref.read(eosbWizardProvider.notifier);
     final groupValue = wizard.resolvedTermination;
 
-    return GlassSurface(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: RadioGroup<EosbTerminationType>(
-        groupValue: groupValue,
-        onChanged: (v) {
-          if (v != null) notifier.setTerminationType(v);
-        },
-        child: Column(
-          children: _terminationRadioOptions.map((opt) {
-            final selected = groupValue == opt.$1;
-            return RadioListTile<EosbTerminationType>(
-              value: opt.$1,
-              activeColor: AppColors.emerald,
-              selected: selected,
-              title: Text(
-                opt.$2,
-                style: GoogleFonts.cairo(
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              secondary: Icon(
-                opt.$3,
-                color: selected ? AppColors.emerald : null,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-            );
-          }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlassSurface(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: RadioGroup<EosbTerminationType>(
+            groupValue: groupValue,
+            onChanged: (v) {
+              if (v != null) notifier.setTerminationType(v);
+            },
+            child: Column(
+              children: _terminationRadioOptions.map((opt) {
+                final selected = groupValue == opt.$1;
+                return RadioListTile<EosbTerminationType>(
+                  value: opt.$1,
+                  activeColor: AppColors.emerald,
+                  selected: selected,
+                  title: Text(
+                    opt.$2,
+                    style: GoogleFonts.cairo(
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  secondary: Icon(
+                    opt.$3,
+                    color: selected ? AppColors.emerald : null,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                );
+              }).toList(),
+            ),
+          ),
         ),
-      ),
+        if (wizard.terminationType == EosbTerminationType.mutualAgreement) ...[
+          const SizedBox(height: 12),
+          _MutualAgreementSlider(
+            percent: wizard.mutualAgreementPercent,
+            onChanged: notifier.setMutualAgreementPercent,
+          ),
+        ],
+        if (wizard.canShowLivePreview) ...[
+          const SizedBox(height: 16),
+          const _EosbLivePreviewCard(),
+        ],
+      ],
     );
   }
 }
@@ -650,6 +601,29 @@ class _StepContractState extends ConsumerState<_StepContract> {
         const SizedBox(height: 10),
         _CountryLawChip(country: wizard.country),
         const SizedBox(height: 16),
+        Text('نوع العقد', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        SegmentedButton<EosbContractType>(
+          segments: [
+            ButtonSegment(
+              value: EosbContractType.unlimited,
+              label: Text(
+                'غير محدد',
+                style: GoogleFonts.cairo(fontSize: 12),
+              ),
+            ),
+            ButtonSegment(
+              value: EosbContractType.fixed,
+              label: Text(
+                'محدد المدة',
+                style: GoogleFonts.cairo(fontSize: 12),
+              ),
+            ),
+          ],
+          selected: {wizard.contractType},
+          onSelectionChanged: (s) => notifier.setContractType(s.first),
+        ),
+        const SizedBox(height: 16),
         GlassSurface(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -705,6 +679,10 @@ class _StepContractState extends ConsumerState<_StepContract> {
             ],
           ),
         ),
+        if (wizard.canShowLivePreview) ...[
+          const SizedBox(height: 16),
+          const _EosbLivePreviewCard(),
+        ],
       ],
     );
   }
@@ -783,48 +761,9 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
         ),
         if (wizard.terminationType == EosbTerminationType.mutualAgreement) ...[
           const SizedBox(height: 12),
-          GlassSurface(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'نسبة الاتفاق على المكافأة',
-                      style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-                    ),
-                    Text(
-                      '${wizard.mutualAgreementPercent.round()}%',
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.emerald,
-                      ),
-                    ),
-                  ],
-                ),
-                Slider(
-                  value: wizard.mutualAgreementPercent,
-                  min: 0,
-                  max: 100,
-                  divisions: 20,
-                  activeColor: AppColors.emerald,
-                  label: '${wizard.mutualAgreementPercent.round()}%',
-                  onChanged: notifier.setMutualAgreementPercent,
-                ),
-                Text(
-                  'تُطبَّق على أساس المادة 84 (السعودية) أو 51 (الإمارات)',
-                  style: GoogleFonts.cairo(
-                    fontSize: 11,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
+          _MutualAgreementSlider(
+            percent: wizard.mutualAgreementPercent,
+            onChanged: notifier.setMutualAgreementPercent,
           ),
         ],
         const SizedBox(height: 12),
@@ -844,7 +783,149 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
             onChanged: notifier.setNoticeProvided,
           ),
         ),
+        if (wizard.canShowLivePreview) ...[
+          const SizedBox(height: 16),
+          const _EosbLivePreviewCard(),
+        ],
       ],
+    );
+  }
+}
+
+/// شريط نسبة الاتفاق بالتراضي.
+class _MutualAgreementSlider extends StatelessWidget {
+  const _MutualAgreementSlider({
+    required this.percent,
+    required this.onChanged,
+  });
+
+  final double percent;
+  final ValueChanged<double> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'نسبة الاتفاق على المكافأة',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              ),
+              Text(
+                '${percent.round()}%',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.emerald,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: percent,
+            min: 0,
+            max: 100,
+            divisions: 20,
+            activeColor: AppColors.emerald,
+            label: '${percent.round()}%',
+            onChanged: onChanged,
+          ),
+          Text(
+            'تُطبَّق على أساس المادة 84 (السعودية) أو 51 (الإمارات)',
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// معاينة مباشرة — تتحدث فوراً مع [eosbCalculatorProvider].
+class _EosbLivePreviewCard extends ConsumerWidget {
+  const _EosbLivePreviewCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final result = ref.watch(eosbCalculatorProvider);
+    final lines = ref.watch(eosbPreviewLinesProvider);
+    final currency = NumberFormat.currency(
+      locale: result.input.country.currencyLocale,
+      symbol: result.input.country.currencySymbol,
+      decimalDigits: 0,
+    );
+
+    return GlassSurface(
+      highlighted: true,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights_rounded, color: AppColors.emerald),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'معاينة الإجمالي (تقديرية)',
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              Text(
+                currency.format(result.totalEntitlements),
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  color: AppColors.emerald,
+                ),
+              ),
+            ],
+          ),
+          if (lines.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...lines.map(
+              (line) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        line.labelAr,
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.65),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      currency.format(line.amount),
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -990,8 +1071,6 @@ class _InputsSummaryCard extends ConsumerWidget {
         ('نسبة الاستقالة (م. 85)', '${(factor * 100).round()}%'),
       if (awardPct != null)
         ('نسبة المكافأة المطبّقة', '${awardPct.round()}%'),
-      if (m.isMutualAgreement)
-        ('اتفاق بالتراضي', '${m.mutualAgreementPercent.round()}%'),
       if (m.accruedLeaveDays > 0)
         ('إجازات متبقية', '${m.accruedLeaveDays} يوم'),
       if (m.includeFlightTicket)

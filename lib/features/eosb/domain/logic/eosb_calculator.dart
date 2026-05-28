@@ -125,10 +125,12 @@ class EosbCalculator {
     final art84 = saudiArticle84OnBasic(input);
 
     return switch (input.terminationType) {
+      // 100% — راتب أساسي × سنوات
       EosbTerminationType.employerDismissalUnfair => unfairFull,
+      // 50% من المكافأة الكاملة
       EosbTerminationType.employerDismissalValidReason => unfairFull * 0.5,
-      EosbTerminationType.employeeResignation =>
-        art84 * saudiResignationFactor(input.totalServiceYears),
+      // م. 84: 50% أول 5 سنوات + 100% بعدها
+      EosbTerminationType.employeeResignation => art84,
       EosbTerminationType.contractExpiry =>
         _saudiContractExpiryAward(input, art84),
       EosbTerminationType.mutualAgreement =>
@@ -156,6 +158,7 @@ class EosbCalculator {
 
   static double? _saudiAppliedPercent(EosbModel input) {
     return switch (input.terminationType) {
+      EosbTerminationType.employerDismissalUnfair => 100.0,
       EosbTerminationType.employerDismissalValidReason => 50.0,
       EosbTerminationType.mutualAgreement => input.mutualAgreementPercent,
       EosbTerminationType.contractExpiry when
@@ -208,6 +211,7 @@ class EosbCalculator {
 
   static double? _uaeAppliedPercent(EosbModel input) {
     return switch (input.terminationType) {
+      EosbTerminationType.employerDismissalUnfair => 100.0,
       EosbTerminationType.employerDismissalValidReason => 50.0,
       EosbTerminationType.mutualAgreement => input.mutualAgreementPercent,
       EosbTerminationType.contractExpiry when
@@ -290,9 +294,18 @@ class EosbCalculator {
     if (input.isResignation) {
       refs.add(
         const EosbLegalReference(
-          article: 'المادة 85 — الاستقالة',
+          article: 'المادة 84 — الاستقالة',
           summary:
-              'تُطبَّق على أساس المادة 84: أقل من سنتين (0) | 2–5 (ثلث) | 5–10 (ثلثان) | 10+ (كامل).',
+              'نصف الراتب الأساسي عن كل سنة من أول 5 سنوات، وراتب أساسي كامل عن كل سنة بعد السنة الخامسة.',
+        ),
+      );
+    }
+
+    if (input.terminationType == EosbTerminationType.retirementOrDeath) {
+      refs.add(
+        const EosbLegalReference(
+          article: 'التقاعد / الوفاة',
+          summary: 'مكافأة نهاية الخدمة كاملة وفق المادة 84.',
         ),
       );
     }
@@ -474,10 +487,8 @@ class EosbCalculator {
     ];
 
     double? resignationFactor;
-    if (input.isResignation && endOfServiceAward > 0) {
-      resignationFactor = input.country == GulfCountry.uae
-          ? uaeResignationFactor(input.totalServiceYears)
-          : saudiResignationFactor(input.totalServiceYears);
+    if (input.isResignation && input.country == GulfCountry.uae) {
+      resignationFactor = uaeResignationFactor(input.totalServiceYears);
       if (resignationFactor == 0) resignationFactor = null;
     }
 
@@ -512,28 +523,31 @@ class EosbCalculator {
   }
 
   String _eosSubtitle(EosbModel input, double amount) {
-    if (amount <= 0 && input.isResignation) {
-      final f = saudiResignationFactor(input.totalServiceYears);
-      if (f == 0) return 'استقالة — أقل من سنتين (م. 85)';
-    }
     if (input.country == GulfCountry.uae) {
-      if (input.terminationType == EosbTerminationType.employerDismissalValidReason) {
-        return 'فصل لسبب مشروع — 50% من م. 51';
-      }
-      return 'م. 51/132 — 21/30 يوم · حد سنتان';
+      return switch (input.terminationType) {
+        EosbTerminationType.employerDismissalUnfair =>
+          'فصل تعسفي — 100% م. 51',
+        EosbTerminationType.employerDismissalValidReason =>
+          'فصل لسبب مشروع — 50% م. 51',
+        EosbTerminationType.employeeResignation => () {
+          final f = uaeResignationFactor(input.totalServiceYears);
+          if (f == 0) return 'استقالة — أقل من 3 سنوات';
+          if (f < 1) return 'استقالة — ${(f * 100).round()}% من المكافأة';
+          return 'استقالة — مكافأة كاملة';
+        }(),
+        EosbTerminationType.mutualAgreement =>
+          'اتفاق بالتراضي — ${input.mutualAgreementPercent.round()}%',
+        _ => 'م. 51/132 — 21/30 يوم · حد سنتان',
+      };
     }
 
     return switch (input.terminationType) {
       EosbTerminationType.employerDismissalUnfair =>
-        'فصل تعسفي — أساسي × ${input.totalServiceYears.toStringAsFixed(1)} سنة (م. 85)',
+        'فصل تعسفي — 100% (أساسي × ${input.totalServiceYears.toStringAsFixed(1)} سنة)',
       EosbTerminationType.employerDismissalValidReason =>
         'فصل لسبب مشروع — 50% من المكافأة',
-      EosbTerminationType.employeeResignation => () {
-        final f = saudiResignationFactor(input.totalServiceYears);
-        if (f == 0) return 'استقالة — لا مكافأة';
-        if (f < 1) return 'م. 84 + ${(f * 100).round()}% (م. 85)';
-        return 'م. 84 كاملة + م. 85';
-      }(),
+      EosbTerminationType.employeeResignation =>
+        'استقالة — م. 84 (50% أول 5 سنوات + 100% بعدها)',
       EosbTerminationType.contractExpiry => () {
         final half = input.contractType == EosbContractType.fixed &&
             input.totalServiceYears < 1;
