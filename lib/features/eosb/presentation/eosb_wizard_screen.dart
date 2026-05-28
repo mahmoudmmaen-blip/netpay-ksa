@@ -12,7 +12,7 @@ import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
-import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
+import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
 // ─── EOSB Wizard UI only (مكافأة نهاية الخدمة — السعودية والإمارات) ───
@@ -47,11 +47,6 @@ class EosbWizardScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<EosbWizardScreen> createState() => _EosbWizardScreenState();
-}
-
-/// @deprecated Use [EosbWizardScreen].
-class LegalAssistantScreen extends EosbWizardScreen {
-  const LegalAssistantScreen({super.key});
 }
 
 class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
@@ -164,6 +159,13 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
             duration: const Duration(milliseconds: 380),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ...previous,
+                ?current,
+              ],
+            ),
             transitionBuilder: (child, animation) {
               final offset = Tween<Offset>(
                 begin: const Offset(0, 0.04),
@@ -1363,7 +1365,16 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
 
   @override
   Widget build(BuildContext context) {
-    final result = ref.watch(eosbResultsProvider);
+    ref.watch(eosbWizardProvider);
+    final finalized = ref.watch(eosbFinalizedResultProvider);
+
+    if (finalized == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.emerald),
+      );
+    }
+
+    final result = finalized;
     final model = result.input;
     final currency = NumberFormat.currency(
       locale: model.country.currencyLocale,
@@ -1576,7 +1587,8 @@ class _ResultsEdgeCaseBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(eosbResultsProvider);
+    final result = ref.watch(eosbFinalizedResultProvider);
+    if (result == null) return const SizedBox.shrink();
     final m = result.input;
     final showUaeResignationZero = m.country == GulfCountry.uae &&
         m.terminationType == EosbTerminationType.employeeResignation &&
@@ -2084,7 +2096,7 @@ class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
       }
       result = ref.read(eosbFinalizedResultProvider);
     }
-    result ??= ref.read(eosbResultsProvider);
+    result ??= ref.read(eosbFinalizedResultProvider);
     if (result == null ||
         (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
