@@ -1,4 +1,5 @@
 import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_country_rules.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 /// بند مستحق في نتيجة الحساب.
@@ -18,7 +19,7 @@ class EosbComponentItem {
   final bool isPrimary;
 }
 
-/// نتيجة حاسبة نهاية الخدمة — السعودية (84/85) والإمارات (132/51).
+/// نتيجة حاسبة نهاية الخدمة — دول مجلس التعاون الخليجي الست.
 class EosbCalculationResult {
   const EosbCalculationResult({
     required this.input,
@@ -54,7 +55,7 @@ class EosbCalculationResult {
   List<EosbBreakdownRow> get breakdownRows => input.breakdownRows;
 }
 
-/// محرك الحساب — offline وفق نظام العمل السعودي والإماراتي.
+/// محرك الحساب — offline وفق أنظمة العمل في دول الخليج الست.
 class EosbCalculator {
   const EosbCalculator();
 
@@ -63,6 +64,10 @@ class EosbCalculator {
       switch (country) {
         GulfCountry.saudiArabia => 1500,
         GulfCountry.uae => 1200,
+        GulfCountry.oman => 180,
+        GulfCountry.qatar => 2000,
+        GulfCountry.bahrain => 400,
+        GulfCountry.kuwait => 350,
       };
 
   /// حساب كامل لنهاية الخدمة من مدخلات المعالج.
@@ -100,11 +105,20 @@ class EosbCalculator {
     if (input.totalServiceYears <= 0) return 0;
     if (input.basicSalary <= 0) return 0;
 
+    final rules = EosbCountryRules.forCountry(input.country);
+    if (rules != null) {
+      return rules.gratuityByTermination(input);
+    }
+
     return switch (input.country) {
       GulfCountry.uae => _uaeEndOfServiceByTermination(input),
       GulfCountry.saudiArabia => _saudiEndOfServiceByTermination(input),
+      _ => 0,
     };
   }
+
+  static EosbCountryRules? _rulesFor(EosbModel input) =>
+      EosbCountryRules.forCountry(input.country);
 
   // ─── السعودية — نظام العمل ─────────────────────────────────────────
 
@@ -259,9 +273,9 @@ class EosbCalculator {
   }
 
   static double? appliedAwardPercent(EosbModel input) {
-    if (input.country == GulfCountry.uae) {
-      return _uaeAppliedPercent(input);
-    }
+    final rules = _rulesFor(input);
+    if (rules != null) return rules.appliedPercent(input);
+    if (input.country == GulfCountry.uae) return _uaeAppliedPercent(input);
     return _saudiAppliedPercent(input);
   }
 
@@ -270,7 +284,7 @@ class EosbCalculator {
   /// بدل الإجازات المتبقية — (الأجر الشهري ÷ 30) × أيام متبقية.
   static double computeCashLeaveAllowance(EosbModel input) {
     if (input.accruedLeaveDays <= 0) return 0;
-    final daily = input.country == GulfCountry.uae
+    final daily = input.country.eosLeaveDailyFromBasicOnly
         ? (input.basicSalary > 0 ? input.basicSalary / 30 : 0)
         : (input.eosWageBase > 0 ? input.eosWageBase / 30 : 0);
     if (daily <= 0) return 0;
@@ -280,7 +294,7 @@ class EosbCalculator {
   /// أجر اليوم لعرض بدل الإجازات في النتائج.
   static double leaveDailyWage(EosbModel input) {
     if (input.accruedLeaveDays <= 0) return 0;
-    return input.country == GulfCountry.uae
+    return input.country.eosLeaveDailyFromBasicOnly
         ? (input.basicSalary > 0 ? input.basicSalary / 30 : 0)
         : (input.eosWageBase > 0 ? input.eosWageBase / 30 : 0);
   }
@@ -312,9 +326,9 @@ class EosbCalculator {
   // ─── مراجع قانونية ──────────────────────────────────────────────────
 
   static List<EosbLegalReference> buildLegalReferences(EosbModel input) {
-    if (input.country == GulfCountry.uae) {
-      return _uaeLegalReferences(input);
-    }
+    final rules = _rulesFor(input);
+    if (rules != null) return rules.legalReferences(input);
+    if (input.country == GulfCountry.uae) return _uaeLegalReferences(input);
     return _saudiLegalReferences(input);
   }
 
@@ -541,8 +555,13 @@ class EosbCalculator {
     ];
 
     double? resignationFactor;
-    if (input.isResignation && input.country == GulfCountry.uae) {
-      resignationFactor = uaeResignationFactor(input.totalServiceYears);
+    if (input.isResignation) {
+      final rules = _rulesFor(input);
+      if (rules != null) {
+        resignationFactor = rules.resignationFactor(input.totalServiceYears);
+      } else if (input.country == GulfCountry.uae) {
+        resignationFactor = uaeResignationFactor(input.totalServiceYears);
+      }
       if (resignationFactor == 0) resignationFactor = null;
     }
 
@@ -577,6 +596,9 @@ class EosbCalculator {
   }
 
   String _eosSubtitle(EosbModel input, double amount) {
+    final rules = _rulesFor(input);
+    if (rules != null) return rules.eosSubtitle(input, amount);
+
     if (input.country == GulfCountry.uae) {
       return switch (input.terminationType) {
         EosbTerminationType.employerDismissalUnfair =>

@@ -2,6 +2,7 @@
 library;
 
 export 'domain/logic/eosb_calculator.dart';
+export 'domain/logic/eosb_country_rules.dart';
 export 'domain/models/eosb_model.dart';
 export 'providers/eosb_providers.dart';
 export 'services/eosb_history_service.dart';

@@ -1,7 +1,8 @@
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_country_rules.dart';
 
-/// سبب إنهاء علاقة العمل — السعودية والإمارات.
+/// سبب إنهاء علاقة العمل — دول مجلس التعاون الخليجي.
 enum EosbTerminationType {
   /// فصل تعسفي — مكافأة كاملة (أساسي × سنوات)
   employerDismissalUnfair,
@@ -103,7 +104,7 @@ class EosbModel {
       (monthsOfService.clamp(0, 11) / 12.0) +
       (daysOfService.clamp(0, 364) / 365.0);
 
-  double get eosWageBase => country == GulfCountry.uae
+  double get eosWageBase => country.eosGratuityUsesBasicOnly
       ? basicSalary
       : basicSalary + housingAllowance;
 
@@ -130,6 +131,10 @@ class EosbModel {
   /// المكافأة النظرية قبل خصومات الاستقالة (للعرض).
   double get fullEndOfServiceBase {
     if (totalServiceYears <= 0) return 0;
+    final rules = EosbCountryRules.forCountry(country);
+    if (rules != null) {
+      return basicSalary > 0 ? rules.fullGratuity(this) : 0;
+    }
     if (country == GulfCountry.uae) {
       return basicSalary > 0 ? EosbCalculator.uaeFullGratuity(this) : 0;
     }
@@ -142,9 +147,13 @@ class EosbModel {
     };
   }
 
-  double get resignationAwardFactor => country == GulfCountry.uae
-      ? EosbCalculator.uaeResignationFactor(totalServiceYears)
-      : EosbCalculator.saudiResignationFactor(totalServiceYears);
+  double get resignationAwardFactor {
+    final rules = EosbCountryRules.forCountry(country);
+    if (rules != null) return rules.resignationFactor(totalServiceYears);
+    return country == GulfCountry.uae
+        ? EosbCalculator.uaeResignationFactor(totalServiceYears)
+        : EosbCalculator.saudiResignationFactor(totalServiceYears);
+  }
 
   double get endOfServiceAmount =>
       EosbCalculator.calculateEndOfServiceAward(this);

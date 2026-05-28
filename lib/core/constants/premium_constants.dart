@@ -55,6 +55,11 @@ class PremiumConstants {
   static List<String> benefitItemsFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => _benefitsSaudi,
         GulfCountry.uae => _benefitsUae,
+        GulfCountry.oman ||
+        GulfCountry.qatar ||
+        GulfCountry.bahrain ||
+        GulfCountry.kuwait =>
+          _benefitsUae,
       };
 
   /// للتوافق — افتراضياً السعودية.
@@ -62,28 +67,52 @@ class PremiumConstants {
 
   static String monthlyPriceFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => monthlyPriceSar,
-        GulfCountry.uae => monthlyPriceAed,
+        GulfCountry.uae ||
+        GulfCountry.oman ||
+        GulfCountry.qatar ||
+        GulfCountry.bahrain ||
+        GulfCountry.kuwait =>
+          monthlyPriceAed,
       };
 
   static String yearlyPriceFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => yearlyPriceSar,
-        GulfCountry.uae => yearlyPriceAed,
+        GulfCountry.uae ||
+        GulfCountry.oman ||
+        GulfCountry.qatar ||
+        GulfCountry.bahrain ||
+        GulfCountry.kuwait =>
+          yearlyPriceAed,
       };
 
   static String premiumPriceFullFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => premiumPriceFullSar,
-        GulfCountry.uae => premiumPriceFullAed,
+        GulfCountry.uae ||
+        GulfCountry.oman ||
+        GulfCountry.qatar ||
+        GulfCountry.bahrain ||
+        GulfCountry.kuwait =>
+          premiumPriceFullAed,
       };
 
   /// زر التفعيل في بوابة Premium — Activate Premium CTA in gate sheet.
   static String activatePremiumCtaFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => 'فعّل Premium — $premiumPriceFullSar',
-        GulfCountry.uae => 'فعّل Premium — $premiumPriceFullAed',
+        GulfCountry.uae ||
+        GulfCountry.oman ||
+        GulfCountry.qatar ||
+        GulfCountry.bahrain ||
+        GulfCountry.kuwait =>
+          'فعّل Premium — $premiumPriceFullAed',
       };
 
   static String calculatorLabelFor(GulfCountry country) => switch (country) {
         GulfCountry.saudiArabia => 'GOSI · التأمينات الاجتماعية',
         GulfCountry.uae => 'GPSSA / DEWS · قانون العمل الإماراتي',
+        GulfCountry.oman => 'PASI · قانون العمل العُماني',
+        GulfCountry.qatar => 'GRSIA · قانون العمل القطري',
+        GulfCountry.bahrain => 'SIO · قانون العمل البحريني',
+        GulfCountry.kuwait => 'PIFSS · قانون العمل الكويتي',
       };
 
   // ==================== حالات الاشتراك ====================

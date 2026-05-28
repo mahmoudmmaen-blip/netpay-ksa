@@ -11,10 +11,11 @@ import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_country_rules.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
-// ─── EOSB Wizard UI only (مكافأة نهاية الخدمة — السعودية والإمارات) ───
+// ─── EOSB Wizard UI (مكافأة نهاية الخدمة — دول الخليج الست) ───
 // 3-step wizard → live preview → results + PDF. No other feature flows here.
 
 /// إنهاء الخطوة 3 → الانتقال التلقائي لشاشة النتائج (بعد التحقق).
@@ -186,7 +187,7 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
                       ? 'تفاصيل حساب محفوظ'
                       : 'نتيجة الحساب والتفاصيل')
                   : (widget.dedicatedEosbBranding
-                      ? 'السعودية · الإمارات — تقدير قانوني'
+                      ? 'دول الخليج الست — تقدير قانوني'
                       : 'حاسبة نهاية الخدمة الشاملة'),
               style: GoogleFonts.cairo(
                 fontSize: 11,
@@ -823,8 +824,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
         _housingCtrl.text = housingFmt;
       }
     });
-    final currencySuffix =
-        wizard.country == GulfCountry.saudiArabia ? 'ريال' : 'درهم';
+    final currencySuffix = wizard.country.currencyShortAr;
     final showFieldErrors =
         wizard.stepIndex == 1 && !wizard.canProceedStep1;
 
@@ -833,27 +833,9 @@ class _StepContractState extends ConsumerState<_StepContract> {
       children: [
         Text('الدولة', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
-        SegmentedButton<GulfCountry>(
-          segments: [
-            ButtonSegment(
-              value: GulfCountry.saudiArabia,
-              label: Text(
-                'السعودية',
-                style: GoogleFonts.cairo(fontSize: 12),
-              ),
-              icon: const Text('🇸🇦'),
-            ),
-            ButtonSegment(
-              value: GulfCountry.uae,
-              label: Text(
-                'الإمارات',
-                style: GoogleFonts.cairo(fontSize: 12),
-              ),
-              icon: const Text('🇦🇪'),
-            ),
-          ],
-          selected: {wizard.country},
-          onSelectionChanged: (s) => notifier.setCountry(s.first),
+        _EosbCountryGrid(
+          selected: wizard.country,
+          onSelected: notifier.setCountry,
         ),
         const SizedBox(height: 10),
         _CountryLawChip(country: wizard.country),
@@ -1679,6 +1661,79 @@ class _PreviewProportionBar extends StatelessWidget {
   }
 }
 
+/// شبكة اختيار الدولة — ٦ دول مع أعلام.
+class _EosbCountryGrid extends StatelessWidget {
+  const _EosbCountryGrid({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final GulfCountry selected;
+  final ValueChanged<GulfCountry> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: GulfCountry.values.map((country) {
+        final isSelected = country == selected;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelected(country);
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.emerald
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.35),
+                  width: isSelected ? 2 : 1,
+                ),
+                color: isSelected
+                    ? AppColors.emerald.withValues(alpha: 0.12)
+                    : Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.5),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(country.flag, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 6),
+                  Text(
+                    country.nameAr,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight:
+                          isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected
+                          ? AppColors.emerald
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
 /// شارة نظام العمل حسب الدولة.
 class _CountryLawChip extends StatelessWidget {
   const _CountryLawChip({required this.country});
@@ -1687,9 +1742,7 @@ class _CountryLawChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = country == GulfCountry.saudiArabia
-        ? '🇸🇦 نظام العمل السعودي — المواد 84 و 85'
-        : '🇦🇪 قانون العمل الإماراتي — المادة 51';
+    final text = country.eosLawChipAr;
     return GlassSurface(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -1974,14 +2027,33 @@ class _ResultsEdgeCaseBanner extends ConsumerWidget {
     final result = ref.watch(eosbFinalizedResultProvider);
     if (result == null) return const SizedBox.shrink();
     final m = result.input;
-    final showUaeResignationZero = m.country == GulfCountry.uae &&
-        m.terminationType == EosbTerminationType.employeeResignation &&
+    final rules = EosbCountryRules.forCountry(m.country);
+    final showResignationZero = m.terminationType ==
+            EosbTerminationType.employeeResignation &&
         result.endOfServiceAmount <= 0 &&
-        (result.resignationFactorApplied ?? 0) <= 0;
+        ((rules != null &&
+                rules.shouldShowResignationZeroBanner(m, result.endOfServiceAmount)) ||
+            (m.country == GulfCountry.uae &&
+                (result.resignationFactorApplied ?? 0) <= 0));
 
-    if (!showUaeResignationZero) {
+    if (!showResignationZero) {
       return const SizedBox.shrink();
     }
+
+    final message = switch (m.country) {
+      GulfCountry.uae =>
+        'استقالة قبل إتمام 3 سنوات في الإمارات — لا تستحق مكافأة '
+        'نهاية الخدمة (م. 51). قد يظهر في الإجمالي بدل إجازة أو تذكرة فقط.',
+      GulfCountry.qatar =>
+        'استقالة قبل سنتين في قطر — لا تستحق مكافأة نهاية الخدمة (م. 51).',
+      GulfCountry.oman =>
+        'استقالة قبل 3 سنوات في عُمان — لا تستحق مكافأة (م. 50).',
+      GulfCountry.bahrain =>
+        'استقالة قبل 3 سنوات في البحرين — لا تستحق مكافأة نهاية الخدمة.',
+      GulfCountry.kuwait =>
+        'استقالة قبل 3 سنوات في الكويت — لا تستحق مكافأة (م. 53).',
+      _ => 'استقالة بمدة خدمة غير كافية — لا مكافأة نهاية خدمة.',
+    };
 
     return GlassSurface(
       padding: const EdgeInsets.all(12),
@@ -1992,8 +2064,7 @@ class _ResultsEdgeCaseBanner extends ConsumerWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'استقالة قبل إتمام 3 سنوات في الإمارات — لا تستحق مكافأة '
-              'نهاية الخدمة (م. 51). قد يظهر في الإجمالي بدل إجازة أو تذكرة فقط.',
+              message,
               style: GoogleFonts.cairo(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -2822,7 +2893,8 @@ class _LegalDisclaimer extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'تنبيه قانوني: أداة تقديرية عامة وفق أنظمة العمل في السعودية والإمارات. '
+              'تنبيه قانوني: أداة تقديرية عامة وفق أنظمة العمل في دول مجلس التعاون '
+              'الخليجي (السعودية، الإمارات، عُمان، قطر، البحرين، الكويت). '
               'لا تُغني عن مراجعة العقد أو محامٍ أو الجهة المختصة.',
               style: GoogleFonts.cairo(fontSize: 11, height: 1.5),
             ),
