@@ -416,12 +416,6 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
-  void goToStep(int index) {
-    if (index < 0 || index >= EosbWizardState.totalSteps) return;
-    ref.read(eosbFinalizedResultProvider.notifier).state = null;
-    state = state.copyWith(stepIndex: index, showResults: false);
-  }
-
   void reset() {
     ref.read(eosbFinalizedResultProvider.notifier).state = null;
     final salary = ref.read(salaryNotifierProvider);
@@ -479,18 +473,6 @@ final eosbResultsProvider = Provider<EosbCalculationResult>((ref) {
 final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
   final wizard = ref.watch(eosbWizardProvider);
   return EosbCalculator.calculateEndOfServiceAward(wizard.toModel());
-});
-
-/// بنود المعاينة المباشرة — حية في المعالج، مجمّدة على النتائج.
-final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
-  final wizard = ref.watch(eosbWizardProvider);
-  if (!wizard.showResults) {
-    return EosbPreviewLine.fromResult(ref.watch(eosbCalculatorProvider));
-  }
-  final finalized = ref.watch(eosbFinalizedResultProvider);
-  return EosbPreviewLine.fromResult(
-    finalized ?? ref.watch(eosbCalculatorProvider),
-  );
 });
 
 /// مفتاح إعادة بناء المعاينة — يتغير مع كل مدخل.
