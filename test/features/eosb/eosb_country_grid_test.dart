@@ -22,8 +22,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(EosbCountryGrid.gccCountries, hasLength(6));
-    for (final country in EosbCountryGrid.gccCountries) {
+    expect(EosbCountryGrid.allGccCountries, hasLength(6));
+    for (final country in EosbCountryGrid.allGccCountries) {
       expect(find.text(country.nameAr), findsOneWidget);
       expect(find.text(country.nameEn), findsOneWidget);
       expect(find.text(country.flag), findsOneWidget);

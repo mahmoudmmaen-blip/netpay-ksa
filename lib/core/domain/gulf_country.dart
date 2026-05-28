@@ -6,6 +6,10 @@ enum GulfCountry {
   qatar,
   bahrain,
   kuwait,
+  ;
+
+  /// اسم مختصر للسعودية — يُستخدم في [EosbCountryGrid.allGccCountries].
+  static const GulfCountry saudi = GulfCountry.saudiArabia;
 }
 
 extension GulfCountryMeta on GulfCountry {

@@ -6,7 +6,7 @@ import 'package:netgulf/core/theme/app_colors.dart';
 
 /// شبكة اختيار الدولة في معالج EOSB — تعرض الدول الست دائماً (بدون فلترة).
 ///
-/// لا تستخدم [GulfCountry.values] ولا أي `.where()` — القائمة [gccCountries] ثابتة.
+/// لا تستخدم [GulfCountry.values] ولا أي `.where()` — القائمة [allGccCountries] ثابتة.
 class EosbCountryGrid extends StatelessWidget {
   const EosbCountryGrid({
     super.key,
@@ -17,9 +17,9 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  /// كل دول مجلس التعاون الخليجي الست — ثابتة (Saudi = [GulfCountry.saudiArabia]).
-  static const List<GulfCountry> gccCountries = [
-    GulfCountry.saudiArabia,
+  /// كل دول مجلس التعاون الخليجي الست — قائمة ثابتة (لا فلترة، لا `.where()`).
+  static const List<GulfCountry> allGccCountries = [
+    GulfCountry.saudi,
     GulfCountry.uae,
     GulfCountry.oman,
     GulfCountry.qatar,
@@ -27,22 +27,22 @@ class EosbCountryGrid extends StatelessWidget {
     GulfCountry.kuwait,
   ];
 
-  static const List<GulfCountry> allCountries = gccCountries;
-  static const List<GulfCountry> countries = gccCountries;
+  /// اسم قديم — يشير إلى [allGccCountries].
+  static const List<GulfCountry> gccCountries = allGccCountries;
+  static const List<GulfCountry> allCountries = allGccCountries;
+  static const List<GulfCountry> countries = allGccCountries;
 
   static const int _crossAxisCount = 2;
   static const double _spacing = 10;
   static const double _tileHeight = 152;
 
-  static double get _gridHeight {
-    const rows = gccCountries.length ~/ _crossAxisCount;
-    return rows * _tileHeight + (rows - 1) * _spacing;
-  }
+  /// ٦ دول ÷ ٢ أعمدة = ٣ صفوف.
+  static const double _gridHeight = 3 * _tileHeight + 2 * _spacing;
 
   @override
   Widget build(BuildContext context) {
     assert(
-      gccCountries.length == 6,
+      allGccCountries.length == 6,
       'EOSB country grid must show exactly 6 GCC countries',
     );
 
@@ -59,9 +59,9 @@ class EosbCountryGrid extends StatelessWidget {
           crossAxisSpacing: _spacing,
           mainAxisExtent: _tileHeight,
         ),
-        itemCount: gccCountries.length,
+        itemCount: allGccCountries.length,
         itemBuilder: (context, index) {
-          final country = gccCountries[index];
+          final country = allGccCountries[index];
           return _EosbCountryTile(
             key: ValueKey('eosb_country_${country.name}'),
             country: country,
