@@ -29,12 +29,7 @@ void main() {
   });
 
   group('Multi-country EOSB (mobile QA)', () {
-    for (final country in [
-      GulfCountry.saudiArabia,
-      GulfCountry.uae,
-      GulfCountry.oman,
-      GulfCountry.qatar,
-    ]) {
+    for (final country in GulfCountry.values) {
       test('${country.name} — calculate + legal refs + PDF', () async {
         final model = _sampleModel(country);
         final result = _calc.calculateEndOfService(model);
