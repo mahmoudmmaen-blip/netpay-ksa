@@ -1153,144 +1153,476 @@ class _MutualAgreementSlider extends StatelessWidget {
 class _EosbLivePreviewCard extends ConsumerWidget {
   const _EosbLivePreviewCard();
 
+  static Color _totalColor(BuildContext context, double total, double monthlyWage) {
+    final muted = Theme.of(context)
+        .colorScheme
+        .onSurface
+        .withValues(alpha: 0.45);
+    if (total <= 0) return muted;
+    if (monthlyWage <= 0) return AppColors.emerald;
+    final ratio = total / monthlyWage;
+    if (ratio >= 12) return AppColors.goldBright;
+    if (ratio >= 6) return AppColors.emerald;
+    if (ratio >= 3) return AppColors.emeraldLight;
+    return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75);
+  }
+
+  static String? _entitlementHint(double total, double monthlyWage) {
+    if (total <= 0 || monthlyWage <= 0) return null;
+    final ratio = total / monthlyWage;
+    if (ratio >= 12) return 'مستحقات مرتفعة — أكثر من سنة راتب';
+    if (ratio >= 6) return 'مستحقات جيدة — أكثر من 6 أشهر راتب';
+    if (ratio >= 3) return 'مستحقات معتدلة';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
     final previewKey = ref.watch(eosbLivePreviewKeyProvider);
     final result = ref.watch(eosbCalculatorProvider);
-    final eosAward = result.endOfServiceAmount;
-    final lines = EosbPreviewLine.fromResult(result);
     final model = result.input;
     final currency = NumberFormat.currency(
-      locale: result.input.country.currencyLocale,
-      symbol: result.input.country.currencySymbol,
+      locale: model.country.currencyLocale,
+      symbol: model.country.currencySymbol,
       decimalDigits: 0,
     );
     final needsContractData = !wizard.canProceedStep1;
     final previewWarning = wizard.livePreviewWarning;
+    final total = result.totalEntitlements;
+    final totalColor = _totalColor(context, total, model.monthlyWage);
+    final hint = _entitlementHint(total, model.monthlyWage);
+    final leaveTotal =
+        result.cashLeaveAllowance + result.vacationAllowance;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final breakdown = <_PreviewBreakdownRow>[
+      _PreviewBreakdownRow(
+        icon: Icons.card_giftcard_rounded,
+        label: 'مكافأة نهاية الخدمة',
+        amount: result.endOfServiceAmount,
+        accent: AppColors.emerald,
+      ),
+      _PreviewBreakdownRow(
+        icon: Icons.beach_access_rounded,
+        label: model.accruedLeaveDays > 0
+            ? 'إجازات (${model.accruedLeaveDays} يوم + سنوية)'
+            : 'إجازات (سنوية تقديرية)',
+        amount: leaveTotal,
+        accent: const Color(0xFF0EA5E9),
+      ),
+      _PreviewBreakdownRow(
+        icon: Icons.flight_rounded,
+        label: model.includeFlightTicket
+            ? 'تذكرة طيران (تقدير)'
+            : 'تذكرة طيران',
+        amount: result.flightTicketAllowance,
+        accent: const Color(0xFF8B5CF6),
+        inactive: !model.includeFlightTicket,
+      ),
+    ];
 
     return GlassSurface(
       key: ValueKey(previewKey),
       highlighted: true,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.insights_rounded, color: AppColors.emerald),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'معاينة الإجمالي (تقديرية)',
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.emerald.withValues(alpha: isDark ? 0.35 : 0.18),
+                  AppColors.emeraldDark.withValues(alpha: isDark ? 0.2 : 0.08),
+                ],
               ),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 220),
-                child: Text(
-                  currency.format(result.totalEntitlements),
-                  key: ValueKey(result.totalEntitlements.toStringAsFixed(0)),
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    color: AppColors.emerald,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (needsContractData) ...[
-            const SizedBox(height: 6),
-            Text(
-              'أكمل مدة الخدمة والراتب في الخطوة 2 لتحديث المكافأة',
-              style: GoogleFonts.cairo(
-                fontSize: 11,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.55),
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
-          ],
-          if (previewWarning != null) ...[
-            const SizedBox(height: 6),
-            Row(
+            child: Row(
               children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 14,
-                  color: Colors.amber.shade700,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.emerald.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.insights_rounded,
+                    color: AppColors.emerald,
+                    size: 22,
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    previewWarning,
-                    style: GoogleFonts.cairo(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.amber.shade800,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'معاينة المستحقات',
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        'تقدير فوري — يتحدث مع كل حقل',
+                        style: GoogleFonts.cairo(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  child: Container(
+                    key: ValueKey(total.toStringAsFixed(0)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: totalColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: totalColor.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                    ),
+                    child: Text(
+                      currency.format(total),
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: totalColor,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-          ],
-          if (!needsContractData) ...[
-            const SizedBox(height: 6),
-            Text(
-              '${model.terminationSummary} · '
-              '${model.totalServiceYears.toStringAsFixed(1)} سنة · '
-              'مكافأة محسوبة: ${currency.format(eosAward)}',
-              style: GoogleFonts.cairo(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.emerald.withValues(alpha: 0.85),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...lines.map(
-              (line) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        line.labelAr,
-                        style: GoogleFonts.cairo(
-                          fontSize: 11,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.65),
-                        ),
-                      ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (hint != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 180),
-                      child: Text(
-                        currency.format(line.amount),
-                        key: ValueKey('${line.labelAr}_${line.amount}'),
-                        style: GoogleFonts.cairo(
-                          fontSize: 11,
-                          fontWeight: line.labelAr == 'الإجمالي المستحق'
-                              ? FontWeight.w800
-                              : FontWeight.w700,
-                          color: line.labelAr == 'الإجمالي المستحق'
-                              ? AppColors.emerald
-                              : null,
+                    decoration: BoxDecoration(
+                      color: totalColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.trending_up_rounded,
+                          size: 16,
+                          color: totalColor,
                         ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            hint,
+                            style: GoogleFonts.cairo(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: totalColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (needsContractData)
+                  Text(
+                    'أكمل مدة الخدمة والراتب في الخطوة 2 لعرض التفصيل',
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.55),
+                    ),
+                  )
+                else ...[
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      _PreviewChip(
+                        icon: Icons.gavel_rounded,
+                        label: model.terminationSummary,
                       ),
+                      _PreviewChip(
+                        icon: Icons.schedule_rounded,
+                        label:
+                            '${model.totalServiceYears.toStringAsFixed(1)} سنة خدمة',
+                      ),
+                      _PreviewChip(
+                        icon: Icons.payments_rounded,
+                        label:
+                            'أجر ${currency.format(model.monthlyWage)}/شهر',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'تفصيل التقدير',
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.emerald,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...breakdown.map(
+                    (row) => _PreviewBreakdownTile(
+                      row: row,
+                      currency: currency,
+                      total: total,
+                    ),
+                  ),
+                  if (total > 0) ...[
+                    const SizedBox(height: 8),
+                    _PreviewProportionBar(
+                      eos: result.endOfServiceAmount,
+                      leave: leaveTotal,
+                      ticket: model.includeFlightTicket
+                          ? result.flightTicketAllowance
+                          : 0,
+                      total: total,
                     ),
                   ],
-                ),
+                  const SizedBox(height: 8),
+                  Divider(
+                    height: 1,
+                    color: AppColors.emerald.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        'الإجمالي المستحق',
+                        style: GoogleFonts.cairo(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const Spacer(),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: Text(
+                          currency.format(total),
+                          key: ValueKey('total_$total'),
+                          style: GoogleFonts.cairo(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: totalColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (previewWarning != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        size: 14,
+                        color: Colors.amber.shade700,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          previewWarning,
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.amber.shade800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewBreakdownRow {
+  const _PreviewBreakdownRow({
+    required this.icon,
+    required this.label,
+    required this.amount,
+    required this.accent,
+    this.inactive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final double amount;
+  final Color accent;
+  final bool inactive;
+}
+
+class _PreviewBreakdownTile extends StatelessWidget {
+  const _PreviewBreakdownTile({
+    required this.row,
+    required this.currency,
+    required this.total,
+  });
+
+  final _PreviewBreakdownRow row;
+  final NumberFormat currency;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final amountColor = row.inactive
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
+        : row.amount > 0 && total > 0 && row.amount / total >= 0.5
+            ? AppColors.emerald
+            : row.amount > 0
+                ? row.accent
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: row.accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(row.icon, size: 16, color: row.accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              row.label,
+              style: GoogleFonts.cairo(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
+          ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Text(
+              row.inactive
+                  ? 'غير مفعّلة'
+                  : currency.format(row.amount),
+              key: ValueKey('${row.label}_${row.amount}_${row.inactive}'),
+              style: GoogleFonts.cairo(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: amountColor,
+              ),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _PreviewChip extends StatelessWidget {
+  const _PreviewChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.emerald.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.emerald.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.emerald),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: GoogleFonts.cairo(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شريط نسبي — مكافأة · إجازات · تذكرة.
+class _PreviewProportionBar extends StatelessWidget {
+  const _PreviewProportionBar({
+    required this.eos,
+    required this.leave,
+    required this.ticket,
+    required this.total,
+  });
+
+  final double eos;
+  final double leave;
+  final double ticket;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final segments = <(Color, double)>[
+      (AppColors.emerald, eos),
+      (const Color(0xFF0EA5E9), leave),
+      if (ticket > 0) (const Color(0xFF8B5CF6), ticket),
+    ];
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: SizedBox(
+        height: 6,
+        child: Row(
+          children: segments
+              .where((s) => s.$2 > 0)
+              .map(
+                (s) => Expanded(
+                  flex: (s.$2 / total * 100).round().clamp(1, 100),
+                  child: ColoredBox(color: s.$1),
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }
