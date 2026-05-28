@@ -298,7 +298,13 @@ class _WizardBottomBar extends ConsumerWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (wizard.canShowLivePreview) const _LivePreviewBar(),
+        if (wizard.canShowLivePreview) ...[
+          const _LivePreviewBar(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+            child: _InputsSummaryCard(),
+          ),
+        ],
         if (validationMsg != null && !canAdvance)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
@@ -343,7 +349,17 @@ class _WizardBottomBar extends ConsumerWidget {
                           return;
                         }
                         if (isLastStep) {
-                          notifier.finishWizard();
+                          if (!notifier.finishWizard() && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'تعذّر عرض النتيجة — راجع البيانات المطلوبة',
+                                  style: GoogleFonts.cairo(),
+                                ),
+                                backgroundColor: AppColors.error,
+                              ),
+                            );
+                          }
                         } else {
                           notifier.nextStep();
                         }
@@ -821,7 +837,7 @@ class _CountryLawChip extends StatelessWidget {
 }
 
 class _ResultsView extends ConsumerWidget {
-  const _ResultsView({required this.isDark});
+  const _ResultsView({super.key, required this.isDark});
 
   final bool isDark;
 
@@ -843,7 +859,7 @@ class _ResultsView extends ConsumerWidget {
             children: [
               _TotalHeroCard(result: result, currency: currency, isDark: isDark),
               const SizedBox(height: 14),
-              _InputsSummaryCard(result: result),
+              const _InputsSummaryCard(),
               const SizedBox(height: 20),
               Text(
                 'تفصيل المستحقات',
@@ -899,14 +915,13 @@ class _ResultsView extends ConsumerWidget {
   }
 }
 
-/// ملخص المدخلات المستخدمة في الحساب.
-class _InputsSummaryCard extends StatelessWidget {
-  const _InputsSummaryCard({required this.result});
-
-  final EosbCalculationResult result;
+/// ملخص المدخلات — يتحدث فوراً مع [eosbCalculatorProvider].
+class _InputsSummaryCard extends ConsumerWidget {
+  const _InputsSummaryCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final result = ref.watch(eosbCalculatorProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
     final rows = <(String, String)>[

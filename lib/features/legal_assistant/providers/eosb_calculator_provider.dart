@@ -236,7 +236,7 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 
   void setAccruedLeave(int days) {
-    state = state.copyWith(accruedLeaveDays: days);
+    state = state.copyWith(accruedLeaveDays: days.clamp(0, 90));
   }
 
   void setFlightTicket({required bool include, double? cost}) {
@@ -306,6 +306,9 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 }
 
+/// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
+/// - مكافأة نهاية الخدمة (م. 84/85 السعودية · م. 51 الإمارات)
+/// - بدل إجازة سنوية · إجازات متبقية · تذكرة طيران (تقدير)
 const eosbEngine = EosbCalculator();
 
 final eosbWizardProvider =

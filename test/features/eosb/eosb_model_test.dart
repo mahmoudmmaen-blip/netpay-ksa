@@ -3,14 +3,15 @@ import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
-  test('Saudi termination — full salary per year', () {
+  test('Saudi termination — Article 84 (half month per year, first 5)', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
       housingAllowance: 2500,
       terminationType: EosbTerminationType.employerDismissalUnfair,
     );
-    expect(model.endOfServiceAmount, closeTo(37500, 0.01));
+    // وعاء 12500 · 3 سنوات · نصف شهر/سنة = 18750
+    expect(model.endOfServiceAmount, closeTo(18750, 0.01));
   });
 
   test('contract expiry — same as unfair dismissal', () {
@@ -45,13 +46,14 @@ void main() {
     expect(model.endOfServiceAmount, 0);
   });
 
-  test('resignation 2-5 years Saudi — one third', () {
+  test('resignation 2-5 years Saudi — one third (Art. 85)', () {
     const model = EosbModel(
       yearsOfService: 4,
       basicSalary: 12000,
       terminationType: EosbTerminationType.employeeResignation,
     );
-    expect(model.endOfServiceAmount, closeTo(12000 * 4 / 3, 0.01));
+    // 12000 × 0.5 × 4 = 24000 · ثلث = 8000
+    expect(model.endOfServiceAmount, closeTo(8000, 0.01));
   });
 
   test('UAE gratuity — 21 days per year cap', () {

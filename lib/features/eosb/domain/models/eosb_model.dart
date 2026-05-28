@@ -118,7 +118,15 @@ class EosbModel {
   double get fullEndOfServiceBase {
     if (totalServiceYears <= 0 || eosWageBase <= 0) return 0;
     if (country == GulfCountry.uae) return _uaeFullGratuity;
-    return eosWageBase * totalServiceYears;
+    return _saudiFullGratuity;
+  }
+
+  /// السعودية — م. 84: نصف شهر عن كل سنة (أول 5) وشهر كامل بعدها.
+  double get _saudiFullGratuity {
+    final y = totalServiceYears;
+    final first5 = y.clamp(0.0, 5.0);
+    final after5 = (y - 5).clamp(0.0, 100.0);
+    return (eosWageBase * 0.5 * first5) + (eosWageBase * after5);
   }
 
   double get _uaeFullGratuity {
@@ -228,7 +236,8 @@ class EosbModel {
     final refs = <EosbLegalReference>[
       const EosbLegalReference(
         article: 'المادة 84',
-        summary: 'مكافأة نهاية الخدمة عند انتهاء العلاقة — نصف شهر عن كل سنة (أول 5) وشهر عن كل سنة بعدها (تبسيط: راتب × سنوات الخدمة في هذه الحاسبة).',
+        summary:
+            'مكافأة نهاية الخدمة — نصف شهر أجر (أساسي + سكن) عن كل سنة من أول 5 سنوات، وشهر كامل عن كل سنة بعدها.',
       ),
       const EosbLegalReference(
         article: 'المادة 85',
