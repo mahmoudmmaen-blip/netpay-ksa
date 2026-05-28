@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/features/eosb/domain/eosb_constants.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:pdf/pdf.dart';
@@ -85,7 +86,7 @@ class EosbPdfService {
           pw.SizedBox(height: 16),
           pw.Center(
             child: pw.Text(
-              'هذه الحسابة تقريبية - يُفضل استشارة متخصص قانوني',
+              EosbConstants.approximationDisclaimerAr,
               style: pw.TextStyle(
                 font: font,
                 fontSize: 9,

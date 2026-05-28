@@ -288,10 +288,19 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 
   void setCountry(GulfCountry country) {
+    if (state.country == country) return;
     final nextTicketCost = state.includeFlightTicket && state.ticketCost <= 0
         ? _defaultYearlyTicketEstimate(country)
         : state.ticketCost;
-    state = state.copyWith(country: country, ticketCost: nextTicketCost);
+    // إلغاء النتيجة المجمّدة عند تغيير الدولة لضمان إعادة الحساب بالقواعد الجديدة.
+    if (state.showResults) {
+      ref.read(eosbFinalizedResultProvider.notifier).state = null;
+    }
+    state = state.copyWith(
+      country: country,
+      ticketCost: nextTicketCost,
+      showResults: false,
+    );
   }
 
   void setContractType(EosbContractType type) {
