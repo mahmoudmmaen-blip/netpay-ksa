@@ -82,6 +82,18 @@ class EosbPdfService {
           ...result.legalReferences.map(
             (ref) => _legalCard(ref, font, fontBold),
           ),
+          pw.SizedBox(height: 16),
+          pw.Center(
+            child: pw.Text(
+              'هذه الحسابة تقريبية - يُفضل استشارة متخصص قانوني',
+              style: pw.TextStyle(
+                font: font,
+                fontSize: 9,
+                color: PdfColors.grey700,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
           pw.SizedBox(height: 24),
           _signatureSection(font, fontBold, date),
           pw.SizedBox(height: 16),

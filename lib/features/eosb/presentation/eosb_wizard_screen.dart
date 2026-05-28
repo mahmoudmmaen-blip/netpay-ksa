@@ -1660,7 +1660,7 @@ class _PreviewProportionBar extends StatelessWidget {
   }
 }
 
-/// شبكة اختيار الدولة — ٦ دول مع أعلام.
+/// شبكة اختيار الدولة — ٦ دول خليجية (3×2) مع أعلام وأسماء عربية.
 class _EosbCountryGrid extends StatelessWidget {
   const _EosbCountryGrid({
     required this.selected,
@@ -1672,89 +1672,99 @@ class _EosbCountryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const countries = GulfCountry.values;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemWidth = (constraints.maxWidth - 8) / 2;
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: countries.map((country) {
-            final isSelected = country == selected;
-            return SizedBox(
-              width: itemWidth,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onSelected(country);
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.emerald
-                            : Theme.of(context)
-                                .colorScheme
-                                .outline
-                                .withValues(alpha: 0.35),
-                        width: isSelected ? 2 : 1,
-                      ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return GridView.count(
+      crossAxisCount: 3,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio: 0.88,
+      children: GulfCountry.values.map((country) {
+        final isSelected = country == selected;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelected(country);
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.emerald
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.3),
+                  width: isSelected ? 2.5 : 1,
+                ),
+                gradient: isSelected
+                    ? LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppColors.emerald.withValues(alpha: isDark ? 0.28 : 0.14),
+                          AppColors.emeraldDark.withValues(alpha: isDark ? 0.12 : 0.05),
+                        ],
+                      )
+                    : null,
+                color: isSelected
+                    ? null
+                    : Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: isDark ? 0.35 : 0.65),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.emerald.withValues(alpha: 0.22),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(country.flag, style: const TextStyle(fontSize: 28)),
+                  const SizedBox(height: 6),
+                  Text(
+                    country.nameAr,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.cairo(
+                      fontSize: 11.5,
+                      height: 1.2,
+                      fontWeight:
+                          isSelected ? FontWeight.w800 : FontWeight.w600,
                       color: isSelected
-                          ? AppColors.emerald.withValues(alpha: 0.12)
-                          : Theme.of(context)
-                              .colorScheme
-                              .surface
-                              .withValues(alpha: 0.5),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          country.flag,
-                          style: const TextStyle(fontSize: 22),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            country.nameAr,
-                            style: GoogleFonts.cairo(
-                              fontSize: 13,
-                              fontWeight: isSelected
-                                  ? FontWeight.w800
-                                  : FontWeight.w600,
-                              color: isSelected
-                                  ? AppColors.emerald
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .onSurface,
-                            ),
-                          ),
-                        ),
-                        if (isSelected)
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.emerald,
-                            size: 18,
-                          ),
-                      ],
+                          ? AppColors.emerald
+                          : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
-                ),
+                  if (isSelected) ...[
+                    const SizedBox(height: 4),
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.emerald,
+                      size: 16,
+                    ),
+                  ],
+                ],
               ),
-            );
-          }).toList(),
+            ),
+          ),
         );
-      },
+      }).toList(),
     );
   }
 }
@@ -1858,6 +1868,10 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
                 currency: currency,
                 isDark: widget.isDark,
               ),
+              const SizedBox(height: 10),
+              const _ResultsApproximationNote(),
+              const SizedBox(height: 8),
+              _ResultsCountryLawChip(country: model.country),
               const SizedBox(height: 12),
               _SaveCalculationButton(result: result),
               const SizedBox(height: 10),
@@ -2898,6 +2912,59 @@ class _EosbTextField extends StatelessWidget {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      ),
+    );
+  }
+}
+
+/// ملاحظة تقريبية تحت إجمالي النتائج.
+class _ResultsApproximationNote extends StatelessWidget {
+  const _ResultsApproximationNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'هذه الحسابة تقريبية - يُفضل استشارة متخصص قانوني',
+      textAlign: TextAlign.center,
+      style: GoogleFonts.cairo(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        height: 1.4,
+        color: Theme.of(context)
+            .colorScheme
+            .onSurface
+            .withValues(alpha: 0.6),
+      ),
+    );
+  }
+}
+
+/// شارة القانون المطبّق على النتائج.
+class _ResultsCountryLawChip extends StatelessWidget {
+  const _ResultsCountryLawChip({required this.country});
+
+  final GulfCountry country;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Text(country.flag, style: const TextStyle(fontSize: 20)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              country.eosLawChipAr,
+              style: GoogleFonts.cairo(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.emerald,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
