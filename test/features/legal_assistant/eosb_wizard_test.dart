@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
-import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
+import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
 void main() {
   test('wizard blocks step 0 without termination type', () {

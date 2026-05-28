@@ -1721,14 +1721,15 @@ class _ResultsSuccessBannerState extends State<_ResultsSuccessBanner>
 class _InputsSummaryCard extends ConsumerWidget {
   const _InputsSummaryCard({this.forResults = false});
 
-  /// عند true: يقرأ [eosbResultsProvider] (نتيجة الخطوة 3).
+  /// عند true: يقرأ [eosbFinalizedResultProvider] (نتيجة مجمّدة).
   final bool forResults;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = forResults
-        ? ref.watch(eosbResultsProvider)
+    final EosbCalculationResult result = forResults
+        ? ref.watch(eosbFinalizedResultProvider) ??
+            ref.watch(eosbCalculatorProvider)
         : ref.watch(eosbCalculatorProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
