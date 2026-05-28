@@ -107,11 +107,15 @@ class EosbWizardState {
     return null;
   }
 
+  /// مدة الخدمة بالسنوات (مع الشهور الإضافية).
+  double get totalServiceYears =>
+      years + (months.clamp(0, 11) / 12.0) + (days.clamp(0, 364) / 365.0);
+
   EosbModel toModel() => EosbModel(
         country: country,
         yearsOfService: years,
-        monthsOfService: months,
-        daysOfService: days,
+        monthsOfService: months.clamp(0, 11),
+        daysOfService: days.clamp(0, 364),
         basicSalary: basicSalary,
         housingAllowance: housingAllowance,
         otherAllowances: otherAllowances,
@@ -168,13 +172,16 @@ class EosbWizardState {
 }
 
 class EosbWizardNotifier extends Notifier<EosbWizardState> {
-  static double _defaultYearlyTicketEstimate(GulfCountry country) {
-    // تقدير افتراضي (قابل للتعديل لاحقاً بإضافة حقل تكلفة التذكرة).
+  /// تقدير تكلفة تذكرة سنوية واحدة حسب الدولة (ريال / درهم).
+  static double yearlyTicketEstimateFor(GulfCountry country) {
     return switch (country) {
       GulfCountry.saudiArabia => 1500,
       GulfCountry.uae => 1200,
     };
   }
+
+  static double _defaultYearlyTicketEstimate(GulfCountry country) =>
+      yearlyTicketEstimateFor(country);
 
   @override
   EosbWizardState build() {
@@ -214,9 +221,9 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void setServiceDuration({int? years, int? months, int? days}) {
     state = state.copyWith(
-      years: years ?? state.years,
-      months: months ?? state.months,
-      days: days ?? state.days,
+      years: (years ?? state.years).clamp(0, 40),
+      months: (months ?? state.months).clamp(0, 11),
+      days: (days ?? state.days).clamp(0, 364),
     );
   }
 
@@ -299,18 +306,64 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 }
 
-const _calculator = EosbCalculator();
+const eosbEngine = EosbCalculator();
 
 final eosbWizardProvider =
     NotifierProvider<EosbWizardNotifier, EosbWizardState>(
   EosbWizardNotifier.new,
 );
 
-/// نتيجة الحساب الكاملة من الحالة الحالية.
+/// نتيجة الحساب الكاملة من الحالة الحالية — تتحدث فوراً مع أي تغيير في المعالج.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
-  final model = ref.watch(eosbWizardProvider).toModel();
-  return _calculator.calculate(model);
+  final wizard = ref.watch(eosbWizardProvider);
+  return eosbEngine.calculate(wizard.toModel());
 });
+
+/// بنود المعاينة المباشرة (عربي + مبلغ).
+final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
+  final result = ref.watch(eosbCalculatorProvider);
+  return EosbPreviewLine.fromResult(result);
+});
+
+/// سطر في معاينة/ملخص المستحقات.
+class EosbPreviewLine {
+  const EosbPreviewLine({required this.labelAr, required this.amount});
+
+  final String labelAr;
+  final double amount;
+
+  static List<EosbPreviewLine> fromResult(EosbCalculationResult result) {
+    final lines = <EosbPreviewLine>[
+      EosbPreviewLine(
+        labelAr: 'مكافأة نهاية الخدمة',
+        amount: result.endOfServiceAmount,
+      ),
+    ];
+    if (result.cashLeaveAllowance > 0) {
+      lines.add(
+        EosbPreviewLine(
+          labelAr: 'بدل الإجازات المتبقية',
+          amount: result.cashLeaveAllowance,
+        ),
+      );
+    }
+    lines.add(
+      EosbPreviewLine(
+        labelAr: 'بدل إجازة سنوية',
+        amount: result.vacationAllowance,
+      ),
+    );
+    if (result.input.includeFlightTicket) {
+      lines.add(
+        EosbPreviewLine(
+          labelAr: 'تذكرة طيران (تقدير)',
+          amount: result.flightTicketAllowance,
+        ),
+      );
+    }
+    return lines;
+  }
+}
 
 /// @deprecated استخدم [eosbCalculatorProvider]
 final eosbCalculationProvider = Provider<EosbModel>((ref) {

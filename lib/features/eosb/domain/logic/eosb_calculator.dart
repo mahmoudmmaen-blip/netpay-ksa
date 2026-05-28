@@ -69,24 +69,26 @@ class EosbCalculator {
         amount: eos,
         isPrimary: true,
       ),
-      EosbComponentItem(
-        id: 'vacation',
-        titleAr: 'بدل إجازة سنوية تقديري',
-        subtitleAr: '${input.annualVacationDays} يوم · ${input.totalServiceYears.toStringAsFixed(1)} سنة خدمة',
-        amount: vacation,
-      ),
       if (leave > 0)
         EosbComponentItem(
           id: 'leave',
-          titleAr: 'صرف إجازات متبقية',
-          subtitleAr: '${input.accruedLeaveDays} يوم',
+          titleAr: 'بدل الإجازات المتبقية',
+          subtitleAr:
+              '${input.accruedLeaveDays} يوم · أجر يومي ${(input.basicSalary / 30).toStringAsFixed(0)}',
           amount: leave,
         ),
-      if (ticket > 0)
+      EosbComponentItem(
+        id: 'vacation',
+        titleAr: 'بدل إجازة سنوية (تقديري)',
+        subtitleAr:
+            '${input.annualVacationDays} يوم · ${input.totalServiceYears.toStringAsFixed(1)} سنة خدمة',
+        amount: vacation,
+      ),
+      if (input.includeFlightTicket)
         EosbComponentItem(
           id: 'ticket',
-          titleAr: 'تذكرة سفر',
-          subtitleAr: EosbModel.ticketFrequencyLabel(input.ticketFrequency),
+          titleAr: 'تذكرة طيران سنوية (تقدير)',
+          subtitleAr: _ticketSubtitle(input, ticket),
           amount: ticket,
         ),
     ];
@@ -107,6 +109,16 @@ class EosbCalculator {
       legalReferences: input.legalReferences,
       resignationFactorApplied: factor,
     );
+  }
+
+  String _ticketSubtitle(EosbModel input, double amount) {
+    if (amount <= 0) {
+      return 'تقدير غير متاح — تحقق من مدة الخدمة والراتب';
+    }
+    final freq = EosbModel.ticketFrequencyLabel(input.ticketFrequency);
+    final cost = input.ticketCost.round();
+    final years = input.totalServiceYears.toStringAsFixed(1);
+    return '$freq · $cost ${input.country.currencySymbol} × $years سنة';
   }
 
   String _eosSubtitle(EosbModel input) {

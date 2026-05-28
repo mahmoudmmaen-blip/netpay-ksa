@@ -82,9 +82,20 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
           gradient: AppColors.homeGradient(Theme.of(context).brightness),
         ),
         child: SafeArea(
-          child: wizard.showResults
-              ? _ResultsView(isDark: isDark)
-              : _WizardStepper(isDark: isDark, key: const ValueKey('eosb_wizard')),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 320),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            child: wizard.showResults
+                ? _ResultsView(
+                    key: const ValueKey('eosb_results'),
+                    isDark: isDark,
+                  )
+                : _WizardStepper(
+                    key: const ValueKey('eosb_wizard'),
+                    isDark: isDark,
+                  ),
+          ),
         ),
       ),
     );
@@ -364,13 +375,14 @@ class _WizardBottomBar extends ConsumerWidget {
   }
 }
 
-/// معاينة مباشرة للإجمالي — يتحدث مع [eosbCalculatorProvider].
+/// معاينة مباشرة — تتحدث فوراً مع [eosbCalculatorProvider].
 class _LivePreviewBar extends ConsumerWidget {
   const _LivePreviewBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final result = ref.watch(eosbCalculatorProvider);
+    final lines = ref.watch(eosbPreviewLinesProvider);
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
       symbol: result.input.country.currencySymbol,
@@ -382,27 +394,63 @@ class _LivePreviewBar extends ConsumerWidget {
       child: GlassSurface(
         highlighted: true,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.insights_rounded, color: AppColors.emerald),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'معاينة الإجمالي (تقديرية)',
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+            Row(
+              children: [
+                const Icon(Icons.insights_rounded, color: AppColors.emerald),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'معاينة الإجمالي (تقديرية)',
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                Text(
+                  currency.format(result.totalEntitlements),
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.emerald,
+                  ),
+                ),
+              ],
+            ),
+            if (lines.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...lines.map(
+                (line) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          line.labelAr,
+                          style: GoogleFonts.cairo(
+                            fontSize: 11,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.65),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        currency.format(line.amount),
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Text(
-              currency.format(result.totalEntitlements),
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                color: AppColors.emerald,
-              ),
-            ),
+            ],
           ],
         ),
       ),
@@ -705,11 +753,11 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: SwitchListTile(
             title: Text(
-              'هل تستحق تذكرة طيران سنوية؟',
+              'هل تستحق تذكرة طيران؟',
               style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
             subtitle: Text(
-              'تذكرة سنوية للوافد حسب العقد أو اللائحة',
+              'تقدير سنوي: ${EosbWizardNotifier.yearlyTicketEstimateFor(wizard.country).round()} ${wizard.country.currencySymbol}',
               style: GoogleFonts.cairo(fontSize: 11),
             ),
             value: wizard.includeFlightTicket,
@@ -794,6 +842,8 @@ class _ResultsView extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
             children: [
               _TotalHeroCard(result: result, currency: currency, isDark: isDark),
+              const SizedBox(height: 14),
+              _InputsSummaryCard(result: result),
               const SizedBox(height: 20),
               Text(
                 'تفصيل المستحقات',
@@ -845,6 +895,85 @@ class _ResultsView extends ConsumerWidget {
         ),
         _ResultsBottomBar(),
       ],
+    );
+  }
+}
+
+/// ملخص المدخلات المستخدمة في الحساب.
+class _InputsSummaryCard extends StatelessWidget {
+  const _InputsSummaryCard({required this.result});
+
+  final EosbCalculationResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final m = result.input;
+    final currency = m.country.currencySymbol;
+    final rows = <(String, String)>[
+      ('نوع الإنهاء', m.terminationSummary),
+      ('مدة الخدمة', '${m.yearsOfService} سنة · ${m.monthsOfService} شهر'),
+      ('الراتب الأساسي', '${m.basicSalary.round()} $currency'),
+      if (m.housingAllowance > 0)
+        ('بدل السكن', '${m.housingAllowance.round()} $currency'),
+      if (m.accruedLeaveDays > 0)
+        ('إجازات متبقية', '${m.accruedLeaveDays} يوم'),
+      if (m.includeFlightTicket)
+        (
+          'تذكرة طيران',
+          'تقدير ${m.ticketCost.round()} $currency · ${EosbModel.ticketFrequencyLabel(m.ticketFrequency)}',
+        ),
+      (
+        'إشعار الإنهاء',
+        m.noticeProvided ? 'تم تقديمه' : 'لم يُقدَّم — راجع المادة 75',
+      ),
+    ];
+
+    return GlassSurface(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'بيانات الحساب',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 14),
+          ),
+          const SizedBox(height: 10),
+          ...rows.map(
+            (row) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      row.$1,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      row.$2,
+                      textAlign: TextAlign.end,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
