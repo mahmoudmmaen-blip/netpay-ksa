@@ -90,12 +90,15 @@ class EosbWizardState {
     };
   }
 
+  /// هل يمكن الانتقال من الخطوة الحالية فقط؟
+  bool get isCurrentStepValid => validationMessageForStep(stepIndex) == null;
+
   /// هل يمكن الانتقال للخطوة التالية أو عرض النتيجة؟
   bool get canAdvanceFromCurrentStep {
     if (stepIndex >= totalSteps - 1) {
       return validationBeforeResults() == null;
     }
-    return validationMessageForStep(stepIndex) == null;
+    return isCurrentStepValid;
   }
 
   /// التحقق الكامل قبل عرض النتائج.
@@ -350,9 +353,30 @@ final eosbWizardProvider =
 );
 
 /// نتيجة الحساب الكاملة — تتحدث فوراً مع أي تغيير في المعالج.
+///
+/// يقرأ كل المدخلات: الدولة، الإنهاء، المدة، الرواتب، العقد، الإجازات،
+/// التذكرة، الإشعار، ونسبة الاتفاق بالتراضي.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
-  final wizard = ref.watch(eosbWizardProvider);
-  return eosbEngine.calculateEndOfService(wizard.toModel());
+  final w = ref.watch(eosbWizardProvider);
+  final model = EosbModel(
+    country: w.country,
+    yearsOfService: w.years,
+    monthsOfService: w.months.clamp(0, 11),
+    daysOfService: w.days.clamp(0, 364),
+    basicSalary: w.basicSalary,
+    housingAllowance: w.housingAllowance,
+    otherAllowances: w.otherAllowances,
+    contractType: w.contractType,
+    terminationType:
+        w.resolvedTermination ?? EosbTerminationType.employerDismissalUnfair,
+    ticketCost: w.ticketCost,
+    includeFlightTicket: w.includeFlightTicket,
+    ticketFrequency: w.ticketFrequency,
+    accruedLeaveDays: w.accruedLeaveDays,
+    noticeProvided: w.noticeProvided,
+    mutualAgreementPercent: w.mutualAgreementPercent,
+  );
+  return eosbEngine.calculateEndOfService(model);
 });
 
 /// بنود المعاينة المباشرة (عربي + مبلغ).
@@ -369,35 +393,27 @@ class EosbPreviewLine {
   final double amount;
 
   static List<EosbPreviewLine> fromResult(EosbCalculationResult result) {
-    final lines = <EosbPreviewLine>[
+    final m = result.input;
+    return [
       EosbPreviewLine(
         labelAr: 'مكافأة نهاية الخدمة',
         amount: result.endOfServiceAmount,
       ),
-    ];
-    if (result.cashLeaveAllowance > 0) {
-      lines.add(
+      if (m.accruedLeaveDays > 0)
         EosbPreviewLine(
           labelAr: 'بدل الإجازات المتبقية',
           amount: result.cashLeaveAllowance,
         ),
-      );
-    }
-    lines.add(
       EosbPreviewLine(
-        labelAr: 'بدل إجازة سنوية',
+        labelAr: 'بدل إجازة سنوية (تقدير)',
         amount: result.vacationAllowance,
       ),
-    );
-    if (result.input.includeFlightTicket) {
-      lines.add(
+      if (m.includeFlightTicket)
         EosbPreviewLine(
           labelAr: 'تذكرة طيران (تقدير)',
           amount: result.flightTicketAllowance,
         ),
-      );
-    }
-    return lines;
+    ];
   }
 }
 

@@ -30,6 +30,15 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
     final wizard = ref.watch(eosbWizardProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    ref.listen(eosbWizardProvider, (previous, next) {
+      if (previous != null &&
+          !previous.showResults &&
+          next.showResults &&
+          mounted) {
+        HapticFeedback.mediumImpact();
+      }
+    });
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       floatingActionButton: wizard.showResults
@@ -83,9 +92,22 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
         ),
         child: SafeArea(
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 320),
+            duration: const Duration(milliseconds: 380),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              final offset = Tween<Offset>(
+                begin: const Offset(0, 0.04),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ));
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: offset, child: child),
+              );
+            },
             child: wizard.showResults
                 ? _ResultsView(
                     key: const ValueKey('eosb_results'),
@@ -113,6 +135,8 @@ class _WizardStepper extends ConsumerStatefulWidget {
 }
 
 class _WizardStepperState extends ConsumerState<_WizardStepper> {
+  final _scrollController = ScrollController();
+  int _lastStepIndex = 0;
 
   static const _stepTitles = [
   'نوع إنهاء الخدمة',
@@ -127,9 +151,29 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
   ];
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final step = wizard.stepIndex.clamp(0, 2);
+
+    if (step != _lastStepIndex) {
+      _lastStepIndex = step;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop());
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -153,6 +197,7 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
             switchOutCurve: Curves.easeInCubic,
             child: SingleChildScrollView(
               key: ValueKey<int>(step),
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               child: switch (step) {
                 0 => _StepTermination(key: const ValueKey('s0')),
@@ -352,9 +397,7 @@ class _WizardBottomBar extends ConsumerWidget {
                         }
                         if (isLastStep) {
                           if (notifier.finishWizard()) {
-                            if (context.mounted) {
-                              HapticFeedback.mediumImpact();
-                            }
+                            // showResults → AnimatedSwitcher في الشاشة الرئيسية
                           } else if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -370,7 +413,9 @@ class _WizardBottomBar extends ConsumerWidget {
                             );
                           }
                         } else {
-                          notifier.nextStep();
+                          if (notifier.nextStep()) {
+                            HapticFeedback.selectionClick();
+                          }
                         }
                       }
                     : null,
@@ -609,7 +654,8 @@ class _StepContractState extends ConsumerState<_StepContract> {
     });
     final currencySuffix =
         wizard.country == GulfCountry.saudiArabia ? 'ريال' : 'درهم';
-    final showFieldErrors = !wizard.canProceedStep1;
+    final showFieldErrors =
+        wizard.stepIndex == 1 && !wizard.canProceedStep1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -948,12 +994,16 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              Text(
-                currency.format(result.totalEntitlements),
-                style: GoogleFonts.cairo(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                  color: AppColors.emerald,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: Text(
+                  currency.format(result.totalEntitlements),
+                  key: ValueKey(result.totalEntitlements.toStringAsFixed(0)),
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppColors.emerald,
+                  ),
                 ),
               ),
             ],
@@ -971,7 +1021,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
               ),
             ),
           ],
-          if (lines.isNotEmpty && !needsContractData) ...[
+          if (!needsContractData) ...[
             const SizedBox(height: 8),
             ...lines.map(
               (line) => Padding(
@@ -990,11 +1040,15 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Text(
-                      currency.format(line.amount),
-                      style: GoogleFonts.cairo(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: Text(
+                        currency.format(line.amount),
+                        key: ValueKey('${line.labelAr}_${line.amount}'),
+                        style: GoogleFonts.cairo(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
