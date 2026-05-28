@@ -95,25 +95,18 @@ class EosbCalculator {
 
   // ─── مكافأة نهاية الخدمة (نقطة الدخول الموحّدة) ─────────────────────
 
-  /// حساب مكافأة نهاية الخدمة حسب [EosbModel.terminationType] والدولة.
-  ///
-  /// **السعودية:** فصل تعسفي (أساسي×سنوات) · فصل مشروع (50%) · م.84 للباقي.
-  /// **الإمارات:** م.51/132 مع تعديلات الإنهاء.
-  ///
-  /// مربوطة بـ Live Preview وResults عبر `eosbCalculatorProvider`.
+  /// حساب مكافأة نهاية الخدمة — توجيه حسب الدولة (استراتيجية + السعودية/الإمارات).
   static double calculateEndOfServiceAward(EosbModel input) {
-    if (input.totalServiceYears <= 0) return 0;
-    if (input.basicSalary <= 0) return 0;
-
-    final rules = EosbCountryRules.forCountry(input.country);
-    if (rules != null) {
-      return rules.gratuityByTermination(input);
-    }
+    if (input.totalServiceYears <= 0 || input.basicSalary <= 0) return 0;
 
     return switch (input.country) {
-      GulfCountry.uae => _uaeEndOfServiceByTermination(input),
       GulfCountry.saudiArabia => _saudiEndOfServiceByTermination(input),
-      _ => 0,
+      GulfCountry.uae => _uaeEndOfServiceByTermination(input),
+      GulfCountry.oman => const OmanEosbRules().gratuityByTermination(input),
+      GulfCountry.qatar => const QatarEosbRules().gratuityByTermination(input),
+      GulfCountry.bahrain =>
+        const BahrainEosbRules().gratuityByTermination(input),
+      GulfCountry.kuwait => const KuwaitEosbRules().gratuityByTermination(input),
     };
   }
 
