@@ -314,6 +314,16 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     return true;
   }
 
+  /// مزامنة الحقول ثم إنهاء المعالج — نقطة الدخول الموحّدة للواجهة.
+  ///
+  /// يُرجع `null` عند النجاح، أو رسالة خطأ عربية عند الفشل.
+  String? tryFinishWizard() {
+    flushAllInputs();
+    final validationError = state.validationBeforeResults();
+    if (validationError != null) return validationError;
+    return finishWizard() ? null : 'تعذّر عرض النتيجة — راجع البيانات';
+  }
+
   /// إنهاء المعالج — حفظ نتيجة الحساب والانتقال لشاشة النتائج.
   bool finishWizard() {
     flushAllInputs();

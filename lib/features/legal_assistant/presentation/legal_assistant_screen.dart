@@ -15,35 +15,14 @@ import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
 import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
-/// إنهاء المعالج والانتقال لشاشة النتائج — منطق موحّد.
+/// إنهاء المعالج → شاشة النتائج (انتقال تلقائي + شريط نجاح).
 bool eosbTryFinishAndShowResults(BuildContext context, WidgetRef ref) {
-  final notifier = ref.read(eosbWizardProvider.notifier);
-  notifier.flushAllInputs();
+  final error = ref.read(eosbWizardProvider.notifier).tryFinishWizard();
+  if (error == null) return true;
 
-  final error = ref.read(eosbWizardProvider).validationBeforeResults();
-  if (error != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(error, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    return false;
-  }
-
-  if (notifier.finishWizard()) {
-    return true;
-  }
-
-  if (!context.mounted) return false;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text(
-        ref.read(eosbWizardProvider).validationBeforeResults() ??
-            'تعذّر عرض النتيجة — راجع الخطوات 1 و 2',
-        style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
-      ),
+      content: Text(error, style: GoogleFonts.cairo(fontWeight: FontWeight.w600)),
       backgroundColor: AppColors.error,
       behavior: SnackBarBehavior.floating,
     ),
@@ -438,11 +417,9 @@ class _WizardBottomBar extends ConsumerWidget {
                     ),
                   )
                 : Text(
-                    validationMsg != null && !canAdvance
-                        ? ''
-                        : isLastStep
-                            ? 'اضغط «عرض النتيجة» للانتقال التلقائي لشاشة النتائج'
-                            : wizard.guidanceForStep(stepIndex),
+                    isLastStep && canAdvance
+                        ? 'اضغط «عرض النتيجة» للانتقال التلقائي لشاشة النتائج'
+                        : wizard.guidanceForStep(stepIndex),
                     key: ValueKey('hint_${stepIndex}_$canAdvance'),
                     textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
@@ -685,8 +662,13 @@ class _StepContractState extends ConsumerState<_StepContract> {
   }
 
   @override
-  void dispose() {
+  void deactivate() {
     _pushToProvider();
+    super.deactivate();
+  }
+
+  @override
+  void dispose() {
     ref.read(eosbWizardProvider.notifier).unregisterInputSync(_pushToProvider);
     _yearsCtrl.dispose();
     _monthsCtrl.dispose();

@@ -12,6 +12,27 @@ void main() {
     expect(notifier.nextStep(), isFalse);
   });
 
+  test('tryFinishWizard returns error without termination', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    expect(
+      notifier.tryFinishWizard(),
+      'الخطوة 1: اختر نوع إنهاء الخدمة للمتابعة',
+    );
+  });
+
+  test('tryFinishWizard succeeds with valid inputs', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setSalaries(basic: 8000);
+    notifier.setServiceDuration(years: 3);
+    expect(notifier.tryFinishWizard(), isNull);
+    expect(container.read(eosbWizardProvider).showResults, isTrue);
+  });
+
   test('wizard produces model with termination', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
