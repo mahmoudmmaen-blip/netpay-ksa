@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شبكة اختيار الدولة في معالج EOSB — يعرض الدول الست دائماً (بدون فلترة).
+/// شبكة اختيار الدولة في معالج EOSB — تعرض الدول الست دائماً (بدون فلترة).
+///
+/// لا تستخدم [GulfCountry.values] ولا أي `.where()` — القائمة [gccCountries] ثابتة.
 class EosbCountryGrid extends StatelessWidget {
   const EosbCountryGrid({
     super.key,
@@ -15,8 +17,8 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  /// القائمة الثابتة — كل دول الخليج الست (لا تستخدم [GulfCountry.values]).
-  static const List<GulfCountry> allCountries = [
+  /// كل دول مجلس التعاون الخليجي الست — ثابتة (Saudi = [GulfCountry.saudiArabia]).
+  static const List<GulfCountry> gccCountries = [
     GulfCountry.saudiArabia,
     GulfCountry.uae,
     GulfCountry.oman,
@@ -25,58 +27,53 @@ class EosbCountryGrid extends StatelessWidget {
     GulfCountry.kuwait,
   ];
 
-  /// @deprecated Use [allCountries]
-  static const List<GulfCountry> countries = allCountries;
+  static const List<GulfCountry> allCountries = gccCountries;
+  static const List<GulfCountry> countries = gccCountries;
 
+  static const int _crossAxisCount = 2;
   static const double _spacing = 10;
   static const double _tileHeight = 152;
 
-  static int _crossAxisCount(double width) {
-    if (width >= 720) return 3;
-    return 2;
-  }
-
-  static double _gridHeight(int itemCount, int columns) {
-    final rows = (itemCount / columns).ceil();
+  static double get _gridHeight {
+    const rows = gccCountries.length ~/ _crossAxisCount;
     return rows * _tileHeight + (rows - 1) * _spacing;
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final columns = _crossAxisCount(width);
-        final flagSize = width < 360 ? 40.0 : 44.0;
+    assert(
+      gccCountries.length == 6,
+      'EOSB country grid must show exactly 6 GCC countries',
+    );
 
-        return SizedBox(
-          height: _gridHeight(allCountries.length, columns),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              mainAxisSpacing: _spacing,
-              crossAxisSpacing: _spacing,
-              mainAxisExtent: _tileHeight,
-            ),
-            itemCount: allCountries.length,
-            itemBuilder: (context, index) {
-              final country = allCountries[index];
-              return _EosbCountryTile(
-                key: ValueKey(country),
-                country: country,
-                isSelected: country == selected,
-                flagSize: flagSize,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onSelected(country);
-                },
-              );
+    final flagSize = MediaQuery.sizeOf(context).width < 360 ? 42.0 : 46.0;
+
+    return SizedBox(
+      height: _gridHeight,
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _crossAxisCount,
+          mainAxisSpacing: _spacing,
+          crossAxisSpacing: _spacing,
+          mainAxisExtent: _tileHeight,
+        ),
+        itemCount: gccCountries.length,
+        itemBuilder: (context, index) {
+          final country = gccCountries[index];
+          return _EosbCountryTile(
+            key: ValueKey('eosb_country_${country.name}'),
+            country: country,
+            isSelected: country == selected,
+            flagSize: flagSize,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelected(country);
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -131,9 +128,9 @@ class _EosbCountryTile extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         AppColors.emerald
-                            .withValues(alpha: isDark ? 0.38 : 0.2),
+                            .withValues(alpha: isDark ? 0.4 : 0.22),
                         AppColors.emeraldDark
-                            .withValues(alpha: isDark ? 0.18 : 0.08),
+                            .withValues(alpha: isDark ? 0.2 : 0.1),
                       ],
                     )
                   : null,
@@ -142,11 +139,11 @@ class _EosbCountryTile extends StatelessWidget {
                   : Theme.of(context)
                       .colorScheme
                       .surface
-                      .withValues(alpha: isDark ? 0.5 : 0.8),
+                      .withValues(alpha: isDark ? 0.5 : 0.85),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.emerald.withValues(alpha: 0.35),
+                        color: AppColors.emerald.withValues(alpha: 0.38),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -170,7 +167,7 @@ class _EosbCountryTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.cairo(
-                        fontSize: 13,
+                        fontSize: 13.5,
                         height: 1.1,
                         fontWeight: FontWeight.w800,
                         color: isSelected
@@ -186,25 +183,25 @@ class _EosbCountryTile extends StatelessWidget {
                       style: GoogleFonts.cairo(
                         fontSize: 10,
                         height: 1.1,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         color: isSelected
-                            ? AppColors.emerald.withValues(alpha: 0.9)
+                            ? AppColors.emerald.withValues(alpha: 0.95)
                             : muted,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
+                        horizontal: 5,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
                         color: (isSelected ? AppColors.emerald : muted)
-                            .withValues(alpha: 0.12),
+                            .withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: (isSelected ? AppColors.emerald : muted)
-                              .withValues(alpha: 0.35),
+                              .withValues(alpha: 0.4),
                         ),
                       ),
                       child: Text(
@@ -214,7 +211,7 @@ class _EosbCountryTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.cairo(
                           fontSize: 8.5,
-                          height: 1.15,
+                          height: 1.12,
                           fontWeight: FontWeight.w700,
                           color: isSelected ? AppColors.emerald : muted,
                         ),
@@ -224,8 +221,8 @@ class _EosbCountryTile extends StatelessWidget {
                 ),
                 if (isSelected)
                   const PositionedDirectional(
-                    top: 0,
-                    end: 0,
+                    top: 4,
+                    end: 4,
                     child: Icon(
                       Icons.check_circle_rounded,
                       color: AppColors.emerald,
