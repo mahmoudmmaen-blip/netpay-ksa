@@ -20,11 +20,24 @@ void main() {
     notifier.setServiceDuration(years: 2);
     expect(notifier.nextStep(), isTrue); // → step 1
     expect(notifier.nextStep(), isTrue); // → step 2
-    expect(notifier.nextStep(), isTrue); // → results
-    final result = notifier.calculateEndOfService();
+    expect(notifier.finishWizard(), isTrue);
+    expect(container.read(eosbWizardProvider).showResults, isTrue);
+    final result = container.read(eosbCalculatorProvider);
     expect(result.endOfServiceAmount, greaterThan(0));
     expect(result.totalEntitlements, greaterThan(0));
-    expect(container.read(eosbCalculatorProvider).totalEntitlements,
-        result.totalEntitlements);
+    expect(result.legalReferences, isNotEmpty);
+  });
+
+  test('live preview updates when housing changes', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setSalaries(basic: 10000, housing: 0);
+    notifier.setServiceDuration(years: 3);
+    final before = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    notifier.setSalaries(basic: 10000, housing: 2500);
+    final after = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    expect(after, greaterThan(before));
   });
 }

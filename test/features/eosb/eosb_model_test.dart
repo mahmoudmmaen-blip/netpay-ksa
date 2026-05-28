@@ -24,30 +24,34 @@ void main() {
     expect(model.endOfServiceAmount, closeTo(25000, 0.01));
   });
 
-  test('resignation — Art 84 only (50% first 5 + 100% after)', () {
+  test('resignation — Art 84 with housing (50% first 5 + 100% after)', () {
     const fourYears = EosbModel(
       yearsOfService: 4,
-      basicSalary: 12000,
+      basicSalary: 10000,
+      housingAllowance: 2000,
       terminationType: EosbTerminationType.employeeResignation,
     );
+    // 12000 × 0.5 × 4 = 24000
     expect(fourYears.endOfServiceAmount, closeTo(24000, 0.01));
 
     const sixYears = EosbModel(
       yearsOfService: 6,
       basicSalary: 10000,
+      housingAllowance: 2000,
       terminationType: EosbTerminationType.employeeResignation,
     );
-    // 10000×0.5×5 + 10000×1 = 35000
-    expect(sixYears.endOfServiceAmount, closeTo(35000, 0.01));
+    // 12000×0.5×5 + 12000×1 = 42000
+    expect(sixYears.endOfServiceAmount, closeTo(42000, 0.01));
   });
 
-  test('contract expiry — full Art 84 after 1+ years', () {
+  test('contract expiry — full Art 84 after 1+ years (basic + housing)', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
+      housingAllowance: 2500,
       terminationType: EosbTerminationType.contractExpiry,
     );
-    expect(model.endOfServiceAmount, closeTo(15000, 0.01));
+    expect(model.endOfServiceAmount, closeTo(18750, 0.01));
   });
 
   test('contract expiry fixed < 1 year — half Art 84', () {
@@ -62,24 +66,27 @@ void main() {
     expect(model.endOfServiceAmount, closeTo(art84 * 0.5, 0.01));
   });
 
-  test('mutual agreement — custom percent', () {
+  test('mutual agreement — custom percent on Art 84 wage base', () {
     const model = EosbModel(
       yearsOfService: 4,
       basicSalary: 12000,
+      housingAllowance: 3000,
       terminationType: EosbTerminationType.mutualAgreement,
       mutualAgreementPercent: 75,
     );
-    expect(model.endOfServiceAmount, closeTo(24000 * 0.75, 0.01));
+    final art84 = 15000 * 0.5 * 4;
+    expect(model.endOfServiceAmount, closeTo(art84 * 0.75, 0.01));
   });
 
-  test('retirement — full Art 84', () {
+  test('retirement — full Art 84 with wage base', () {
     const model = EosbModel(
       yearsOfService: 8,
       basicSalary: 9000,
+      housingAllowance: 1000,
       terminationType: EosbTerminationType.retirementOrDeath,
     );
-    // 9000×0.5×5 + 9000×3 = 49500
-    expect(model.endOfServiceAmount, closeTo(49500, 0.01));
+    // 10000×0.5×5 + 10000×3 = 55000
+    expect(model.endOfServiceAmount, closeTo(55000, 0.01));
   });
 
   test('UAE unfair — 100% gratuity', () {
@@ -104,12 +111,13 @@ void main() {
     expect(model.endOfServiceAmount, closeTo(3 * 21 * daily * 0.5, 0.01));
   });
 
-  test('cash leave — (basic / 30) × days', () {
+  test('cash leave — (wage base / 30) × days includes housing in KSA', () {
     const model = EosbModel(
       basicSalary: 15000,
+      housingAllowance: 3000,
       accruedLeaveDays: 10,
     );
-    expect(model.cashLeaveAllowance, closeTo(5000, 0.01));
+    expect(model.cashLeaveAllowance, closeTo(6000, 0.01));
   });
 
   test('flight ticket auto-estimate', () {

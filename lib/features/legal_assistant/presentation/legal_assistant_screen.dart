@@ -1226,7 +1226,12 @@ class _InputsSummaryCard extends ConsumerWidget {
       if (factor != null)
         ('نسبة الاستقالة (م. 85)', '${(factor * 100).round()}%'),
       if (awardPct != null)
-        ('نسبة المكافأة المطبّقة', '${awardPct.round()}%'),
+        (
+          m.isMutualAgreement ? 'نسبة الاتفاق بالتراضي' : 'نسبة المكافأة المطبّقة',
+          '${awardPct.round()}%',
+        ),
+      if (m.isMutualAgreement)
+        ('وعاء الاتفاق', 'م. 84 (أساسي + سكن)'),
       if (m.accruedLeaveDays > 0)
         ('إجازات متبقية', '${m.accruedLeaveDays} يوم'),
       if (m.includeFlightTicket)

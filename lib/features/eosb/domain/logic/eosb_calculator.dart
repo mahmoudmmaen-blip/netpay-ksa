@@ -109,20 +109,25 @@ class EosbCalculator {
     return input.basicSalary * input.totalServiceYears;
   }
 
-  /// م. 84 — نصف الراتب الأساسي لأول 5 سنوات + راتب كامل لكل سنة بعدها.
-  static double saudiArticle84OnBasic(EosbModel input) {
-    if (input.basicSalary <= 0) return 0;
+  /// م. 84 — نصف أجر (أساسي + سكن) لأول 5 سنوات + أجر كامل لكل سنة بعدها.
+  static double saudiArticle84Award(EosbModel input) {
+    final wage = input.eosWageBase;
+    if (wage <= 0) return 0;
     final y = input.totalServiceYears;
     final first5 = y.clamp(0.0, 5.0);
     final after5 = (y - 5).clamp(0.0, 100.0);
-    return (input.basicSalary * 0.5 * first5) + (input.basicSalary * after5);
+    return (wage * 0.5 * first5) + (wage * after5);
   }
+
+  /// @deprecated استخدم [saudiArticle84Award]
+  static double saudiArticle84OnBasic(EosbModel input) =>
+      saudiArticle84Award(input);
 
   static double _computeSaudiEndOfService(EosbModel input) {
     if (input.basicSalary <= 0) return 0;
 
     final unfairFull = saudiUnfairDismissalAward(input);
-    final art84 = saudiArticle84OnBasic(input);
+    final art84 = saudiArticle84Award(input);
 
     return switch (input.terminationType) {
       // 100% — راتب أساسي × سنوات
@@ -231,10 +236,22 @@ class EosbCalculator {
 
   // ─── بدلات إضافية ───────────────────────────────────────────────────
 
-  /// بدل الإجازات المتبقية — (الراتب ÷ 30) × أيام متبقية.
+  /// بدل الإجازات المتبقية — (الأجر الشهري ÷ 30) × أيام متبقية.
   static double computeCashLeaveAllowance(EosbModel input) {
-    if (input.accruedLeaveDays <= 0 || input.basicSalary <= 0) return 0;
-    return (input.basicSalary / 30) * input.accruedLeaveDays;
+    if (input.accruedLeaveDays <= 0) return 0;
+    final daily = input.country == GulfCountry.uae
+        ? (input.basicSalary > 0 ? input.basicSalary / 30 : 0)
+        : (input.eosWageBase > 0 ? input.eosWageBase / 30 : 0);
+    if (daily <= 0) return 0;
+    return daily * input.accruedLeaveDays.toDouble();
+  }
+
+  /// أجر اليوم لعرض بدل الإجازات في النتائج.
+  static double leaveDailyWage(EosbModel input) {
+    if (input.accruedLeaveDays <= 0) return 0;
+    return input.country == GulfCountry.uae
+        ? (input.basicSalary > 0 ? input.basicSalary / 30 : 0)
+        : (input.eosWageBase > 0 ? input.eosWageBase / 30 : 0);
   }
 
   /// بدل إجازة سنوية تقديري — 21 أو 30 يوم حسب مدة الخدمة.
@@ -286,7 +303,7 @@ class EosbCalculator {
         const EosbLegalReference(
           article: 'المادة 84 — حساب المكافأة',
           summary:
-              'نصف الراتب الأساسي عن كل سنة من أول 5 سنوات، وراتب أساسي كامل عن كل سنة بعد السنة الخامسة.',
+              'نصف أجر (أساسي + بدل سكن) عن كل سنة من أول 5 سنوات، وأجر كامل عن كل سنة بعد السنة الخامسة.',
         ),
       );
     }
@@ -466,7 +483,7 @@ class EosbCalculator {
           id: 'leave',
           titleAr: 'بدل الإجازات المتبقية',
           subtitleAr:
-              '${input.accruedLeaveDays} يوم · (${input.basicSalary.round()} ÷ 30) × ${input.accruedLeaveDays}',
+              '${input.accruedLeaveDays} يوم · أجر يومي ${leaveDailyWage(input).round()}',
           amount: remainingLeavePay,
         ),
       if (vacationEntitlementPay > 0)
@@ -553,7 +570,7 @@ class EosbCalculator {
       EosbTerminationType.employerDismissalValidReason =>
         'فصل لسبب مشروع — 50% من المكافأة',
       EosbTerminationType.employeeResignation =>
-        'استقالة — م. 84 (50% أول 5 سنوات + 100% بعدها)',
+        'استقالة — م. 84 (أساسي + سكن · 50% أول 5 سنوات + 100% بعدها)',
       EosbTerminationType.contractExpiry => () {
         final half = input.contractType == EosbContractType.fixed &&
             input.totalServiceYears < 1;

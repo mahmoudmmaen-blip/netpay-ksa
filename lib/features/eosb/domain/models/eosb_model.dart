@@ -138,7 +138,7 @@ class EosbModel {
         EosbCalculator.saudiUnfairDismissalAward(this),
       EosbTerminationType.employerDismissalValidReason =>
         EosbCalculator.saudiUnfairDismissalAward(this) * 0.5,
-      _ => EosbCalculator.saudiArticle84OnBasic(this),
+      _ => EosbCalculator.saudiArticle84Award(this),
     };
   }
 
