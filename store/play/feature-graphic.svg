@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B1120"/>
+      <stop offset="100%" style="stop-color:#064E3B"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="100%" style="stop-color:#FFC857"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <circle cx="140" cy="250" r="72" fill="#10B981" opacity="0.25"/>
+  <circle cx="140" cy="250" r="52" fill="#10B981"/>
+  <text x="140" y="262" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="42" font-weight="700" fill="#0B1120">NG</text>
+  <text x="260" y="200" font-family="Segoe UI, Arial, sans-serif" font-size="56" font-weight="700" fill="#FFFFFF">NetGulf</text>
+  <text x="260" y="255" font-family="Segoe UI, Arial, sans-serif" font-size="28" fill="url(#gold)">Full GCC Salary &amp; EOSB Calculator</text>
+  <text x="260" y="310" font-family="Segoe UI, Arial, sans-serif" font-size="22" fill="#94A3B8"><ø<æ <æ<ê <ô<ò <ö<æ <ç<í <ð<ü · Offline · PDF · GOSI</text>
+  <rect x="260" y="340" width="420" height="4" rx="2" fill="#10B981" opacity="0.6"/>
+  <text x="260" y="385" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#64748B">Net salary · End of service · 6 GCC countries</text>
+</svg>
