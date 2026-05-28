@@ -336,9 +336,11 @@ class _WizardBottomBar extends ConsumerWidget {
               FilledButton.icon(
                 onPressed: canAdvance
                     ? () {
+                        notifier.flushAllInputs();
+                        final current = ref.read(eosbWizardProvider);
                         final error = isLastStep
-                            ? wizard.validationBeforeResults()
-                            : notifier.validateCurrentStep();
+                            ? current.validationBeforeResults()
+                            : current.validationMessageForStep(stepIndex);
                         if (error != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -349,11 +351,18 @@ class _WizardBottomBar extends ConsumerWidget {
                           return;
                         }
                         if (isLastStep) {
-                          if (!notifier.finishWizard() && context.mounted) {
+                          if (notifier.finishWizard()) {
+                            if (context.mounted) {
+                              HapticFeedback.mediumImpact();
+                            }
+                          } else if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'تعذّر عرض النتيجة — راجع البيانات المطلوبة',
+                                  ref
+                                          .read(eosbWizardProvider)
+                                          .validationBeforeResults() ??
+                                      'تعذّر عرض النتيجة — راجع البيانات المطلوبة',
                                   style: GoogleFonts.cairo(),
                                 ),
                                 backgroundColor: AppColors.error,
@@ -538,12 +547,17 @@ class _StepContractState extends ConsumerState<_StepContract> {
       text: w.housingAllowance > 0 ? _fmt(w.housingAllowance) : '',
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _pushToProvider();
+      if (mounted) {
+        ref.read(eosbWizardProvider.notifier).registerInputSync(_pushToProvider);
+        _pushToProvider();
+      }
     });
   }
 
   @override
   void dispose() {
+    _pushToProvider();
+    ref.read(eosbWizardProvider.notifier).unregisterInputSync(_pushToProvider);
     _yearsCtrl.dispose();
     _monthsCtrl.dispose();
     _basicCtrl.dispose();
@@ -553,9 +567,14 @@ class _StepContractState extends ConsumerState<_StepContract> {
 
   void _pushToProvider() {
     final notifier = ref.read(eosbWizardProvider.notifier);
+    final rawMonths = _parseNonNegativeInt(_monthsCtrl.text);
+    final months = rawMonths.clamp(0, 11);
+    if (rawMonths != months) {
+      _monthsCtrl.text = '$months';
+    }
     notifier.setServiceDuration(
       years: _parseNonNegativeInt(_yearsCtrl.text),
-      months: _parseNonNegativeInt(_monthsCtrl.text),
+      months: months,
     );
     notifier.setSalaries(
       basic: _parseNonNegativeDouble(_basicCtrl.text),
@@ -567,6 +586,27 @@ class _StepContractState extends ConsumerState<_StepContract> {
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
+
+    ref.listen(eosbWizardProvider, (prev, next) {
+      if (prev == null) return;
+      if (prev.years != next.years && _yearsCtrl.text != '${next.years}') {
+        _yearsCtrl.text = '${next.years}';
+      }
+      if (prev.months != next.months && _monthsCtrl.text != '${next.months}') {
+        _monthsCtrl.text = '${next.months}';
+      }
+      final basicFmt =
+          next.basicSalary > 0 ? _fmt(next.basicSalary) : '';
+      if (prev.basicSalary != next.basicSalary && _basicCtrl.text != basicFmt) {
+        _basicCtrl.text = basicFmt;
+      }
+      final housingFmt =
+          next.housingAllowance > 0 ? _fmt(next.housingAllowance) : '';
+      if (prev.housingAllowance != next.housingAllowance &&
+          _housingCtrl.text != housingFmt) {
+        _housingCtrl.text = housingFmt;
+      }
+    });
     final currencySuffix =
         wizard.country == GulfCountry.saudiArabia ? 'ريال' : 'درهم';
     final showFieldErrors = !wizard.canProceedStep1;
@@ -637,6 +677,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 errorText: showFieldErrors ? wizard.serviceYearsFieldError : null,
                 onChanged: (_) => _pushToProvider(),
+                onEditingComplete: _pushToProvider,
               ),
               const SizedBox(height: 12),
               _EosbTextField(
@@ -648,6 +689,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 errorText:
                     showFieldErrors ? wizard.serviceMonthsFieldError : null,
                 onChanged: (_) => _pushToProvider(),
+                onEditingComplete: _pushToProvider,
               ),
               const SizedBox(height: 12),
               _EosbTextField(
@@ -662,6 +704,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                 ],
                 errorText: showFieldErrors ? wizard.basicSalaryFieldError : null,
                 onChanged: (_) => _pushToProvider(),
+                onEditingComplete: _pushToProvider,
               ),
               const SizedBox(height: 12),
               _EosbTextField(
@@ -675,6 +718,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
                   FilteringTextInputFormatter.allow(RegExp(r'[\d., ]')),
                 ],
                 onChanged: (_) => _pushToProvider(),
+                onEditingComplete: _pushToProvider,
               ),
             ],
           ),
@@ -708,23 +752,41 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
     _leaveCtrl = TextEditingController(text: '$days');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        ref.read(eosbWizardProvider.notifier).setAccruedLeave(
-              int.tryParse(_leaveCtrl.text) ?? 0,
-            );
+        final notifier = ref.read(eosbWizardProvider.notifier);
+        notifier.registerInputSync(_pushLeaveToProvider);
+        _pushLeaveToProvider();
       }
     });
   }
 
   @override
   void dispose() {
+    _pushLeaveToProvider();
+    ref
+        .read(eosbWizardProvider.notifier)
+        .unregisterInputSync(_pushLeaveToProvider);
     _leaveCtrl.dispose();
     super.dispose();
+  }
+
+  void _pushLeaveToProvider() {
+    ref.read(eosbWizardProvider.notifier).setAccruedLeave(
+          int.tryParse(_leaveCtrl.text) ?? 0,
+        );
   }
 
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
+
+    ref.listen(eosbWizardProvider, (prev, next) {
+      if (prev != null &&
+          prev.accruedLeaveDays != next.accruedLeaveDays &&
+          _leaveCtrl.text != '${next.accruedLeaveDays}') {
+        _leaveCtrl.text = '${next.accruedLeaveDays}';
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -740,6 +802,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
             onChanged: (v) => notifier.setAccruedLeave(
               (int.tryParse(v) ?? 0).clamp(0, 90),
             ),
+            onEditingComplete: _pushLeaveToProvider,
           ),
         ),
         const SizedBox(height: 12),
@@ -856,6 +919,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final wizard = ref.watch(eosbWizardProvider);
     final result = ref.watch(eosbCalculatorProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
     final currency = NumberFormat.currency(
@@ -863,6 +927,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
       symbol: result.input.country.currencySymbol,
       decimalDigits: 0,
     );
+    final needsContractData = !wizard.canProceedStep1;
 
     return GlassSurface(
       highlighted: true,
@@ -893,7 +958,20 @@ class _EosbLivePreviewCard extends ConsumerWidget {
               ),
             ],
           ),
-          if (lines.isNotEmpty) ...[
+          if (needsContractData) ...[
+            const SizedBox(height: 6),
+            Text(
+              'أكمل مدة الخدمة والراتب في الخطوة 2 لتحديث المكافأة',
+              style: GoogleFonts.cairo(
+                fontSize: 11,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.55),
+              ),
+            ),
+          ],
+          if (lines.isNotEmpty && !needsContractData) ...[
             const SizedBox(height: 8),
             ...lines.map(
               (line) => Padding(
@@ -1371,6 +1449,7 @@ class _EosbTextField extends StatelessWidget {
     this.keyboardType,
     this.inputFormatters,
     this.onChanged,
+    this.onEditingComplete,
   });
 
   final TextEditingController controller;
@@ -1381,6 +1460,7 @@ class _EosbTextField extends StatelessWidget {
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
   final ValueChanged<String>? onChanged;
+  final VoidCallback? onEditingComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -1389,6 +1469,7 @@ class _EosbTextField extends StatelessWidget {
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       onChanged: onChanged,
+      onEditingComplete: onEditingComplete,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       validator: errorText != null ? (_) => errorText : null,
       style: GoogleFonts.cairo(fontWeight: FontWeight.w600, fontSize: 15),

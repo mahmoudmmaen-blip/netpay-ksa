@@ -183,10 +183,30 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   static double _defaultYearlyTicketEstimate(GulfCountry country) =>
       yearlyTicketEstimateFor(country);
 
+  final List<void Function()> _inputSyncCallbacks = [];
+
+  /// تسجيل دالة مزامنة حقول الخطوة (TextField → state) قبل الحساب أو الانتقال.
+  void registerInputSync(void Function() sync) {
+    if (!_inputSyncCallbacks.contains(sync)) {
+      _inputSyncCallbacks.add(sync);
+    }
+  }
+
+  void unregisterInputSync(void Function() sync) {
+    _inputSyncCallbacks.remove(sync);
+  }
+
+  void flushAllInputs() {
+    for (final sync in List<void Function()>.from(_inputSyncCallbacks)) {
+      sync();
+    }
+  }
+
   @override
   EosbWizardState build() {
-    final country = ref.watch(gulfCountryProvider);
-    final salary = ref.watch(salaryNotifierProvider);
+    // read فقط — تجنّب إعادة ضبط المعالج عند تغيّر الراتب أو الدولة عالمياً
+    final country = ref.read(gulfCountryProvider);
+    final salary = ref.read(salaryNotifierProvider);
     return EosbWizardState(
       country: country,
       basicSalary: salary.basicSalary,
@@ -271,6 +291,7 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   bool nextStep() {
     if (state.showResults) return false;
+    flushAllInputs();
     if (validateCurrentStep() != null) return false;
     if (state.stepIndex >= EosbWizardState.totalSteps - 1) {
       return finishWizard();
@@ -281,8 +302,9 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   /// إنهاء المعالج والانتقال لشاشة النتائج.
   bool finishWizard() {
+    flushAllInputs();
     if (state.validationBeforeResults() != null) return false;
-    state = state.copyWith(showResults: true);
+    state = state.copyWith(showResults: true, stepIndex: EosbWizardState.totalSteps - 1);
     return true;
   }
 
@@ -329,8 +351,8 @@ final eosbWizardProvider =
 
 /// نتيجة الحساب الكاملة — تتحدث فوراً مع أي تغيير في المعالج.
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
-  ref.watch(eosbWizardProvider);
-  return ref.read(eosbWizardProvider.notifier).calculateEndOfService();
+  final wizard = ref.watch(eosbWizardProvider);
+  return eosbEngine.calculateEndOfService(wizard.toModel());
 });
 
 /// بنود المعاينة المباشرة (عربي + مبلغ).
