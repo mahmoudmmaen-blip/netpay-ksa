@@ -11,6 +11,7 @@ import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
+import 'package:netgulf/features/eosb/domain/eosb_constants.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
@@ -837,7 +838,15 @@ class _StepContractState extends ConsumerState<_StepContract> {
           onSelected: notifier.setCountry,
         ),
         const SizedBox(height: 10),
-        _CountryLawChip(country: wizard.country),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 280),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: _CountryLawChip(
+            key: ValueKey(wizard.country),
+            country: wizard.country,
+          ),
+        ),
         const SizedBox(height: 16),
         Text('نوع العقد', style: GoogleFonts.cairo(fontWeight: FontWeight.w700)),
         const SizedBox(height: 8),
@@ -1660,7 +1669,7 @@ class _PreviewProportionBar extends StatelessWidget {
   }
 }
 
-/// شبكة اختيار الدولة — ٦ دول خليجية (3×2) مع أعلام وأسماء عربية.
+/// شبكة اختيار الدولة — ٦ دول خليجية، متجاوبة مع عرض الشاشة.
 class _EosbCountryGrid extends StatelessWidget {
   const _EosbCountryGrid({
     required this.selected,
@@ -1670,17 +1679,49 @@ class _EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
+  static int _crossAxisCount(double width) {
+    if (width < 340) return 2;
+    if (width > 520) return 3;
+    return 3;
+  }
+
+  static double _childAspectRatio(double width, int columns) {
+    if (width < 340) return 1.05;
+    if (columns == 2) return 1.0;
+    if (width > 520) return 0.9;
+    return 0.88;
+  }
+
+  static double _flagSize(double width) {
+    if (width < 340) return 26;
+    if (width > 520) return 30;
+    return 28;
+  }
+
+  static double _nameFontSize(double width) {
+    if (width < 340) return 12;
+    return 11.5;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 0.88,
-      children: GulfCountry.values.map((country) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = _crossAxisCount(width);
+        final aspectRatio = _childAspectRatio(width, columns);
+        final flagSize = _flagSize(width);
+        final nameSize = _nameFontSize(width);
+
+        return GridView.count(
+          crossAxisCount: columns,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: aspectRatio,
+          children: GulfCountry.values.map((country) {
         final isSelected = country == selected;
         return Material(
           color: Colors.transparent,
@@ -1734,26 +1775,28 @@ class _EosbCountryGrid extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(country.flag, style: const TextStyle(fontSize: 28)),
+                  Text(country.flag, style: TextStyle(fontSize: flagSize)),
                   const SizedBox(height: 6),
-                  Text(
-                    country.nameAr,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.cairo(
-                      fontSize: 11.5,
-                      height: 1.2,
-                      fontWeight:
-                          isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected
-                          ? AppColors.emerald
-                          : Theme.of(context).colorScheme.onSurface,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      country.nameAr,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: GoogleFonts.cairo(
+                        fontSize: nameSize,
+                        height: 1.2,
+                        fontWeight:
+                            isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected
+                            ? AppColors.emerald
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
                     ),
                   ),
                   if (isSelected) ...[
                     const SizedBox(height: 4),
-                    Icon(
+                    const Icon(
                       Icons.check_circle_rounded,
                       color: AppColors.emerald,
                       size: 16,
@@ -1764,14 +1807,16 @@ class _EosbCountryGrid extends StatelessWidget {
             ),
           ),
         );
-      }).toList(),
+          }).toList(),
+        );
+      },
     );
   }
 }
 
 /// شارة نظام العمل حسب الدولة.
 class _CountryLawChip extends StatelessWidget {
-  const _CountryLawChip({required this.country});
+  const _CountryLawChip({super.key, required this.country});
 
   final GulfCountry country;
 
@@ -1871,7 +1916,13 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
               const SizedBox(height: 10),
               const _ResultsApproximationNote(),
               const SizedBox(height: 8),
-              _ResultsCountryLawChip(country: model.country),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: _ResultsCountryLawChip(
+                  key: ValueKey(model.country),
+                  country: model.country,
+                ),
+              ),
               const SizedBox(height: 12),
               _SaveCalculationButton(result: result),
               const SizedBox(height: 10),
@@ -2917,23 +2968,41 @@ class _EosbTextField extends StatelessWidget {
   }
 }
 
-/// ملاحظة تقريبية تحت إجمالي النتائج.
+/// تنبيه تقريبية تحت إجمالي النتائج.
 class _ResultsApproximationNote extends StatelessWidget {
   const _ResultsApproximationNote();
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'هذه الحسابة تقريبية - يُفضل استشارة متخصص قانوني',
-      textAlign: TextAlign.center,
-      style: GoogleFonts.cairo(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        height: 1.4,
-        color: Theme.of(context)
-            .colorScheme
-            .onSurface
-            .withValues(alpha: 0.6),
+    return GlassSurface(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.gavel_rounded,
+            size: 20,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurface
+                .withValues(alpha: 0.5),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              EosbConstants.approximationDisclaimerAr,
+              style: GoogleFonts.cairo(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.65),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2941,7 +3010,7 @@ class _ResultsApproximationNote extends StatelessWidget {
 
 /// شارة القانون المطبّق على النتائج.
 class _ResultsCountryLawChip extends StatelessWidget {
-  const _ResultsCountryLawChip({required this.country});
+  const _ResultsCountryLawChip({super.key, required this.country});
 
   final GulfCountry country;
 

@@ -1,6 +1,7 @@
 /// End of Service Benefit (مكافأة نهاية الخدمة) feature — KSA & UAE.
 library;
 
+export 'domain/eosb_constants.dart';
 export 'domain/logic/eosb_calculator.dart';
 export 'domain/logic/eosb_country_rules.dart';
 export 'domain/models/eosb_model.dart';

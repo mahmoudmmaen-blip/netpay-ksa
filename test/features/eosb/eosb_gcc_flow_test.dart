@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/features/eosb/domain/eosb_constants.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
@@ -100,6 +101,32 @@ void main() {
       );
     });
 
+    test('Oman → Qatar updates live preview and legal references', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(eosbWizardProvider.notifier);
+      notifier.setTerminationType(EosbTerminationType.employerDismissalUnfair);
+      notifier.setSalaries(basic: 10_000);
+      notifier.setServiceDuration(years: 5);
+
+      notifier.setCountry(GulfCountry.oman);
+      final omanLive = container.read(eosbCalculatorProvider);
+      expect(omanLive.legalReferences.first.article, contains('49'));
+
+      notifier.setCountry(GulfCountry.qatar);
+      final qatarLive = container.read(eosbCalculatorProvider);
+      expect(qatarLive.input.country, GulfCountry.qatar);
+      expect(qatarLive.legalReferences.first.article, contains('51'));
+      expect(
+        omanLive.legalReferences.first.article,
+        isNot(contains('51')),
+      );
+      expect(
+        container.read(eosbCountryLawSummaryProvider),
+        contains('قطر'),
+      );
+    });
+
     test('live preview updates when country changes SA → Qatar', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -120,5 +147,16 @@ void main() {
       expect(container.read(eosbActiveCountryRulesProvider),
           isA<QatarEosbRules>());
     });
+  });
+
+  test('approximation disclaimer constant is defined', () {
+    expect(
+      EosbConstants.approximationDisclaimerAr,
+      contains('استشارة قانونية رسمية'),
+    );
+    expect(
+      EosbConstants.approximationDisclaimerAr,
+      contains('محامٍ'),
+    );
   });
 }
