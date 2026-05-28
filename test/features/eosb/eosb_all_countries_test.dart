@@ -7,9 +7,9 @@ import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
 void main() {
   test('EosbCountryGrid lists all 6 GCC countries', () {
-    expect(EosbCountryGrid.allGccCountries, hasLength(6));
+    expect(GulfCountry.values, hasLength(6));
     expect(
-      EosbCountryGrid.allGccCountries.map((c) => c.nameAr).toList(),
+      GulfCountry.values.map((c) => c.nameAr).toList(),
       [
         'السعودية',
         'الإمارات',
@@ -35,7 +35,7 @@ void main() {
 
     final refsByCountry = <GulfCountry, String>{};
 
-    for (final country in EosbCountryGrid.allGccCountries) {
+    for (final country in GulfCountry.values) {
       notifier.setCountry(country);
 
       final live = container.read(eosbCalculatorProvider);

@@ -8,7 +8,7 @@ enum GulfCountry {
   kuwait,
   ;
 
-  /// اسم مختصر للسعودية — يُستخدم في [EosbCountryGrid.allGccCountries].
+  /// اسم مختصر للسعودية.
   static const GulfCountry saudi = GulfCountry.saudiArabia;
 }
 

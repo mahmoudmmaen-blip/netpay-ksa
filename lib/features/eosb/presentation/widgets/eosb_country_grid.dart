@@ -4,9 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 
-/// شبكة اختيار الدولة في معالج EOSB — تعرض الدول الست دائماً (بدون فلترة).
-///
-/// لا تستخدم [GulfCountry.values] ولا أي `.where()` — القائمة [allGccCountries] ثابتة.
+/// شبكة اختيار الدولة في معالج EOSB — كل قيم [GulfCountry] (٦ دول خليجية).
 class EosbCountryGrid extends StatelessWidget {
   const EosbCountryGrid({
     super.key,
@@ -17,39 +15,25 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  /// كل دول مجلس التعاون الخليجي الست — قائمة ثابتة (لا فلترة، لا `.where()`).
-  static const List<GulfCountry> allGccCountries = [
-    GulfCountry.saudi,
-    GulfCountry.uae,
-    GulfCountry.oman,
-    GulfCountry.qatar,
-    GulfCountry.bahrain,
-    GulfCountry.kuwait,
-  ];
-
-  /// اسم قديم — يشير إلى [allGccCountries].
-  static const List<GulfCountry> gccCountries = allGccCountries;
-  static const List<GulfCountry> allCountries = allGccCountries;
-  static const List<GulfCountry> countries = allGccCountries;
-
   static const int _crossAxisCount = 2;
   static const double _spacing = 10;
   static const double _tileHeight = 152;
 
-  /// ٦ دول ÷ ٢ أعمدة = ٣ صفوف.
-  static const double _gridHeight = 3 * _tileHeight + 2 * _spacing;
-
   @override
   Widget build(BuildContext context) {
     assert(
-      allGccCountries.length == 6,
-      'EOSB country grid must show exactly 6 GCC countries',
+      GulfCountry.values.length == 6,
+      'EOSB country grid expects exactly 6 GCC enum values',
     );
 
+    final countries = GulfCountry.values;
+    final rowCount = (countries.length / _crossAxisCount).ceil();
+    final gridHeight =
+        rowCount * _tileHeight + (rowCount - 1) * _spacing;
     final flagSize = MediaQuery.sizeOf(context).width < 360 ? 42.0 : 46.0;
 
     return SizedBox(
-      height: _gridHeight,
+      height: gridHeight,
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -59,9 +43,9 @@ class EosbCountryGrid extends StatelessWidget {
           crossAxisSpacing: _spacing,
           mainAxisExtent: _tileHeight,
         ),
-        itemCount: allGccCountries.length,
+        itemCount: GulfCountry.values.length,
         itemBuilder: (context, index) {
-          final country = allGccCountries[index];
+          final country = GulfCountry.values[index];
           return _EosbCountryTile(
             key: ValueKey('eosb_country_${country.name}'),
             country: country,
