@@ -924,12 +924,23 @@ class _InputsSummaryCard extends ConsumerWidget {
     final result = ref.watch(eosbCalculatorProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
+    final factor = result.resignationFactorApplied;
     final rows = <(String, String)>[
+      ('الدولة', '${m.country.flag} ${m.country.nameAr}'),
       ('نوع الإنهاء', m.terminationSummary),
-      ('مدة الخدمة', '${m.yearsOfService} سنة · ${m.monthsOfService} شهر'),
+      ('نوع العقد', EosbModel.contractTypeLabel(m.contractType)),
+      (
+        'مدة الخدمة',
+        '${m.totalServiceYears.toStringAsFixed(1)} سنة '
+        '(${m.yearsOfService}س ${m.monthsOfService}ش)',
+      ),
       ('الراتب الأساسي', '${m.basicSalary.round()} $currency'),
       if (m.housingAllowance > 0)
         ('بدل السكن', '${m.housingAllowance.round()} $currency'),
+      if (m.otherAllowances > 0)
+        ('بدلات أخرى', '${m.otherAllowances.round()} $currency'),
+      if (factor != null)
+        ('نسبة الاستقالة (م. 85)', '${(factor * 100).round()}%'),
       if (m.accruedLeaveDays > 0)
         ('إجازات متبقية', '${m.accruedLeaveDays} يوم'),
       if (m.includeFlightTicket)

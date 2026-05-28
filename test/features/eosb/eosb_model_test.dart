@@ -3,18 +3,18 @@ import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 
 void main() {
-  test('Saudi unfair dismissal — basic salary only (half × first 5)', () {
+  test('Saudi unfair dismissal — full Article 84 (basic + housing)', () {
     const model = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
       housingAllowance: 2500,
       terminationType: EosbTerminationType.employerDismissalUnfair,
     );
-    // (10000 ÷ 2) × 3 = 15000 — السكن لا يُضاف في الفصل التعسفي
-    expect(model.endOfServiceAmount, closeTo(15000, 0.01));
+    // (12500 ÷ 2) × 3 = 18750 — مكافأة كاملة دون خصم الاستقالة
+    expect(model.endOfServiceAmount, closeTo(18750, 0.01));
   });
 
-  test('contract expiry uses Article 84 wage base (basic + housing)', () {
+  test('contract expiry uses same Article 84 wage base', () {
     const unfair = EosbModel(
       yearsOfService: 3,
       basicSalary: 10000,
@@ -27,7 +27,7 @@ void main() {
       housingAllowance: 2500,
       terminationType: EosbTerminationType.contractExpiry,
     );
-    expect(unfair.endOfServiceAmount, closeTo(15000, 0.01));
+    expect(unfair.endOfServiceAmount, closeTo(18750, 0.01));
     expect(contractEnd.endOfServiceAmount, closeTo(18750, 0.01));
   });
 
@@ -70,12 +70,13 @@ void main() {
     expect(model.endOfServiceAmount, closeTo(3 * 21 * daily, 0.01));
   });
 
-  test('cash leave allowance', () {
+  test('cash leave allowance uses monthly wage', () {
     const model = EosbModel(
       basicSalary: 15000,
+      housingAllowance: 3000,
       accruedLeaveDays: 10,
     );
-    expect(model.cashLeaveAllowance, closeTo(15000 / 30 * 10, 0.01));
+    expect(model.cashLeaveAllowance, closeTo(18000 / 30 * 10, 0.01));
   });
 
   test('totalEntitlements sums components', () {

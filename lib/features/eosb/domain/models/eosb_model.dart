@@ -1,4 +1,5 @@
 import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 
 /// سبب إنهاء علاقة العمل — السعودية والإمارات.
 enum EosbTerminationType {
@@ -76,6 +77,8 @@ class EosbModel {
     this.noticeProvided = true,
   });
 
+  static const _calc = EosbCalculator();
+
   final GulfCountry country;
   final int yearsOfService;
   final int monthsOfService;
@@ -96,7 +99,7 @@ class EosbModel {
       (monthsOfService.clamp(0, 11) / 12.0) +
       (daysOfService.clamp(0, 364) / 365.0);
 
-  /// وعاء المكافأة — السعودية: أساسي + سكن | الإمارات: الأساسي غالباً.
+  /// وعاء المكافأة — السعودية: أساسي + سكن | الإمارات: الأساسي.
   double get eosWageBase => country == GulfCountry.uae
       ? basicSalary
       : basicSalary + housingAllowance;
@@ -105,6 +108,9 @@ class EosbModel {
       basicSalary + housingAllowance + otherAllowances;
 
   double get dailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
+
+  /// أجر اليوم لبدل الإجازات المتبقية — الراتب الشهري ÷ 30.
+  double get leaveDailyWage => monthlyWage > 0 ? monthlyWage / 30 : 0;
 
   int get annualVacationDays => totalServiceYears >= 5 ? 30 : 21;
 
@@ -118,107 +124,26 @@ class EosbModel {
   double get fullEndOfServiceBase {
     if (totalServiceYears <= 0) return 0;
     if (country == GulfCountry.uae) {
-      return basicSalary > 0 ? _uaeFullGratuity : 0;
+      return basicSalary > 0 ? EosbCalculator.uaeFullGratuity(this) : 0;
     }
-    return switch (terminationType) {
-      EosbTerminationType.employerDismissalUnfair =>
-        basicSalary > 0 ? _saudiUnfairDismissalAward : 0,
-      _ => eosWageBase > 0 ? _saudiArticle84Base : 0,
-    };
+    return eosWageBase > 0 ? EosbCalculator.saudiArticle84Base(this) : 0;
   }
 
-  /// السعودية — فصل تعسفي: (راتب أساسي ÷ 2) × سنوات أول 5، راتب أساسي كامل لكل سنة بعدها.
-  double get _saudiUnfairDismissalAward {
-    if (basicSalary <= 0) return 0;
-    final y = totalServiceYears;
-    final first5 = y.clamp(0.0, 5.0);
-    final after5 = (y - 5).clamp(0.0, 100.0);
-    return (basicSalary * 0.5 * first5) + (basicSalary * after5);
-  }
+  double get resignationAwardFactor => country == GulfCountry.uae
+      ? EosbCalculator.uaeResignationFactor(totalServiceYears)
+      : EosbCalculator.saudiResignationFactor(totalServiceYears);
 
-  /// السعودية — م. 84: نصف شهر (أساسي + سكن) لأول 5 سنوات، شهر كامل بعدها.
-  double get _saudiArticle84Base {
-    if (eosWageBase <= 0) return 0;
-    final y = totalServiceYears;
-    final first5 = y.clamp(0.0, 5.0);
-    final after5 = (y - 5).clamp(0.0, 100.0);
-    return (eosWageBase * 0.5 * first5) + (eosWageBase * after5);
-  }
+  double get endOfServiceAmount =>
+      EosbCalculator.computeEndOfServiceAward(this);
 
-  /// الإمارات — م. 51 / 132: 21 يوم/سنة (أول 5) و30 يوم/سنة بعدها على الأجر الأساسي.
-  double get _uaeFullGratuity {
-    if (totalServiceYears < 1) return 0;
-    final daily = basicSalary / 30;
-    final first5Years = totalServiceYears.clamp(0, 5);
-    final after5 = (totalServiceYears - 5).clamp(0, 100);
-    final amount = (first5Years * 21 * daily) + (after5 * 30 * daily);
-    final cap = basicSalary * 24;
-    return amount > cap ? cap : amount;
-  }
+  double get vacationAllowance =>
+      EosbCalculator.computeVacationAllowance(this);
 
-  double get resignationAwardFactor {
-    final y = totalServiceYears;
-    if (country == GulfCountry.uae) {
-      if (y < 1) return 0;
-      if (y < 3) return 0;
-      if (y < 5) return 1 / 3;
-      return 1;
-    }
-    if (y < 2) return 0;
-    if (y < 5) return 1 / 3;
-    if (y < 10) return 2 / 3;
-    return 1;
-  }
+  double get flightTicketAllowance =>
+      EosbCalculator.computeFlightTicketAllowance(this);
 
-  double get endOfServiceAmount {
-    if (totalServiceYears <= 0) return 0;
-    if (isValidEmployerDismissal) return 0;
-
-    if (country == GulfCountry.uae) {
-      if (basicSalary <= 0) return 0;
-      final base = _uaeFullGratuity;
-      if (isResignation) return base * resignationAwardFactor;
-      return switch (terminationType) {
-        EosbTerminationType.employerDismissalValidReason => 0,
-        EosbTerminationType.employeeResignation =>
-          base * resignationAwardFactor,
-        _ => base,
-      };
-    }
-
-    // --- السعودية ---
-    return switch (terminationType) {
-      // فصل تعسفي: وعاء الراتب الأساسي فقط
-      EosbTerminationType.employerDismissalUnfair => _saudiUnfairDismissalAward,
-      EosbTerminationType.employerDismissalValidReason => 0,
-      // استقالة: م. 84 ثم نسبة م. 85
-      EosbTerminationType.employeeResignation =>
-        _saudiArticle84Base * resignationAwardFactor,
-      // انتهاء عقد / تراضي / تقاعد: م. 84 كاملة (أساسي + سكن)
-      EosbTerminationType.contractExpiry ||
-      EosbTerminationType.mutualAgreement ||
-      EosbTerminationType.retirementOrDeath =>
-        _saudiArticle84Base,
-    };
-  }
-
-  /// بدل إجازة سنوية تقديري (21 أو 30 يوم حسب مدة الخدمة).
-  double get vacationAllowance => dailyWage * annualVacationDays;
-
-  double get flightTicketAllowance {
-    if (!includeFlightTicket || ticketCost <= 0 || totalServiceYears <= 0) {
-      return 0;
-    }
-    final multiplier =
-        ticketFrequency == FlightTicketFrequency.biannual ? 2.0 : 1.0;
-    return ticketCost * multiplier * totalServiceYears;
-  }
-
-  /// بدل الإجازات المتبقية — (راتب أساسي ÷ 30) × أيام متبقية.
-  double get cashLeaveAllowance {
-    if (basicSalary <= 0 || accruedLeaveDays <= 0) return 0;
-    return (basicSalary / 30) * accruedLeaveDays;
-  }
+  double get cashLeaveAllowance =>
+      EosbCalculator.computeCashLeaveAllowance(this);
 
   double get totalEntitlements =>
       endOfServiceAmount +
@@ -238,13 +163,14 @@ class EosbModel {
           label: 'بدل الإجازات المتبقية ($accruedLeaveDays يوم)',
           amount: cashLeaveAllowance,
         ),
-      EosbBreakdownRow(
-        label: 'بدل إجازة سنوية تقديري ($annualVacationDays يوم)',
-        amount: vacationAllowance,
-      ),
-      if (includeFlightTicket)
+      if (vacationAllowance > 0)
         EosbBreakdownRow(
-          label: 'تذكرة طيران سنوية (تقدير)',
+          label: 'بدل إجازة سنوية تقديري ($annualVacationDays يوم)',
+          amount: vacationAllowance,
+        ),
+      if (includeFlightTicket && flightTicketAllowance > 0)
+        EosbBreakdownRow(
+          label: 'تذكرة طيران (تقدير)',
           amount: flightTicketAllowance,
         ),
       EosbBreakdownRow(
@@ -256,71 +182,8 @@ class EosbModel {
     return rows;
   }
 
-  List<EosbLegalReference> get legalReferences {
-    if (country == GulfCountry.uae) {
-      return _uaeLegalRefs;
-    }
-    return _saudiLegalRefs;
-  }
-
-  List<EosbLegalReference> get _saudiLegalRefs {
-    final refs = <EosbLegalReference>[
-      if (terminationType == EosbTerminationType.employerDismissalUnfair)
-        const EosbLegalReference(
-          article: 'المادة 84 — فصل تعسفي',
-          summary:
-              'مكافأة على الراتب الأساسي: نصف الراتب عن كل سنة من أول 5 سنوات، وراتب أساسي كامل عن كل سنة بعدها.',
-        )
-      else
-        const EosbLegalReference(
-          article: 'المادة 84',
-          summary:
-              'نصف شهر أجر (أساسي + بدل سكن) عن كل سنة من أول 5 سنوات، وشهر أجر كامل عن كل سنة بعدها.',
-        ),
-      const EosbLegalReference(
-        article: 'المادة 85',
-        summary:
-            'الاستقالة: أقل من سنتين (0)، من 2 إلى 5 (ثلث المكافأة)، من 5 إلى 10 (ثلثان)، 10+ (كامل).',
-      ),
-    ];
-    if (isValidEmployerDismissal) {
-      refs.add(
-        const EosbLegalReference(
-          article: 'المادة 80',
-          summary: 'الفصل لسبب مشروع قد يستبعد المكافأة — راجع سبب الإنهاء مع الموارد البشرية أو محامٍ.',
-        ),
-      );
-    }
-    if (!noticeProvided) {
-      refs.add(
-        const EosbLegalReference(
-          article: 'المادة 75',
-          summary: 'إشعار الإنهاء: عدم الالتزام قد يؤثر على التعويضات — تحقق من مدة الإشعار حسب نوع العقد.',
-        ),
-      );
-    }
-    return refs;
-  }
-
-  List<EosbLegalReference> get _uaeLegalRefs {
-    return [
-      const EosbLegalReference(
-        article: 'المادة 132 / 51 — قانون العمل الاتحادي',
-        summary:
-            'مكافأة نهاية الخدمة: 21 يوم أجر أساسي لكل سنة (أول 5 سنوات) و30 يوماً لكل سنة بعدها — بحد أقصى أجر سنتين.',
-      ),
-      const EosbLegalReference(
-        article: 'المرسوم الاتحادي رقم 33 لسنة 2021',
-        summary:
-            'يستحق العامل المكافأة بعد سنة خدمة؛ الاستقالة قبل 3 سنوات قد تُسقطها أو تخفّضها حسب المدة.',
-      ),
-      if (isResignation)
-        const EosbLegalReference(
-          article: 'استقالة الموظف',
-          summary: '3–5 سنوات: ثلث المكافأة | 5+ سنوات: كامل (حسب مدة الخدمة الفعلية).',
-        ),
-    ];
-  }
+  List<EosbLegalReference> get legalReferences =>
+      EosbCalculator.buildLegalReferences(this);
 
   String get terminationSummary => switch (terminationType) {
         EosbTerminationType.employerDismissalUnfair =>
@@ -379,4 +242,7 @@ class EosbModel {
         FlightTicketFrequency.yearly => 'سنوي',
         FlightTicketFrequency.biannual => 'نصف سنوي (مرتين)',
       };
+
+  /// نتيجة الحساب الكاملة من المحرك الموحّد.
+  EosbCalculationResult calculate() => _calc.calculateEndOfService(this);
 }

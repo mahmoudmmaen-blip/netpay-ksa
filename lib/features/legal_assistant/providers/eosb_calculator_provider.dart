@@ -173,12 +173,8 @@ class EosbWizardState {
 
 class EosbWizardNotifier extends Notifier<EosbWizardState> {
   /// تقدير تكلفة تذكرة سنوية واحدة حسب الدولة (ريال / درهم).
-  static double yearlyTicketEstimateFor(GulfCountry country) {
-    return switch (country) {
-      GulfCountry.saudiArabia => 1500,
-      GulfCountry.uae => 1200,
-    };
-  }
+  static double yearlyTicketEstimateFor(GulfCountry country) =>
+      EosbCalculator.defaultYearlyTicketEstimate(country);
 
   static double _defaultYearlyTicketEstimate(GulfCountry country) =>
       yearlyTicketEstimateFor(country);
