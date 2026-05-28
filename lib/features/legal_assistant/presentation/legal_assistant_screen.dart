@@ -73,7 +73,9 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
               style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 17),
             ),
             Text(
-              'حاسبة نهاية الخدمة الشاملة',
+              wizard.showResults
+                  ? 'نتيجة الحساب والتفاصيل'
+                  : 'حاسبة نهاية الخدمة الشاملة',
               style: GoogleFonts.cairo(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -335,7 +337,7 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbCalculatorProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
     final canAdvance = wizard.canAdvanceFromCurrentStep;
@@ -400,7 +402,7 @@ class _WizardBottomBar extends ConsumerWidget {
                         }
                         if (isLastStep) {
                           if (notifier.finishWizard()) {
-                            // showResults → AnimatedSwitcher في الشاشة الرئيسية
+                            HapticFeedback.mediumImpact();
                           } else if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -501,6 +503,7 @@ class _StepTermination extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final groupValue = wizard.resolvedTermination;
 
@@ -633,6 +636,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -827,6 +831,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
+    ref.watch(eosbResultsProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -848,9 +853,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
             hint: '0 إن لم يوجد رصيد',
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            onChanged: (v) => notifier.setAccruedLeave(
-              (int.tryParse(v) ?? 0).clamp(0, 90),
-            ),
+            onChanged: (_) => _pushLeaveToProvider(),
             onEditingComplete: _pushLeaveToProvider,
           ),
         ),
@@ -985,8 +988,9 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = ref.watch(eosbCalculatorProvider);
+    final result = ref.watch(eosbResultsProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
+    ref.watch(eosbEndOfServiceAwardProvider);
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
       symbol: result.input.country.currencySymbol,
@@ -1119,14 +1123,37 @@ class _CountryLawChip extends StatelessWidget {
   }
 }
 
-class _ResultsView extends ConsumerWidget {
+class _ResultsView extends ConsumerStatefulWidget {
   const _ResultsView({super.key, required this.isDark});
 
   final bool isDark;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(eosbCalculatorProvider);
+  ConsumerState<_ResultsView> createState() => _ResultsViewState();
+}
+
+class _ResultsViewState extends ConsumerState<_ResultsView> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = ref.watch(eosbResultsProvider);
     final model = result.input;
     final currency = NumberFormat.currency(
       locale: model.country.currencyLocale,
@@ -1138,9 +1165,14 @@ class _ResultsView extends ConsumerWidget {
       children: [
         Expanded(
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
             children: [
-              _TotalHeroCard(result: result, currency: currency, isDark: isDark),
+              _TotalHeroCard(
+                result: result,
+                currency: currency,
+                isDark: widget.isDark,
+              ),
               const SizedBox(height: 14),
               const _InputsSummaryCard(),
               const SizedBox(height: 20),
@@ -1192,19 +1224,19 @@ class _ResultsView extends ConsumerWidget {
             ],
           ),
         ),
-        _ResultsBottomBar(),
+        const _ResultsBottomBar(),
       ],
     );
   }
 }
 
-/// ملخص المدخلات — يتحدث فوراً مع [eosbCalculatorProvider].
+/// ملخص المدخلات — يتحدث فوراً مع [eosbResultsProvider].
 class _InputsSummaryCard extends ConsumerWidget {
   const _InputsSummaryCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(eosbCalculatorProvider);
+    final result = ref.watch(eosbResultsProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
@@ -1212,6 +1244,10 @@ class _InputsSummaryCard extends ConsumerWidget {
     final rows = <(String, String)>[
       ('الدولة', '${m.country.flag} ${m.country.nameAr}'),
       ('نوع الإنهاء', m.terminationSummary),
+      (
+        'مكافأة نهاية الخدمة',
+        '${result.endOfServiceAmount.round()} $currency',
+      ),
       ('نوع العقد', EosbModel.contractTypeLabel(m.contractType)),
       (
         'مدة الخدمة',
@@ -1454,9 +1490,18 @@ class _ComponentCard extends StatelessWidget {
       };
 }
 
-class _ResultsBottomBar extends ConsumerWidget {
+class _ResultsBottomBar extends ConsumerStatefulWidget {
+  const _ResultsBottomBar();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ResultsBottomBar> createState() => _ResultsBottomBarState();
+}
+
+class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
+  bool _exporting = false;
+
+  @override
+  Widget build(BuildContext context) {
     return GlassSurface(
       borderRadius: 0,
       blur: 8,
@@ -1470,10 +1515,19 @@ class _ResultsBottomBar extends ConsumerWidget {
               width: double.infinity,
               height: 52,
               child: FilledButton.icon(
-                onPressed: () => _exportPdf(context, ref),
-                icon: const Icon(Icons.picture_as_pdf_rounded, size: 22),
+                onPressed: _exporting ? null : () => _exportPdf(context),
+                icon: _exporting
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.picture_as_pdf_rounded, size: 22),
                 label: Text(
-                  'تصدير PDF',
+                  _exporting ? 'جاري التصدير...' : 'تصدير PDF',
                   style: GoogleFonts.cairo(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
@@ -1482,6 +1536,8 @@ class _ResultsBottomBar extends ConsumerWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.emerald,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor:
+                      AppColors.emerald.withValues(alpha: 0.7),
                   elevation: 2,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1495,7 +1551,21 @@ class _ResultsBottomBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _exportPdf(BuildContext context, WidgetRef ref) async {
+  Future<void> _exportPdf(BuildContext context) async {
+    final result = ref.read(eosbResultsProvider);
+    if (result.endOfServiceAmount <= 0 && result.totalEntitlements <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'لا توجد بيانات كافية للتصدير — راجع مدخلات الحساب',
+            style: GoogleFonts.cairo(),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     final isPremium = await PremiumAccess.requirePremium(
       context,
       ref,
@@ -1505,19 +1575,24 @@ class _ResultsBottomBar extends ConsumerWidget {
       await PremiumAccess.showInterstitialAfterPdfAttempt(ref);
       return;
     }
+    if (!mounted) return;
+
+    setState(() => _exporting = true);
     try {
-      final result = ref.read(eosbCalculatorProvider);
       await EosbPdfService.exportAndShare(result);
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'تعذّر تصدير PDF. حاول مرة أخرى.',
+            'تعذّر تصدير PDF. تحقق من الاتصال وحاول مرة أخرى.',
             style: GoogleFonts.cairo(),
           ),
+          backgroundColor: AppColors.error,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
     }
   }
 }

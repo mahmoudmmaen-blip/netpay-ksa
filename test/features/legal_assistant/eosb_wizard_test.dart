@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/legal_assistant/providers/eosb_calculator_provider.dart';
 
@@ -22,10 +23,31 @@ void main() {
     expect(notifier.nextStep(), isTrue); // → step 2
     expect(notifier.finishWizard(), isTrue);
     expect(container.read(eosbWizardProvider).showResults, isTrue);
-    final result = container.read(eosbCalculatorProvider);
+    final result = container.read(eosbResultsProvider);
     expect(result.endOfServiceAmount, greaterThan(0));
     expect(result.totalEntitlements, greaterThan(0));
     expect(result.legalReferences, isNotEmpty);
+    expect(container.read(eosbFinalizedResultProvider), isNotNull);
+  });
+
+  test('finalized result stays stable after finish', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+    notifier.setTerminationType(EosbTerminationType.contractExpiry);
+    notifier.setSalaries(basic: 10000, housing: 0);
+    notifier.setServiceDuration(years: 3);
+    notifier.finishWizard();
+    final frozen = container.read(eosbResultsProvider).endOfServiceAmount;
+    notifier.setSalaries(basic: 10000, housing: 5000);
+    expect(
+      container.read(eosbResultsProvider).endOfServiceAmount,
+      frozen,
+    );
+    expect(
+      container.read(eosbCalculatorProvider).endOfServiceAmount,
+      greaterThan(frozen),
+    );
   });
 
   test('live preview updates when housing changes', () {
@@ -35,9 +57,15 @@ void main() {
     notifier.setTerminationType(EosbTerminationType.contractExpiry);
     notifier.setSalaries(basic: 10000, housing: 0);
     notifier.setServiceDuration(years: 3);
-    final before = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    final before = container.read(eosbEndOfServiceAwardProvider);
     notifier.setSalaries(basic: 10000, housing: 2500);
-    final after = container.read(eosbCalculatorProvider).endOfServiceAmount;
+    final after = container.read(eosbEndOfServiceAwardProvider);
     expect(after, greaterThan(before));
+    expect(
+      after,
+      EosbCalculator.calculateEndOfServiceAward(
+        container.read(eosbWizardProvider).toModel(),
+      ),
+    );
   });
 }

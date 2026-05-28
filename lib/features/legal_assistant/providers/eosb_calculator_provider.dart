@@ -309,16 +309,26 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     return true;
   }
 
-  /// إنهاء المعالج والانتقال لشاشة النتائج.
+  /// إنهاء المعالج — حفظ نتيجة الحساب والانتقال لشاشة النتائج.
   bool finishWizard() {
     flushAllInputs();
-    if (state.validationBeforeResults() != null) return false;
-    state = state.copyWith(showResults: true, stepIndex: EosbWizardState.totalSteps - 1);
+    final validationError = state.validationBeforeResults();
+    if (validationError != null) return false;
+
+    final model = state.toModel();
+    final result = eosbEngine.calculateEndOfService(model);
+    ref.read(eosbFinalizedResultProvider.notifier).state = result;
+
+    state = state.copyWith(
+      showResults: true,
+      stepIndex: EosbWizardState.totalSteps - 1,
+    );
     return true;
   }
 
   void previousStep() {
     if (state.showResults) {
+      ref.read(eosbFinalizedResultProvider.notifier).state = null;
       state = state.copyWith(showResults: false);
       return;
     }
@@ -329,10 +339,12 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
   void goToStep(int index) {
     if (index < 0 || index >= EosbWizardState.totalSteps) return;
+    ref.read(eosbFinalizedResultProvider.notifier).state = null;
     state = state.copyWith(stepIndex: index, showResults: false);
   }
 
   void reset() {
+    ref.read(eosbFinalizedResultProvider.notifier).state = null;
     final salary = ref.read(salaryNotifierProvider);
     state = EosbWizardState(
       country: ref.read(gulfCountryProvider),
@@ -342,10 +354,13 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
-  /// حساب نهاية الخدمة من الحالة الحالية للمعالج (معاينة مباشرة + نتائج).
-  EosbCalculationResult calculateEndOfService() {
-    return eosbEngine.calculateEndOfService(state.toModel());
-  }
+  /// مكافأة نهاية الخدمة فقط — [EosbCalculator.calculateEndOfServiceAward].
+  double calculateEndOfServiceAward() =>
+      EosbCalculator.calculateEndOfServiceAward(state.toModel());
+
+  /// حساب كامل من الحالة الحالية (معاينة مباشرة).
+  EosbCalculationResult calculateEndOfService() =>
+      eosbEngine.calculateEndOfService(state.toModel());
 }
 
 /// محرك الحساب الموحّد — يقرأ [EosbWizardState.toModel] ويطبّق:
@@ -358,18 +373,33 @@ final eosbWizardProvider =
   EosbWizardNotifier.new,
 );
 
-/// نتيجة الحساب الكاملة — تتحدث فوراً مع أي تغيير في المعالج.
-///
-/// يقرأ كل المدخلات: الدولة، الإنهاء، المدة، الرواتب، العقد، الإجازات،
-/// التذكرة، الإشعار، ونسبة الاتفاق بالتراضي.
+/// نتيجة حية — تتحدث فوراً مع أي تغيير في المعالج (معاينة + ملخص).
 final eosbCalculatorProvider = Provider<EosbCalculationResult>((ref) {
   final wizard = ref.watch(eosbWizardProvider);
   return eosbEngine.calculateEndOfService(wizard.toModel());
 });
 
+/// نتيجة مُجمّدة عند «عرض النتيجة» — تبقى ثابتة على شاشة النتائج وPDF.
+final eosbFinalizedResultProvider =
+    StateProvider<EosbCalculationResult?>((ref) => null);
+
+/// نتيجة العرض: حية في المعالج، مجمّدة بعد إنهاء الخطوة 3.
+final eosbResultsProvider = Provider<EosbCalculationResult>((ref) {
+  final wizard = ref.watch(eosbWizardProvider);
+  final finalized = ref.watch(eosbFinalizedResultProvider);
+  if (wizard.showResults && finalized != null) return finalized;
+  return ref.watch(eosbCalculatorProvider);
+});
+
+/// مكافأة نهاية الخدمة حسب نوع الإنهاء — للمعاينة السريعة.
+final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
+  final wizard = ref.watch(eosbWizardProvider);
+  return EosbCalculator.calculateEndOfServiceAward(wizard.toModel());
+});
+
 /// بنود المعاينة المباشرة (عربي + مبلغ).
 final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
-  final result = ref.watch(eosbCalculatorProvider);
+  final result = ref.watch(eosbResultsProvider);
   return EosbPreviewLine.fromResult(result);
 });
 
