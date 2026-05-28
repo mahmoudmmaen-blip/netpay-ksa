@@ -317,6 +317,15 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
 
     final model = state.toModel();
     final result = eosbEngine.calculateEndOfService(model);
+    // تأكيد اتساق المكافأة مع نوع الإنهاء
+    assert(
+      (result.endOfServiceAmount -
+                  EosbCalculator.calculateEndOfServiceAward(model))
+              .abs() <
+          0.01,
+      'endOfServiceAmount must match calculateEndOfServiceAward',
+    );
+
     ref.read(eosbFinalizedResultProvider.notifier).state = result;
 
     state = state.copyWith(
@@ -397,9 +406,10 @@ final eosbEndOfServiceAwardProvider = Provider<double>((ref) {
   return EosbCalculator.calculateEndOfServiceAward(wizard.toModel());
 });
 
-/// بنود المعاينة المباشرة (عربي + مبلغ).
+/// بنود المعاينة المباشرة — دائماً من الحساب الحي (كل تغيير مدخل).
 final eosbPreviewLinesProvider = Provider<List<EosbPreviewLine>>((ref) {
-  final result = ref.watch(eosbResultsProvider);
+  ref.watch(eosbWizardProvider);
+  final result = ref.watch(eosbCalculatorProvider);
   return EosbPreviewLine.fromResult(result);
 });
 

@@ -31,11 +31,22 @@ class _LegalAssistantScreenState extends ConsumerState<LegalAssistantScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen(eosbWizardProvider, (previous, next) {
-      if (previous != null &&
-          !previous.showResults &&
-          next.showResults &&
-          mounted) {
+      if (previous == null || !mounted) return;
+      if (!previous.showResults && next.showResults) {
         HapticFeedback.mediumImpact();
+        final total = ref.read(eosbResultsProvider).totalEntitlements;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم حساب مستحقاتك — ${NumberFormat.decimalPattern('ar').format(total.round())} '
+              '${next.country.currencySymbol}',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     });
 
@@ -337,7 +348,7 @@ class _WizardBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final isLastStep = stepIndex == EosbWizardState.totalSteps - 1;
     final canAdvance = wizard.canAdvanceFromCurrentStep;
@@ -503,7 +514,7 @@ class _StepTermination extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
     final groupValue = wizard.resolvedTermination;
 
@@ -636,7 +647,7 @@ class _StepContractState extends ConsumerState<_StepContract> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -831,7 +842,7 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
   @override
   Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    ref.watch(eosbResultsProvider);
+    ref.watch(eosbCalculatorProvider);
     final notifier = ref.read(eosbWizardProvider.notifier);
 
     ref.listen(eosbWizardProvider, (prev, next) {
@@ -988,9 +999,8 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
-    final result = ref.watch(eosbResultsProvider);
+    final result = ref.watch(eosbCalculatorProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
-    ref.watch(eosbEndOfServiceAwardProvider);
     final currency = NumberFormat.currency(
       locale: result.input.country.currencyLocale,
       symbol: result.input.country.currencySymbol,
@@ -1168,13 +1178,28 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 88),
             children: [
+              const _ResultsSuccessBanner(),
+              const SizedBox(height: 12),
               _TotalHeroCard(
                 result: result,
                 currency: currency,
                 isDark: widget.isDark,
               ),
-              const SizedBox(height: 14),
-              const _InputsSummaryCard(),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      ref.read(eosbWizardProvider.notifier).previousStep(),
+                  icon: const Icon(Icons.edit_rounded, size: 18),
+                  label: Text(
+                    'تعديل البيانات',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const _InputsSummaryCard(forResults: true),
               const SizedBox(height: 20),
               Text(
                 'تفصيل المستحقات',
@@ -1230,13 +1255,58 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
   }
 }
 
-/// ملخص المدخلات — يتحدث فوراً مع [eosbResultsProvider].
+/// شريط نجاح أعلى شاشة النتائج.
+class _ResultsSuccessBanner extends StatelessWidget {
+  const _ResultsSuccessBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      highlighted: true,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.emerald.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.emerald,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'اكتمل الحساب — يمكنك مراجعة التفاصيل أو تصدير PDF',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ملخص المدخلات — حي في المعالج، مجمّد على شاشة النتائج.
 class _InputsSummaryCard extends ConsumerWidget {
-  const _InputsSummaryCard();
+  const _InputsSummaryCard({this.forResults = false});
+
+  /// عند true: يقرأ [eosbResultsProvider] (نتيجة الخطوة 3).
+  final bool forResults;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final result = ref.watch(eosbResultsProvider);
+    final wizard = ref.watch(eosbWizardProvider);
+    final result = forResults || wizard.showResults
+        ? ref.watch(eosbResultsProvider)
+        : ref.watch(eosbCalculatorProvider);
     final m = result.input;
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
@@ -1288,9 +1358,27 @@ class _InputsSummaryCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'بيانات الحساب',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 14),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  forResults ? 'ملخص الحساب النهائي' : 'بيانات الحساب',
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (!forResults && wizard.canProceedStep1)
+                Text(
+                  'مباشر',
+                  style: GoogleFonts.cairo(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.emerald,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
           ...rows.map(
@@ -1385,6 +1473,22 @@ class _TotalHeroCard extends StatelessWidget {
                 color: AppColors.goldBright,
                 height: 1.1,
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'مكافأة نهاية الخدمة',
+            style: GoogleFonts.cairo(
+              color: Colors.white.withValues(alpha: 0.75),
+              fontSize: 12,
+            ),
+          ),
+          Text(
+            currency.format(result.endOfServiceAmount),
+            style: GoogleFonts.cairo(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Colors.white.withValues(alpha: 0.95),
             ),
           ),
           const SizedBox(height: 12),
@@ -1580,6 +1684,17 @@ class _ResultsBottomBarState extends ConsumerState<_ResultsBottomBar> {
     setState(() => _exporting = true);
     try {
       await EosbPdfService.exportAndShare(result);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تم إنشاء التقرير — اختر التطبيق للمشاركة أو الحفظ',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.emerald,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

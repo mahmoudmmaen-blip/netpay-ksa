@@ -50,6 +50,33 @@ void main() {
     );
   });
 
+  test('all termination types produce valid finalized results', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(eosbWizardProvider.notifier);
+
+    for (final type in EosbTerminationType.values) {
+      notifier.reset();
+      notifier.setTerminationType(type);
+      notifier.setSalaries(basic: 12000, housing: 2000);
+      notifier.setServiceDuration(years: 5, months: 3);
+      if (type == EosbTerminationType.mutualAgreement) {
+        notifier.setMutualAgreementPercent(60);
+      }
+      expect(notifier.finishWizard(), isTrue, reason: '$type');
+
+      final result = container.read(eosbResultsProvider);
+      final model = container.read(eosbWizardProvider).toModel();
+      expect(
+        result.endOfServiceAmount,
+        EosbCalculator.calculateEndOfServiceAward(model),
+      );
+      expect(result.totalEntitlements, greaterThan(0));
+      expect(result.legalReferences, isNotEmpty);
+      expect(result.components, isNotEmpty);
+    }
+  });
+
   test('live preview updates when housing changes', () {
     final container = ProviderContainer();
     addTearDown(container.dispose);
