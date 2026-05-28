@@ -13,7 +13,6 @@ import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
-import 'package:netgulf/features/legal_assistant/services/eosb_pdf_service.dart';
 
 // ─── EOSB Wizard UI only (مكافأة نهاية الخدمة — السعودية والإمارات) ───
 // 3-step wizard → live preview → results + PDF. No other feature flows here.
