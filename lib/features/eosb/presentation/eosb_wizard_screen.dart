@@ -569,7 +569,7 @@ class _LivePreviewBar extends ConsumerWidget {
     ref.watch(eosbLivePreviewKeyProvider);
     return const Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: _EosbLivePreviewCard(),
+      child: RepaintBoundary(child: _EosbLivePreviewCard()),
     );
   }
 }
@@ -1724,11 +1724,13 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
               const SizedBox(height: 12),
               const _ResultsEdgeCaseBanner(),
               const SizedBox(height: 12),
-              _TotalHeroCard(
+              _AnimatedTotalHeroCard(
                 result: result,
                 currency: currency,
                 isDark: widget.isDark,
               ),
+              const SizedBox(height: 12),
+              _SaveCalculationButton(result: result),
               const SizedBox(height: 10),
               _EditWizardButton(
                 onResume: (step) {
@@ -2177,8 +2179,9 @@ class _InputsSummaryCard extends ConsumerWidget {
   }
 }
 
-class _TotalHeroCard extends StatelessWidget {
-  const _TotalHeroCard({
+/// بطاقة الإجمالي — دخول متحرك ومبلغ متحرك عند التحديث.
+class _AnimatedTotalHeroCard extends StatefulWidget {
+  const _AnimatedTotalHeroCard({
     required this.result,
     required this.currency,
     required this.isDark,
@@ -2189,82 +2192,252 @@ class _TotalHeroCard extends StatelessWidget {
   final bool isDark;
 
   @override
+  State<_AnimatedTotalHeroCard> createState() => _AnimatedTotalHeroCardState();
+}
+
+class _AnimatedTotalHeroCardState extends State<_AnimatedTotalHeroCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _entryCtrl;
+  late final Animation<double> _entryScale;
+  late final Animation<double> _entryFade;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    final curve = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: Curves.easeOutBack,
+    );
+    _entryScale = Tween<double>(begin: 0.88, end: 1).animate(curve);
+    _entryFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOut),
+    );
+    _entryCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _entryCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final result = widget.result;
     final model = result.input;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: AppColors.brandGradient,
-        boxShadow: AppColors.premiumCardGlow(isDark: isDark),
+    final total = result.totalEntitlements;
+
+    return FadeTransition(
+      opacity: _entryFade,
+      child: ScaleTransition(
+        scale: _entryScale,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: AppColors.brandGradient,
+            boxShadow: AppColors.premiumCardGlow(isDark: widget.isDark),
+          ),
+          child: Column(
+            children: [
+              Text(
+                result.countryLabel,
+                style: GoogleFonts.cairo(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'إجمالي المستحقات',
+                style: GoogleFonts.cairo(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: total),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      widget.currency.format(value),
+                      style: GoogleFonts.cairo(
+                        fontSize: 52,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.goldBright,
+                        height: 1.05,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'مكافأة نهاية الخدمة',
+                style: GoogleFonts.cairo(
+                  color: Colors.white.withValues(alpha: 0.75),
+                  fontSize: 12,
+                ),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                child: Text(
+                  widget.currency.format(result.endOfServiceAmount),
+                  key: ValueKey(result.endOfServiceAmount),
+                  style: GoogleFonts.cairo(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withValues(alpha: 0.95),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  model.terminationSummary,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Column(
-        children: [
-          Text(
-            result.countryLabel,
-            style: GoogleFonts.cairo(
-              color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+    );
+  }
+}
+
+/// حفظ الحساب في السجل المحلي (Hive).
+class _SaveCalculationButton extends StatefulWidget {
+  const _SaveCalculationButton({required this.result});
+
+  final EosbCalculationResult result;
+
+  @override
+  State<_SaveCalculationButton> createState() => _SaveCalculationButtonState();
+}
+
+class _SaveCalculationButtonState extends State<_SaveCalculationButton> {
+  bool _saving = false;
+  bool _saved = false;
+
+  Future<void> _save() async {
+    if (_saving || _saved) return;
+    setState(() => _saving = true);
+    try {
+      final ok = await EosbHistoryService.save(widget.result);
+      if (!mounted) return;
+      if (ok) {
+        HapticFeedback.mediumImpact();
+        setState(() {
+          _saved = true;
+          _saving = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم حفظ الحساب في السجل — يمكنك مراجعته من «سجل الحسابات»',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
+            backgroundColor: AppColors.emerald,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'إجمالي المستحقات',
-            style: GoogleFonts.cairo(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
+        );
+      } else {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'تعذّر الحفظ — حاول مرة أخرى',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
             ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
           ),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              currency.format(result.totalEntitlements),
-              style: GoogleFonts.cairo(
-                fontSize: 42,
-                fontWeight: FontWeight.w900,
-                color: AppColors.goldBright,
-                height: 1.1,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذّر الحفظ محلياً',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: FilledButton.icon(
+        onPressed: _saving || _saved ? null : _save,
+        icon: _saving
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(
+                _saved ? Icons.check_circle_rounded : Icons.bookmark_add_rounded,
+                size: 24,
               ),
-            ),
+        label: Text(
+          _saving
+              ? 'جاري الحفظ...'
+              : _saved
+                  ? 'تم حفظ الحساب'
+                  : 'حفظ الحساب',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 17),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: _saved ? AppColors.emeraldDark : AppColors.navyMid,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.emerald.withValues(alpha: 0.85),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'مكافأة نهاية الخدمة',
-            style: GoogleFonts.cairo(
-              color: Colors.white.withValues(alpha: 0.75),
-              fontSize: 12,
-            ),
-          ),
-          Text(
-            currency.format(result.endOfServiceAmount),
-            style: GoogleFonts.cairo(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Colors.white.withValues(alpha: 0.95),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              model.terminationSummary,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ),
-          ),
-        ],
+          elevation: 3,
+        ),
       ),
     );
   }

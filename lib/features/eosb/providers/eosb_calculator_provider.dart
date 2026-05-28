@@ -473,39 +473,3 @@ final eosbLivePreviewKeyProvider = Provider<String>((ref) {
   return ref.watch(eosbWizardProvider).livePreviewKey;
 });
 
-/// سطر في معاينة/ملخص المستحقات.
-class EosbPreviewLine {
-  const EosbPreviewLine({required this.labelAr, required this.amount});
-
-  final String labelAr;
-  final double amount;
-
-  static List<EosbPreviewLine> fromResult(EosbCalculationResult result) {
-    final m = result.input;
-    return [
-      EosbPreviewLine(
-        labelAr: 'مكافأة نهاية الخدمة',
-        amount: result.endOfServiceAmount,
-      ),
-      if (m.accruedLeaveDays > 0)
-        EosbPreviewLine(
-          labelAr: 'بدل الإجازات المتبقية',
-          amount: result.cashLeaveAllowance,
-        ),
-      EosbPreviewLine(
-        labelAr: 'بدل إجازة سنوية (تقدير)',
-        amount: result.vacationAllowance,
-      ),
-      if (m.includeFlightTicket)
-        EosbPreviewLine(
-          labelAr: 'تذكرة طيران (تقدير)',
-          amount: result.flightTicketAllowance,
-        ),
-      EosbPreviewLine(
-        labelAr: 'الإجمالي المستحق',
-        amount: result.totalEntitlements,
-      ),
-    ];
-  }
-}
-
