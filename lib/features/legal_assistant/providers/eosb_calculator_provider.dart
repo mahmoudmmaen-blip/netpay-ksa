@@ -82,10 +82,13 @@ class EosbWizardState {
   String? validationMessageForStep(int step) {
     return switch (step) {
       0 when !canProceedStep0 =>
-        'اختر نوع إنهاء الخدمة للمتابعة',
-      1 when basicSalaryFieldError != null => basicSalaryFieldError,
-      1 when serviceMonthsFieldError != null => serviceMonthsFieldError,
-      1 when serviceYearsFieldError != null => serviceYearsFieldError,
+        'الخطوة 1: اختر نوع إنهاء الخدمة للمتابعة',
+      1 when basicSalaryFieldError != null =>
+        'الخطوة 2: ${basicSalaryFieldError!}',
+      1 when serviceMonthsFieldError != null =>
+        'الخطوة 2: ${serviceMonthsFieldError!}',
+      1 when serviceYearsFieldError != null =>
+        'الخطوة 2: ${serviceYearsFieldError!}',
       _ => null,
     };
   }
@@ -346,9 +349,12 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
   }
 
   /// العودة من شاشة النتائج لتعديل المعالج (الخطوة الحالية أو خطوة محددة).
+  ///
+  /// [stepIndex] null = آخر خطوة (3). 0 = البداية من نوع الإنهاء.
   void resumeEditing({int? stepIndex}) {
+    flushAllInputs();
     ref.read(eosbFinalizedResultProvider.notifier).state = null;
-    final target = (stepIndex ?? state.stepIndex).clamp(
+    final target = (stepIndex ?? EosbWizardState.totalSteps - 1).clamp(
       0,
       EosbWizardState.totalSteps - 1,
     );

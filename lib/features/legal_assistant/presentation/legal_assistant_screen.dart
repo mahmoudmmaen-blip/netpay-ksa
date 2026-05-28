@@ -197,6 +197,12 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
     final wizard = ref.watch(eosbWizardProvider);
     final step = wizard.stepIndex.clamp(0, 2);
 
+    ref.listen(eosbWizardProvider, (previous, next) {
+      if (previous != null && previous.stepIndex != next.stepIndex) {
+        ref.read(eosbWizardProvider.notifier).flushAllInputs();
+      }
+    });
+
     if (step != _lastStepIndex) {
       _lastStepIndex = step;
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop());
@@ -961,7 +967,63 @@ class _StepExtrasState extends ConsumerState<_StepExtras> {
           const SizedBox(height: 16),
           const _EosbLivePreviewCard(),
         ],
+        if (wizard.canAdvanceFromCurrentStep) ...[
+          const SizedBox(height: 16),
+          _StepFinishButton(
+            enabled: wizard.validationBeforeResults() == null,
+            onPressed: () {
+              final notifier = ref.read(eosbWizardProvider.notifier);
+              notifier.flushAllInputs();
+              if (notifier.finishWizard()) return;
+              final msg = ref.read(eosbWizardProvider).validationBeforeResults();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    msg ?? 'تعذّر عرض النتيجة — راجع الخطوات 1 و 2',
+                    style: GoogleFonts.cairo(),
+                  ),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// زر إنهاء سريع داخل الخطوة 3 — نفس منطق الشريط السفلي.
+class _StepFinishButton extends StatelessWidget {
+  const _StepFinishButton({
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: enabled ? onPressed : null,
+        icon: const Icon(Icons.calculate_rounded, size: 22),
+        label: Text(
+          'عرض النتيجة الآن',
+          style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.emerald,
+          disabledBackgroundColor: AppColors.emerald.withValues(alpha: 0.35),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1031,6 +1093,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final wizard = ref.watch(eosbWizardProvider);
+    ref.watch(eosbCalculatorProvider);
     final result = ref.watch(eosbResultsProvider);
     final lines = ref.watch(eosbPreviewLinesProvider);
     final currency = NumberFormat.currency(
@@ -1180,11 +1243,16 @@ class _ResultsViewState extends ConsumerState<_ResultsView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(0);
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollResultsToTop());
+  }
+
+  void _scrollResultsToTop() {
+    if (!mounted) return;
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollResultsToTop());
+    }
   }
 
   @override
@@ -1329,42 +1397,64 @@ class _EditWizardButton extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          Text(
+            'أو اختر خطوة محددة للتعديل:',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.55),
+            ),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
-                child: TextButton(
+                child: OutlinedButton(
                   onPressed: () => onResume(0),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
                   child: Text(
-                    'الخطوة 1',
+                    'من البداية',
                     style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ),
+              const SizedBox(width: 6),
               Expanded(
-                child: TextButton(
+                child: OutlinedButton(
                   onPressed: () => onResume(1),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
                   child: Text(
-                    'الخطوة 2',
+                    'العقد',
                     style: GoogleFonts.cairo(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
+              const SizedBox(width: 6),
               Expanded(
-                child: TextButton(
+                child: FilledButton(
                   onPressed: () => onResume(2),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.emerald,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
                   child: Text(
-                    'الخطوة 3',
+                    'التفاصيل',
                     style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.emerald,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -1377,40 +1467,95 @@ class _EditWizardButton extends StatelessWidget {
   }
 }
 
-/// شريط نجاح أعلى شاشة النتائج.
-class _ResultsSuccessBanner extends StatelessWidget {
+/// شريط نجاح أعلى شاشة النتائج — يظهر بانتقال سلس.
+class _ResultsSuccessBanner extends StatefulWidget {
   const _ResultsSuccessBanner();
 
   @override
+  State<_ResultsSuccessBanner> createState() => _ResultsSuccessBannerState();
+}
+
+class _ResultsSuccessBannerState extends State<_ResultsSuccessBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fade = curve;
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -0.08),
+      end: Offset.zero,
+    ).animate(curve);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GlassSurface(
-      highlighted: true,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.emerald.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.emerald,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'اكتمل الحساب — يمكنك مراجعة التفاصيل أو تصدير PDF',
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: GlassSurface(
+          highlighted: true,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.emerald.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.emerald,
+                  size: 22,
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'تم الحساب بنجاح',
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: AppColors.emerald,
+                      ),
+                    ),
+                    Text(
+                      'راجع التفاصيل أدناه أو صدّر تقرير PDF',
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.65),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
