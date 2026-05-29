@@ -96,7 +96,7 @@ abstract final class CountryComparisonEngine {
     required GulfCountry b,
     required double salary,
   }) {
-    final fmt = (GulfCountry c, double v) =>
+    String fmt(GulfCountry c, double v) =>
         '${v.toStringAsFixed(0)} ${c.currencySymbol}';
 
     return [

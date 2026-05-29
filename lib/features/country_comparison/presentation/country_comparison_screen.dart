@@ -238,7 +238,7 @@ class _ComparisonTable extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    if (dotA != null) dotA,
+                    ?dotA,
                     Expanded(
                       child: Text(row.valueA,
                           textAlign: TextAlign.center,
@@ -249,7 +249,7 @@ class _ComparisonTable extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.cairo(fontSize: 12)),
                     ),
-                    if (dotB != null) dotB,
+                    ?dotB,
                   ],
                 ),
               ],
