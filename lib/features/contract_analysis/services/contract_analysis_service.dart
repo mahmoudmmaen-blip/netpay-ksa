@@ -14,6 +14,15 @@ abstract final class ContractAnalysisService {
   static const _model = 'claude-sonnet-4-20250514';
   static const _anthropicVersion = '2023-06-01';
   static const _timeout = Duration(seconds: 30);
+  static const _directApiUri = 'https://api.anthropic.com/v1/messages';
+
+  /// فقط من `--dart-define=ANTHROPIC_PROXY_URL=...` (بدون fallback محلي).
+  static const _anthropicProxyUrlEnv = String.fromEnvironment(
+    'ANTHROPIC_PROXY_URL',
+    defaultValue: '',
+  );
+
+  static bool get _useProxy => _anthropicProxyUrlEnv.trim().isNotEmpty;
 
   static const _systemPrompt = '''
 أنت محلل عقود عمل خليجي متخصص. حلل عقد العمل المرفق وأخرج النتيجة بـ JSON فقط بهذا الشكل بالضبط:
@@ -37,7 +46,8 @@ abstract final class ContractAnalysisService {
     required Uint8List pdfBytes,
     required GulfCountry country,
   }) async {
-    if (!ApiKeys.canUseLiveAnthropic && ApiKeys.effectiveClaudeApiKey.isEmpty) {
+    final apiKey = ApiKeys.claudeApiKey.trim();
+    if (!_useProxy && apiKey.isEmpty) {
       throw ContractAnalysisException(
         'أضف مفتاح Claude API في الإعدادات',
         code: ContractAnalysisErrorCode.noApiKey,
@@ -45,16 +55,16 @@ abstract final class ContractAnalysisService {
     }
 
     final base64Pdf = base64Encode(pdfBytes);
-    final uri = ApiKeys.useAnthropicProxy
-        ? Uri.parse(ApiKeys.anthropicProxyUrl)
-        : Uri.parse('https://api.anthropic.com/v1/messages');
+    final uri = _useProxy
+        ? Uri.parse(_anthropicProxyUrlEnv.trim())
+        : Uri.parse(_directApiUri);
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'anthropic-version': _anthropicVersion,
     };
-    if (!ApiKeys.useAnthropicProxy && ApiKeys.effectiveClaudeApiKey.isNotEmpty) {
-      headers['x-api-key'] = ApiKeys.effectiveClaudeApiKey;
+    if (!_useProxy) {
+      headers['x-api-key'] = apiKey;
     }
 
     final body = jsonEncode({
