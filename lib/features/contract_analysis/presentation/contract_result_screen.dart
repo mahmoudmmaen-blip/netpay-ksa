@@ -22,12 +22,6 @@ class ContractResultScreen extends ConsumerWidget {
   final ContractAnalysisResult result;
   final bool embeddedInHub;
 
-  Color _scoreColor(int score) {
-    if (score <= 4) return Colors.red.shade600;
-    if (score <= 7) return Colors.amber.shade700;
-    return AppColors.emerald;
-  }
-
   String _currencySymbol(String code) => switch (code.toUpperCase()) {
         'SAR' => 'ر.س',
         'AED' => 'د.إ',
@@ -40,7 +34,6 @@ class ContractResultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scoreColor = _scoreColor(result.overallScore);
     final locale = result.country.currencyLocale;
     final symbol = _currencySymbol(result.currency);
     final currency = NumberFormat.currency(
@@ -54,8 +47,9 @@ class ContractResultScreen extends ConsumerWidget {
       children: [
         _ScoreCard(
           score: result.overallScore,
-          color: scoreColor,
-          country: result.country,
+          positiveCount: result.positivePoints.length,
+          risksCount: result.risks.length,
+          missingRightsCount: result.missingRights.length,
         ),
         const SizedBox(height: 16),
         GlassSurface(
@@ -249,40 +243,51 @@ class ContractResultScreen extends ConsumerWidget {
 class _ScoreCard extends StatelessWidget {
   const _ScoreCard({
     required this.score,
-    required this.color,
-    required this.country,
+    required this.positiveCount,
+    required this.risksCount,
+    required this.missingRightsCount,
   });
 
   final int score;
-  final Color color;
-  final GulfCountry country;
+  final int positiveCount;
+  final int risksCount;
+  final int missingRightsCount;
+
+  static const _redScore = Color(0xFFE53935);
+  static const _amberScore = Color(0xFFF9A825);
+  static const _greenScore = Color(0xFF1D9E75);
+
+  Color _scoreColor(int value) {
+    if (value <= 4) return _redScore;
+    if (value <= 7) return _amberScore;
+    return _greenScore;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final color = _scoreColor(score);
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+
     return GlassSurface(
       highlighted: true,
       borderRadius: 22,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       child: Column(
         children: [
-          Text(
-            'تقييم العقد — ${country.nameAr}',
-            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 20),
           SizedBox(
-            width: 140,
-            height: 140,
+            width: 150,
+            height: 150,
             child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: score / 10),
+              tween: Tween(begin: 0, end: score.toDouble()),
               duration: const Duration(milliseconds: 900),
               curve: Curves.easeOutCubic,
-              builder: (context, value, _) {
+              builder: (context, animatedScore, _) {
+                final display = animatedScore.round().clamp(0, 10);
                 return Stack(
                   alignment: Alignment.center,
                   children: [
                     CircularProgressIndicator(
-                      value: value,
+                      value: animatedScore / 10,
                       strokeWidth: 10,
                       color: color,
                       backgroundColor: color.withValues(alpha: 0.15),
@@ -291,18 +296,20 @@ class _ScoreCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '$score',
+                          '$display',
                           style: GoogleFonts.cairo(
-                            fontSize: 36,
+                            fontSize: 42,
                             fontWeight: FontWeight.w900,
                             color: color,
+                            height: 1,
                           ),
                         ),
                         Text(
-                          '/ 10',
+                          '/10',
                           style: GoogleFonts.cairo(
-                            fontSize: 14,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: muted,
                           ),
                         ),
                       ],
@@ -312,7 +319,63 @@ class _ScoreCard extends StatelessWidget {
               },
             ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            'تقييم العقد',
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _SummaryChip(
+                label: '✅ $positiveCount نقطة إيجابية',
+                color: _greenScore,
+              ),
+              _SummaryChip(
+                label: '⚠️ $risksCount مخطر',
+                color: _redScore,
+              ),
+              _SummaryChip(
+                label: 'ℹ️ $missingRightsCount حق ناقص',
+                color: _amberScore,
+              ),
+            ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.cairo(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
