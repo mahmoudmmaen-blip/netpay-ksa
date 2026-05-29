@@ -9,7 +9,6 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
-import 'package:netgulf/features/eosb/presentation/widgets/eosb_country_grid.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_salary_field.dart';
 import 'package:netgulf/features/notice_period/domain/notice_period_calculator.dart';
 import 'package:netgulf/features/notice_period/domain/notice_period_model.dart';
@@ -22,7 +21,6 @@ class NoticePeriodScreen extends ConsumerWidget {
     this.embeddedInHub = false,
   });
 
-  /// داخل تبويب شاشة EOSB — بدون Scaffold منفصل.
   final bool embeddedInHub;
 
   @override
@@ -108,14 +106,14 @@ class _NoticePeriodBody extends StatelessWidget {
     final showContractType = model.country == GulfCountry.saudiArabia;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
         Text(
           'اختر دولة العمل',
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 15),
         ),
-        const SizedBox(height: 8),
-        EosbCountryGrid(
+        const SizedBox(height: 10),
+        _NoticeCountryGrid(
           selected: model.country,
           onSelected: (c) {
             HapticFeedback.selectionClick();
@@ -157,18 +155,23 @@ class _NoticePeriodBody extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          'سنوات الخدمة: ${model.totalServiceYears.toStringAsFixed(1)} سنة',
+          'مدة الخدمة',
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
-        Slider(
-          value: model.totalServiceYears.clamp(0, 30),
-          min: 0,
-          max: 30,
-          divisions: 60,
-          activeColor: AppColors.emerald,
-          label: model.totalServiceYears.toStringAsFixed(1),
-          onChanged: notifier.setYears,
+        const SizedBox(height: 4),
+        Text(
+          'الإجمالي: ${model.serviceYears} سنة و ${model.serviceMonths} شهر',
+          style: GoogleFonts.cairo(fontSize: 12, color: muted),
         ),
+        const SizedBox(height: 8),
+        _ServiceDurationRow(
+          key: ValueKey('service-${model.country.name}'),
+          years: model.serviceYears,
+          months: model.serviceMonths,
+          onYearsChanged: notifier.setServiceYears,
+          onMonthsChanged: notifier.setServiceMonths,
+        ),
+        const SizedBox(height: 16),
         HomeSalaryField(
           key: ValueKey('notice-salary-${model.country.name}'),
           label: 'الراتب الأساسي الشهري',
@@ -258,6 +261,212 @@ class _NoticePeriodBody extends StatelessWidget {
   }
 }
 
+/// شبكة الدول — ٢×٣ بدون ارتفاع ثابت (تجنّب القص).
+class _NoticeCountryGrid extends StatelessWidget {
+  const _NoticeCountryGrid({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final GulfCountry selected;
+  final ValueChanged<GulfCountry> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.4,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: GulfCountry.values.length,
+      itemBuilder: (context, index) {
+        final country = GulfCountry.values[index];
+        final isSelected = country == selected;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => onSelected(country),
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.emerald
+                      : Theme.of(context)
+                          .colorScheme
+                          .outline
+                          .withValues(alpha: 0.3),
+                  width: isSelected ? 2 : 1,
+                ),
+                color: isSelected
+                    ? AppColors.emerald.withValues(alpha: 0.12)
+                    : Theme.of(context)
+                        .colorScheme
+                        .surface
+                        .withValues(alpha: 0.5),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(country.flag, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(height: 4),
+                  Text(
+                    country.nameAr,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.cairo(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? AppColors.emerald : null,
+                    ),
+                  ),
+                  Text(
+                    country.nameEn,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.cairo(
+                      fontSize: 9,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (isSelected)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColors.emerald,
+                        size: 16,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ServiceDurationRow extends StatefulWidget {
+  const _ServiceDurationRow({
+    super.key,
+    required this.years,
+    required this.months,
+    required this.onYearsChanged,
+    required this.onMonthsChanged,
+  });
+
+  final int years;
+  final int months;
+  final ValueChanged<int> onYearsChanged;
+  final ValueChanged<int> onMonthsChanged;
+
+  @override
+  State<_ServiceDurationRow> createState() => _ServiceDurationRowState();
+}
+
+class _ServiceDurationRowState extends State<_ServiceDurationRow> {
+  late final TextEditingController _yearsCtrl;
+  late final TextEditingController _monthsCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _yearsCtrl = TextEditingController(text: '${widget.years}');
+    _monthsCtrl = TextEditingController(text: '${widget.months}');
+  }
+
+  @override
+  void didUpdateWidget(covariant _ServiceDurationRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.years != widget.years &&
+        _yearsCtrl.text != '${widget.years}') {
+      _yearsCtrl.text = '${widget.years}';
+    }
+    if (oldWidget.months != widget.months &&
+        _monthsCtrl.text != '${widget.months}') {
+      _monthsCtrl.text = '${widget.months}';
+    }
+  }
+
+  @override
+  void dispose() {
+    _yearsCtrl.dispose();
+    _monthsCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _IntField(
+            controller: _yearsCtrl,
+            label: 'سنوات (0–40)',
+            onSubmitted: (v) => widget.onYearsChanged(v.clamp(0, 40)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _IntField(
+            controller: _monthsCtrl,
+            label: 'شهور (0–11)',
+            onSubmitted: (v) => widget.onMonthsChanged(v.clamp(0, 11)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _IntField extends StatelessWidget {
+  const _IntField({
+    required this.controller,
+    required this.label,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final ValueChanged<int> onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      borderRadius: 14,
+      padding: EdgeInsets.zero,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        style: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 16),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
+        ),
+        onChanged: (t) => onSubmitted(int.tryParse(t) ?? 0),
+        onFieldSubmitted: (t) => onSubmitted(int.tryParse(t) ?? 0),
+      ),
+    );
+  }
+}
+
 class _ResultCard extends StatelessWidget {
   const _ResultCard({
     required this.model,
@@ -266,6 +475,10 @@ class _ResultCard extends StatelessWidget {
 
   final NoticePeriodModel model;
   final NumberFormat currency;
+
+  static const _legalDisclaimer =
+      'إشعار الإنهاء مطلوب عند إنهاء عقد غير محدد المدة من أي طرف.\n'
+      'العقود المحددة تنتهي تلقائياً دون الحاجة لإشعار.';
 
   @override
   Widget build(BuildContext context) {
@@ -296,6 +509,22 @@ class _ResultCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.emerald.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.emerald.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Text(
+              _legalDisclaimer,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.cairo(fontSize: 11, height: 1.5),
+            ),
           ),
           const SizedBox(height: 16),
           _ResultRow(

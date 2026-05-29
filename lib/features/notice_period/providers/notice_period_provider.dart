@@ -14,7 +14,6 @@ class NoticePeriodNotifier extends StateNotifier<NoticePeriodModel> {
           const NoticePeriodModel(
             country: GulfCountry.saudiArabia,
             monthlyBasicSalary: 0,
-            totalServiceYears: 0,
           ),
         );
 
@@ -23,8 +22,11 @@ class NoticePeriodNotifier extends StateNotifier<NoticePeriodModel> {
   void setSalary(double v) =>
       state = state.copyWith(monthlyBasicSalary: v < 0 ? 0 : v);
 
-  void setYears(double v) =>
-      state = state.copyWith(totalServiceYears: v < 0 ? 0 : v);
+  void setServiceYears(int v) =>
+      state = state.copyWith(serviceYears: v.clamp(0, 40));
+
+  void setServiceMonths(int v) =>
+      state = state.copyWith(serviceMonths: v.clamp(0, 11));
 
   void setContractType(EosbContractType t) =>
       state = state.copyWith(contractType: t);
