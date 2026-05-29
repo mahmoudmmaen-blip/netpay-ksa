@@ -202,37 +202,18 @@ class _ContractAnalysisScreenState
                 tween: Tween(begin: 0, end: progress.clamp(0.05, 1.0)),
                 duration: const Duration(milliseconds: 300),
                 builder: (context, value, _) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CircularProgressIndicator(
-                        value: value,
-                        strokeWidth: 8,
-                        color: AppColors.emerald,
-                        backgroundColor:
-                            AppColors.emerald.withValues(alpha: 0.15),
-                      ),
-                      Text(
-                        '${(value * 100).round()}%',
-                        style: GoogleFonts.cairo(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.emerald,
-                        ),
-                      ),
-                    ],
+                  return CircularProgressIndicator(
+                    value: value,
+                    strokeWidth: 8,
+                    color: AppColors.emerald,
+                    backgroundColor:
+                        AppColors.emerald.withValues(alpha: 0.15),
                   );
                 },
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Claude يحلل العقد…',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.cairo(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
+          const SizedBox(height: 24),
         ],
         SizedBox(
           width: double.infinity,

@@ -13,8 +13,7 @@ abstract final class AppConstants {
   static const String appNameEn = 'NetGulf';
 
   /// وصف قصير داخل التطبيق (شاشة البداية والإعدادات).
-  static const String appTaglineAr =
-      'حاسبة الراتب الصافي ومكافأة نهاية الخدمة — دول الخليج الست';
+  static const String appTaglineAr = 'حاسبة الراتب الصافي لدول الخليج';
   static const String appTaglineEn =
       'Full GCC Net Salary & End-of-Service Calculator';
 
