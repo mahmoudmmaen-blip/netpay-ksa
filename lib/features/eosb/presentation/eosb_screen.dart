@@ -3,11 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/features/contract_analysis/presentation/contract_analysis_screen.dart';
 import 'package:netgulf/features/eosb/presentation/eosb_wizard_screen.dart';
 import 'package:netgulf/features/leave_balance/presentation/leave_balance_screen.dart';
 import 'package:netgulf/features/notice_period/presentation/notice_period_screen.dart';
 
-/// مسار `/eosb` — ثلاثة تبويبات: نهاية الخدمة · إشعار الإنهاء · رصيد الإجازة.
+/// مسار `/eosb` — أربعة تبويبات: نهاية الخدمة · إشعار · إجازة · تحليل العقد.
 class EosbScreen extends StatelessWidget {
   const EosbScreen({super.key, this.historyEntryId});
 
@@ -16,7 +17,7 @@ class EosbScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -36,7 +37,7 @@ class EosbScreen extends StatelessWidget {
                 style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 17),
               ),
               Text(
-                'نهاية الخدمة · إشعار · إجازة',
+                'نهاية الخدمة · إشعار · إجازة · عقد',
                 style: GoogleFonts.cairo(
                   fontSize: 11,
                   color: Theme.of(context)
@@ -67,6 +68,10 @@ class EosbScreen extends StatelessWidget {
                 icon: Icon(Icons.beach_access_rounded),
                 text: 'رصيد الإجازة',
               ),
+              Tab(
+                icon: Icon(Icons.document_scanner_rounded),
+                text: 'تحليل العقد',
+              ),
             ],
           ),
         ),
@@ -79,6 +84,7 @@ class EosbScreen extends StatelessWidget {
             ),
             const NoticePeriodScreen(embeddedInHub: true),
             const LeaveBalanceScreen(embeddedInHub: true),
+            const ContractAnalysisScreen(embeddedInHub: true),
           ],
         ),
       ),

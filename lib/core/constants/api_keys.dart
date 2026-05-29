@@ -5,9 +5,21 @@ import 'package:netgulf/core/constants/api_keys.local.dart';
 abstract final class ApiKeys {
   ApiKeys._();
 
+  /// `flutter run --dart-define=CLAUDE_API_KEY=sk-ant-...`
+  static const String claudeApiKey = String.fromEnvironment(
+    'CLAUDE_API_KEY',
+    defaultValue: '',
+  );
+
   /// `flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...`
   static String get anthropicApiKey =>
       const String.fromEnvironment('ANTHROPIC_API_KEY', defaultValue: '');
+
+  /// مفتاح Claude الفعّال (CLAUDE_API_KEY أو ANTHROPIC_API_KEY).
+  static String get effectiveClaudeApiKey {
+    if (claudeApiKey.trim().isNotEmpty) return claudeApiKey.trim();
+    return anthropicApiKey.trim();
+  }
 
   /// بروكسي Cloudflare Worker (أو محلي) — يتجاوز CORS على Web.
   static String get anthropicProxyUrl {
@@ -15,7 +27,7 @@ abstract final class ApiKeys {
     return env.isNotEmpty ? env : kLocalProxyUrl;
   }
 
-  static bool get hasAnthropicApiKey => anthropicApiKey.trim().isNotEmpty;
+  static bool get hasAnthropicApiKey => effectiveClaudeApiKey.isNotEmpty;
 
   static bool get hasAnthropicProxy => anthropicProxyUrl.trim().isNotEmpty;
 
@@ -23,7 +35,7 @@ abstract final class ApiKeys {
   static bool get useAnthropicProxy {
     if (!hasAnthropicProxy) return false;
     if (kIsWeb) return true;
-    if (hasAnthropicApiKey) return false;
+    if (effectiveClaudeApiKey.isNotEmpty) return false;
     return true;
   }
 
@@ -36,7 +48,7 @@ abstract final class ApiKeys {
   /// - أو مفتاح `--dart-define` على Android/iOS/Desktop
   static bool get canUseLiveAnthropic {
     if (hasAnthropicProxy) return true;
-    if (!hasAnthropicApiKey) return false;
+    if (effectiveClaudeApiKey.isEmpty) return false;
     return !anthropicBlockedByBrowserCors;
   }
 

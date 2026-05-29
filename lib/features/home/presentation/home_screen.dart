@@ -16,6 +16,7 @@ import 'package:netgulf/features/admob/widgets/home_banner_ad.dart';
 import 'package:netgulf/features/pdf_export/pdf_export_helper.dart';
 import 'package:netgulf/features/pdf_export/pdf_service.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
+import 'package:netgulf/features/home/presentation/widgets/home_tools_sections.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_body.dart';
 import 'package:netgulf/features/home/providers/home_salary_provider.dart';
 import 'package:netgulf/core/providers/notification_provider.dart';
@@ -119,10 +120,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: HomeScreenBody(
                   scrollController: _scrollController,
                   isDark: isDark,
-                  quickActions: HomeQuickActionsRow(
-                    key: ValueKey('quick-${country.nameEn}'),
+                  quickActions: HomeToolsSections(
+                    key: ValueKey('tools-${country.nameEn}'),
                     country: country,
-                    items: _quickActionItems(context, ref, country, isPremium),
+                    workItems:
+                        _workActionItems(context, ref, country, isPremium),
+                    planningItems:
+                        _planningActionItems(context, ref, country, isPremium),
+                    onContractAnalysis: () =>
+                        context.push(AppRoutes.contractAnalysis),
                   ),
                   gosiWarnings: isSaudi && gosi != null
                       ? [HomeGosiWarningBanner(gosi: gosi)]
@@ -137,16 +143,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  List<HomeQuickActionItem> _quickActionItems(
+  List<HomeQuickActionItem> _workActionItems(
     BuildContext context,
     WidgetRef ref,
     GulfCountry country,
     bool isPremium,
   ) {
-    final isSaudi = country == GulfCountry.saudiArabia;
-    final isUae = country == GulfCountry.uae;
-
-    final items = <HomeQuickActionItem>[
+    return [
       HomeQuickActionItem(
         title: 'نهاية الخدمة',
         icon: Icons.card_giftcard_rounded,
@@ -162,6 +165,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: 'رصيد الإجازة',
         icon: Icons.beach_access_rounded,
         onTap: () => context.push(AppRoutes.leaveBalance),
+      ),
+      HomeQuickActionItem(
+        title: 'حاسبة البدلات',
+        icon: Icons.home_work_rounded,
+        onTap: () => context.push(AppRoutes.allowances),
+      ),
+      HomeQuickActionItem(
+        title: 'تذكرة السفر',
+        icon: Icons.flight_rounded,
+        onTap: () => context.push(AppRoutes.flightTicket),
+      ),
+      HomeQuickActionItem(
+        title: 'مقارنة الدول',
+        icon: Icons.public_rounded,
+        onTap: () => context.push(AppRoutes.countryComparison),
+      ),
+    ];
+  }
+
+  List<HomeQuickActionItem> _planningActionItems(
+    BuildContext context,
+    WidgetRef ref,
+    GulfCountry country,
+    bool isPremium,
+  ) {
+    final isSaudi = country == GulfCountry.saudiArabia;
+    final isUae = country == GulfCountry.uae;
+
+    final items = <HomeQuickActionItem>[
+      HomeQuickActionItem(
+        title: 'قرض السكن',
+        icon: Icons.real_estate_agent_rounded,
+        onTap: () => context.push(AppRoutes.homeLoan),
+      ),
+      HomeQuickActionItem(
+        title: 'توزيع الراتب',
+        icon: Icons.pie_chart_rounded,
+        onTap: () => context.push(AppRoutes.salaryDistribution),
       ),
       HomeQuickActionItem(
         title: 'مقارنة العروض',

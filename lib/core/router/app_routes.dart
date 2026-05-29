@@ -24,6 +24,13 @@ abstract final class AppRoutes {
   static const String legal = '/legal';
   static const String noticePeriod = '/notice-period';
   static const String leaveBalance = '/leave-balance';
+  static const String contractAnalyzer = '/contract-analyzer';
+  static const String contractAnalysis = '/contract-analysis';
+  static const String allowances = '/allowances';
+  static const String flightTicket = '/flight-ticket';
+  static const String countryComparison = '/country-comparison';
+  static const String homeLoan = '/home-loan';
+  static const String salaryDistribution = '/salary-distribution';
   static const String privacyPolicy = '/privacy-policy';
   static const String settings = '/settings';
 
@@ -42,6 +49,13 @@ abstract final class AppRoutes {
   static const String legalName = 'legal';
   static const String noticePeriodName = 'noticePeriod';
   static const String leaveBalanceName = 'leaveBalance';
+  static const String contractAnalyzerName = 'contractAnalyzer';
+  static const String contractAnalysisName = 'contractAnalysis';
+  static const String allowancesName = 'allowances';
+  static const String flightTicketName = 'flightTicket';
+  static const String countryComparisonName = 'countryComparison';
+  static const String homeLoanName = 'homeLoan';
+  static const String salaryDistributionName = 'salaryDistribution';
   static const String privacyPolicyName = 'privacyPolicy';
   static const String settingsName = 'settings';
 

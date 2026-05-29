@@ -11,6 +11,13 @@ import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart'
 import 'package:netgulf/features/settings/presentation/settings_screen.dart';
 import 'package:netgulf/features/comparison/presentation/comparison_screen.dart';
 import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
+import 'package:netgulf/features/allowances/presentation/allowances_screen.dart';
+import 'package:netgulf/features/contract_analysis/presentation/contract_analysis_screen.dart';
+import 'package:netgulf/features/contract_analyzer/presentation/contract_analyzer_screen.dart';
+import 'package:netgulf/features/country_comparison/presentation/country_comparison_screen.dart';
+import 'package:netgulf/features/flight_ticket/presentation/flight_ticket_screen.dart';
+import 'package:netgulf/features/home_loan/presentation/home_loan_screen.dart';
+import 'package:netgulf/features/salary_distribution/presentation/salary_distribution_screen.dart';
 import 'package:netgulf/features/leave_balance/presentation/leave_balance_screen.dart';
 import 'package:netgulf/features/notice_period/presentation/notice_period_screen.dart';
 import 'package:netgulf/features/history/presentation/history_screen.dart';
@@ -148,6 +155,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const LeaveBalanceScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.contractAnalyzer,
+        name: AppRoutes.contractAnalyzerName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const ContractAnalyzerScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.contractAnalysis,
+        name: AppRoutes.contractAnalysisName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const ContractAnalysisScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.allowances,
+        name: AppRoutes.allowancesName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const AllowancesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.flightTicket,
+        name: AppRoutes.flightTicketName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const FlightTicketScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.countryComparison,
+        name: AppRoutes.countryComparisonName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const CountryComparisonScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.homeLoan,
+        name: AppRoutes.homeLoanName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const HomeLoanScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.salaryDistribution,
+        name: AppRoutes.salaryDistributionName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const SalaryDistributionScreen(),
         ),
       ),
       GoRoute(

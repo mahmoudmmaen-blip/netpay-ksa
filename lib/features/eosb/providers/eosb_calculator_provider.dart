@@ -331,6 +331,18 @@ class EosbWizardNotifier extends Notifier<EosbWizardState> {
     );
   }
 
+  /// تعبئة من تحليل العقد (دولة + راتب أساسي).
+  void applyPrefill({
+    required GulfCountry country,
+    required double basicSalary,
+  }) {
+    setCountry(country);
+    setSalaries(basic: basicSalary);
+    if (state.years <= 0 && state.months <= 0) {
+      setServiceDuration(years: 1);
+    }
+  }
+
   void setAccruedLeave(int days) {
     state = state.copyWith(accruedLeaveDays: days.clamp(0, 90));
   }

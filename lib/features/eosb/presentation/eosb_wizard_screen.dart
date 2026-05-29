@@ -14,6 +14,7 @@ import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
 import 'package:netgulf/features/eosb/domain/eosb_constants.dart';
 import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
 import 'package:netgulf/features/eosb/presentation/widgets/eosb_country_grid.dart';
+import 'package:netgulf/core/providers/eosb_prefill_provider.dart';
 import 'package:netgulf/features/eosb/providers/eosb_providers.dart';
 
 // ─── EOSB Wizard UI (مكافأة نهاية الخدمة — دول الخليج الست) ───
@@ -96,6 +97,17 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
             ),
           );
         }
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final prefill = ref.read(eosbPrefillProvider);
+        if (prefill == null) return;
+        ref.read(eosbWizardProvider.notifier).applyPrefill(
+              country: prefill.country,
+              basicSalary: prefill.basicSalary,
+            );
+        ref.read(eosbPrefillProvider.notifier).state = null;
       });
     }
   }
