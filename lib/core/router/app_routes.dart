@@ -22,6 +22,7 @@ abstract final class AppRoutes {
   static const String notifications = '/notifications';
   static const String uae = '/uae';
   static const String legal = '/legal';
+  static const String noticePeriod = '/notice-period';
   static const String privacyPolicy = '/privacy-policy';
   static const String settings = '/settings';
 
@@ -38,6 +39,7 @@ abstract final class AppRoutes {
   static const String notificationsName = 'notifications';
   static const String uaeName = 'uae';
   static const String legalName = 'legal';
+  static const String noticePeriodName = 'noticePeriod';
   static const String privacyPolicyName = 'privacyPolicy';
   static const String settingsName = 'settings';
 

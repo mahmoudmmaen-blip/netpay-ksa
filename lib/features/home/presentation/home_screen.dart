@@ -154,6 +154,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onTap: () => context.push(AppRoutes.eosb),
       ),
       HomeQuickActionItem(
+        title: 'إشعار الإنهاء',
+        icon: Icons.access_time_rounded,
+        onTap: () => context.push(AppRoutes.noticePeriod),
+      ),
+      HomeQuickActionItem(
         title: 'مقارنة العروض',
         icon: Icons.compare_arrows_rounded,
         locked: !isPremium,

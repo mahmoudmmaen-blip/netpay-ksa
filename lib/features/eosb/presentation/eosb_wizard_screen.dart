@@ -45,6 +45,7 @@ class EosbWizardScreen extends ConsumerStatefulWidget {
     super.key,
     this.dedicatedEosbBranding = false,
     this.historyEntryId,
+    this.embeddedInHub = false,
   });
 
   /// عند true (مسار `/eosb`) — عنوان الشاشة مخصّص للحاسبة فقط.
@@ -52,6 +53,9 @@ class EosbWizardScreen extends ConsumerStatefulWidget {
 
   /// عند التعيين — يُفتح الحساب المحفوظ من السجل مباشرة على النتائج.
   final String? historyEntryId;
+
+  /// داخل تبويب [EosbScreen] — بدون Scaffold/AppBar منفصل.
+  final bool embeddedInHub;
 
   @override
   ConsumerState<EosbWizardScreen> createState() => _EosbWizardScreenState();
@@ -157,20 +161,79 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
       }
     });
 
+    final fab = wizard.showResults
+        ? FloatingActionButton.extended(
+            onPressed: () => ref.read(eosbWizardProvider.notifier).reset(),
+            backgroundColor: AppColors.emerald,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.refresh_rounded),
+            label: Text(
+              'حساب جديد',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
+          )
+        : null;
+
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: AppColors.homeGradient(Theme.of(context).brightness),
+      ),
+      child: SafeArea(
+        top: !widget.embeddedInHub,
+        child: Stack(
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 380),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  ...previous,
+                  ?current,
+                ],
+              ),
+              transitionBuilder: (child, animation) {
+                final offset = Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOutCubic,
+                ));
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(position: offset, child: child),
+                );
+              },
+              child: wizard.showResults
+                  ? _ResultsView(
+                      key: const ValueKey('eosb_results'),
+                      isDark: isDark,
+                    )
+                  : _WizardStepper(
+                      key: const ValueKey('eosb_wizard'),
+                      isDark: isDark,
+                    ),
+            ),
+            if (widget.embeddedInHub && fab != null)
+              PositionedDirectional(
+                start: 16,
+                bottom: 16,
+                child: fab,
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (widget.embeddedInHub) {
+      return content;
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
-      floatingActionButton: wizard.showResults
-          ? FloatingActionButton.extended(
-              onPressed: () => ref.read(eosbWizardProvider.notifier).reset(),
-              backgroundColor: AppColors.emerald,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.refresh_rounded),
-              label: Text(
-                'حساب جديد',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-              ),
-            )
-          : null,
+      floatingActionButton: fab,
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -212,47 +275,7 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
           ],
         ),
       ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppColors.homeGradient(Theme.of(context).brightness),
-        ),
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 380),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previous,
-                ?current,
-              ],
-            ),
-            transitionBuilder: (child, animation) {
-              final offset = Tween<Offset>(
-                begin: const Offset(0, 0.04),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              ));
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(position: offset, child: child),
-              );
-            },
-            child: wizard.showResults
-                ? _ResultsView(
-                    key: const ValueKey('eosb_results'),
-                    isDark: isDark,
-                  )
-                : _WizardStepper(
-                    key: const ValueKey('eosb_wizard'),
-                    isDark: isDark,
-                  ),
-          ),
-        ),
-      ),
+      body: content,
     );
   }
 }

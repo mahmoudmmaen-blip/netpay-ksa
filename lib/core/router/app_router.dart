@@ -11,6 +11,7 @@ import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart'
 import 'package:netgulf/features/settings/presentation/settings_screen.dart';
 import 'package:netgulf/features/comparison/presentation/comparison_screen.dart';
 import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
+import 'package:netgulf/features/notice_period/presentation/notice_period_screen.dart';
 import 'package:netgulf/features/history/presentation/history_screen.dart';
 import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
 import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
@@ -130,6 +131,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: EosbScreen(
             historyEntryId: state.uri.queryParameters['historyId'],
           ),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.noticePeriod,
+        name: AppRoutes.noticePeriodName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const NoticePeriodScreen(),
         ),
       ),
       GoRoute(
