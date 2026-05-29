@@ -45,22 +45,6 @@ abstract final class ContractAnalysisService {
 لا تكتب أي شيء خارج الـ JSON.
 ''';
 
-  /// يزيل ```json ... ``` ويستخرج كائن JSON من النص.
-  static String _stripMarkdownJsonFences(String raw) {
-    var s = raw.trim();
-    if (s.startsWith('```')) {
-      s = s.replaceFirst(RegExp(r'^```(?:json)?\s*', multiLine: true), '');
-      s = s.replaceFirst(RegExp(r'\s*```\s*$', multiLine: true), '');
-      s = s.trim();
-    }
-    final start = s.indexOf('{');
-    final end = s.lastIndexOf('}');
-    if (start != -1 && end > start) {
-      s = s.substring(start, end + 1);
-    }
-    return s.trim();
-  }
-
   static Future<ContractAnalysisResult> analyze({
     required Uint8List pdfBytes,
     required GulfCountry country,
@@ -141,31 +125,42 @@ abstract final class ContractAnalysisService {
     }
 
     try {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      // http.post() → response.body is already a String.
+      final responseBody = response.body;
       // ignore: avoid_print
-      print('API Response: ${data.toString()}');
+      print('RAW RESPONSE: $responseBody');
 
-      final content = data['content'] as List<dynamic>?;
-      if (content == null || content.isEmpty) {
-        throw const FormatException('missing content array');
+      final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
+
+      // Claude API: { "content": [ { "type": "text", "text": "..." } ] }
+      // or error: { "error": { "message": "..." } }
+      if (decoded['error'] != null) {
+        final err = decoded['error'] as Map<String, dynamic>;
+        throw Exception('Claude error: ${err['message']}');
       }
 
-      final firstBlock = content[0];
-      if (firstBlock is! Map<String, dynamic>) {
-        throw const FormatException('content[0] is not an object');
-      }
+      final contentList = decoded['content'] as List;
+      final textContent = contentList.firstWhere(
+        (item) => (item as Map)['type'] == 'text',
+        orElse: () => throw Exception('No text in response'),
+      );
 
-      final text = firstBlock['text']?.toString();
-      if (text == null || text.trim().isEmpty) {
-        throw const FormatException('content[0].text is empty');
-      }
+      String rawText = (textContent as Map)['text'] as String;
+      // ignore: avoid_print
+      print('RAW TEXT: $rawText');
 
-      final clean = _stripMarkdownJsonFences(text);
-      final parsed = jsonDecode(clean) as Map<String, dynamic>;
-      return ContractAnalysisResult.fromJson(parsed, country: country);
-    } catch (_) {
+      rawText = rawText
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+
+      final jsonData = jsonDecode(rawText) as Map<String, dynamic>;
+      return ContractAnalysisResult.fromJson(jsonData, country: country);
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('PARSE ERROR: $e\n$st');
       throw ContractAnalysisException(
-        'تعذر قراءة نتيجة التحليل',
+        'تعذر قراءة نتيجة التحليل: $e',
         code: ContractAnalysisErrorCode.parse,
       );
     }
