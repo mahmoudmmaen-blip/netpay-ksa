@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:netgulf/core/constants/api_keys.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
@@ -22,7 +22,10 @@ abstract final class ContractAnalysisService {
     defaultValue: '',
   );
 
-  static bool get _useProxy => _anthropicProxyUrlEnv.trim().isNotEmpty;
+  static String get _proxyUrl => _anthropicProxyUrlEnv.trim();
+
+  /// Web: دائماً عبر Worker (CORS). غير Web: بروكسي إن وُجد وإلا API مباشر.
+  static bool get _useProxy => kIsWeb || _proxyUrl.isNotEmpty;
 
   static const _systemPrompt = '''
 أنت محلل عقود عمل خليجي متخصص. حلل عقد العمل المرفق وأخرج النتيجة بـ JSON فقط بهذا الشكل بالضبط:
@@ -46,6 +49,16 @@ abstract final class ContractAnalysisService {
     required Uint8List pdfBytes,
     required GulfCountry country,
   }) async {
+    if (kIsWeb && _proxyUrl.isEmpty) {
+      throw ContractAnalysisException(
+        'على Web يجب ضبط بروكسي Worker (CORS).\n'
+        'راجع cloudflare_worker/README.md\n'
+        'flutter run -d chrome '
+        '--dart-define=ANTHROPIC_PROXY_URL=https://xxx.workers.dev',
+        code: ContractAnalysisErrorCode.noApiKey,
+      );
+    }
+
     final apiKey = ApiKeys.claudeApiKey.trim();
     if (!_useProxy && apiKey.isEmpty) {
       throw ContractAnalysisException(
@@ -55,14 +68,13 @@ abstract final class ContractAnalysisService {
     }
 
     final base64Pdf = base64Encode(pdfBytes);
-    final uri = _useProxy
-        ? Uri.parse(_anthropicProxyUrlEnv.trim())
-        : Uri.parse(_directApiUri);
+    final uri = _useProxy ? Uri.parse(_proxyUrl) : Uri.parse(_directApiUri);
 
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'anthropic-version': _anthropicVersion,
     };
+    // المفتاح على Worker فقط — لا نرسله من Web.
     if (!_useProxy) {
       headers['x-api-key'] = apiKey;
     }
