@@ -12,6 +12,7 @@ import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.
 import 'package:netgulf/features/home/presentation/widgets/home_page_transitions.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
 import 'package:netgulf/features/home/presentation/widgets/saudi_home_section.dart';
+import 'package:netgulf/features/home/presentation/widgets/simple_country_section.dart';
 import 'package:netgulf/features/home/presentation/widgets/uae_home_section.dart';
 import 'package:netgulf/features/home/providers/home_salary_provider.dart';
 import 'package:netgulf/features/salary_calculator/models/gosi_model.dart';
@@ -129,8 +130,8 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
 
         // ── 5. Calculator section ──
         _HomeSectionLabel(
-          titleAr: isSaudi ? 'مدخلات الحاسبة — GOSI' : 'مدخلات الحاسبة — GPSSA / DEWS',
-          titleEn: isSaudi ? 'Calculator Inputs — GOSI' : 'Calculator Inputs — GPSSA / DEWS',
+          titleAr: country.calculatorTitleAr,
+          titleEn: country.schemeShort,
         ),
         const SizedBox(height: 12),
         AnimatedSwitcher(
@@ -138,17 +139,23 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
           switchInCurve: HomePageTransitions.switchCurve,
           switchOutCurve: Curves.easeInCubic,
           transitionBuilder: HomePageTransitions.fadeSlideHorizontal,
-          child: isSaudi
-              ? SaudiHomeSection(
-                  key: ValueKey(GulfCountry.saudiArabia),
-                  country: country,
-                  currency: currency,
-                )
-              : UaeHomeSection(
-                  key: ValueKey(GulfCountry.uae),
-                  country: country,
-                  currency: currency,
-                ),
+          child: switch (country) {
+            GulfCountry.saudiArabia => SaudiHomeSection(
+                key: ValueKey(GulfCountry.saudiArabia),
+                country: country,
+                currency: currency,
+              ),
+            GulfCountry.uae => UaeHomeSection(
+                key: ValueKey(GulfCountry.uae),
+                country: country,
+                currency: currency,
+              ),
+            _ => SimpleCountrySection(
+                key: ValueKey(country),
+                country: country,
+                currency: currency,
+              ),
+          },
         ),
       ],
     );

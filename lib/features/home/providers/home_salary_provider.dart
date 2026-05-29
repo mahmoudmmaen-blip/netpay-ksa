@@ -7,7 +7,6 @@ import 'package:netgulf/features/salary_calculator/providers/uae_salary_provider
 import 'package:netgulf/features/share/widgets/salary_share_card.dart';
 
 /// لقطة الراتب على الشاشة الرئيسية — country-aware hero card data.
-/// Home salary snapshot — unified net/gross/deduction for the active country.
 class HomeSalarySnapshot {
   const HomeSalarySnapshot({
     required this.country,
@@ -24,8 +23,12 @@ class HomeSalarySnapshot {
   bool get hasData => net > 0;
   bool get isSaudi => country == GulfCountry.saudiArabia;
   bool get isUae => country == GulfCountry.uae;
+  bool get isSimpleGcc =>
+      country == GulfCountry.oman ||
+      country == GulfCountry.qatar ||
+      country == GulfCountry.bahrain ||
+      country == GulfCountry.kuwait;
 
-  /// بيانات المشاركة — share payload from snapshot values.
   SalaryShareData toShareData() => SalaryShareData(
         netSalary: net,
         grossSalary: gross,
@@ -34,7 +37,12 @@ class HomeSalarySnapshot {
       );
 }
 
-/// تنسيق العملة حسب الدولة المختارة — currency formatter by selected country.
+/// الدولة النشطة على الشاشة الرئيسية.
+final homeCountryProvider = Provider<GulfCountry>((ref) {
+  return ref.watch(gulfCountryProvider);
+});
+
+/// تنسيق العملة حسب الدولة المختارة.
 final homeCurrencyFormatProvider = Provider<NumberFormat>((ref) {
   final country = ref.watch(gulfCountryProvider);
   return NumberFormat.currency(
@@ -44,22 +52,73 @@ final homeCurrencyFormatProvider = Provider<NumberFormat>((ref) {
   );
 });
 
-/// لقطة موحّدة للراتب — Saudi GOSI أو UAE GPSSA/DEWS.
-/// Unified home salary snapshot — routes to the active country's calculator.
+/// حالة الراتب البسيط (عمان، قطر، البحرين، الكويت) — بدون اقتطاع تأمين.
+class SimpleCountrySalaryState {
+  const SimpleCountrySalaryState({
+    this.basicSalary = 0,
+    this.housingAllowance = 0,
+    this.otherAllowances = 0,
+  });
+
+  final double basicSalary;
+  final double housingAllowance;
+  final double otherAllowances;
+
+  double get totalGross =>
+      basicSalary + housingAllowance + otherAllowances;
+}
+
+class SimpleCountrySalaryNotifier
+    extends StateNotifier<SimpleCountrySalaryState> {
+  SimpleCountrySalaryNotifier() : super(const SimpleCountrySalaryState());
+
+  void setBasic(double v) => state = SimpleCountrySalaryState(
+        basicSalary: v,
+        housingAllowance: state.housingAllowance,
+        otherAllowances: state.otherAllowances,
+      );
+
+  void setHousing(double v) => state = SimpleCountrySalaryState(
+        basicSalary: state.basicSalary,
+        housingAllowance: v,
+        otherAllowances: state.otherAllowances,
+      );
+
+  void setOther(double v) => state = SimpleCountrySalaryState(
+        basicSalary: state.basicSalary,
+        housingAllowance: state.housingAllowance,
+        otherAllowances: v,
+      );
+}
+
+final simpleCountrySalaryProvider = StateNotifierProvider<
+    SimpleCountrySalaryNotifier, SimpleCountrySalaryState>(
+  (ref) => SimpleCountrySalaryNotifier(),
+);
+
+/// لقطة موحّدة للراتب — ٦ دول خليجية.
 final homeSalarySnapshotProvider = Provider<HomeSalarySnapshot>((ref) {
   final country = ref.watch(gulfCountryProvider);
 
-  if (country == GulfCountry.saudiArabia) {
-    final salary = ref.watch(salaryNotifierProvider);
-    final gosi = ref.watch(gosiModelProvider);
-    return HomeSalarySnapshot(
-      country: country,
-      net: gosi?.netSalary ?? 0,
-      gross: gosi?.totalGross ?? salary.allowances.totalGross,
-      deduction: gosi?.employeeGosi ?? 0,
-    );
-  }
+  return switch (country) {
+    GulfCountry.saudiArabia => _buildSaudiSnapshot(ref, country),
+    GulfCountry.uae => _buildUaeSnapshot(ref, country),
+    _ => _buildSimpleSnapshot(ref, country),
+  };
+});
 
+HomeSalarySnapshot _buildSaudiSnapshot(Ref ref, GulfCountry country) {
+  final salary = ref.watch(salaryNotifierProvider);
+  final gosi = ref.watch(gosiModelProvider);
+  return HomeSalarySnapshot(
+    country: country,
+    net: gosi?.netSalary ?? 0,
+    gross: gosi?.totalGross ?? salary.allowances.totalGross,
+    deduction: gosi?.employeeGosi ?? 0,
+  );
+}
+
+HomeSalarySnapshot _buildUaeSnapshot(Ref ref, GulfCountry country) {
   final uae = ref.watch(uaeSalaryModelProvider);
   return HomeSalarySnapshot(
     country: country,
@@ -67,9 +126,19 @@ final homeSalarySnapshotProvider = Provider<HomeSalarySnapshot>((ref) {
     gross: uae.totalGross,
     deduction: uae.totalMonthlyDeductions,
   );
-});
+}
 
-/// هل الدولة الحالية السعودية — convenience for Saudi-only UI.
+HomeSalarySnapshot _buildSimpleSnapshot(Ref ref, GulfCountry country) {
+  final simple = ref.watch(simpleCountrySalaryProvider);
+  return HomeSalarySnapshot(
+    country: country,
+    net: simple.totalGross,
+    gross: simple.totalGross,
+    deduction: 0,
+  );
+}
+
+/// هل الدولة الحالية السعودية — GOSI وتنبيهات فقط.
 final homeIsSaudiProvider = Provider<bool>((ref) {
   return ref.watch(gulfCountryProvider) == GulfCountry.saudiArabia;
 });
