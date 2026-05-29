@@ -11,7 +11,7 @@ import 'package:netgulf/features/contract_analysis/models/contract_analysis_resu
 abstract final class ContractAnalysisService {
   ContractAnalysisService._();
 
-  static const _model = 'claude-sonnet-4-20250514';
+  static const _model = 'claude-sonnet-4-5';
   static const _anthropicVersion = '2023-06-01';
   static const _timeout = Duration(seconds: 30);
   static const _directApiUri = 'https://api.anthropic.com/v1/messages';
@@ -73,16 +73,20 @@ abstract final class ContractAnalysisService {
     final headers = <String, String>{
       'Content-Type': 'application/json',
       'anthropic-version': _anthropicVersion,
+      'anthropic-beta': 'pdfs-2024-09-25',
     };
     // المفتاح على Worker فقط — لا نرسله من Web.
     if (!_useProxy) {
       headers['x-api-key'] = apiKey;
     }
 
+    final userPrompt =
+        '$_systemPrompt\n\n'
+        'حلل عقد العمل وفق قانون العمل في ${country.nameAr}. ${country.eosLawChipAr}';
+
     final body = jsonEncode({
       'model': _model,
       'max_tokens': 2000,
-      'system': _systemPrompt,
       'messages': [
         {
           'role': 'user',
@@ -97,8 +101,7 @@ abstract final class ContractAnalysisService {
             },
             {
               'type': 'text',
-              'text':
-                  'حلل عقد العمل وفق قانون العمل في ${country.nameAr}. ${country.eosLawChipAr}',
+              'text': userPrompt,
             },
           ],
         },
