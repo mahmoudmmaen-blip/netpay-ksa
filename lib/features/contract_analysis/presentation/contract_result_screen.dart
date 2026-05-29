@@ -9,6 +9,7 @@ import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/features/contract_analysis/models/contract_analysis_result.dart';
+import 'package:netgulf/features/notifications/contract_reminder/contract_reminder_service.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// نتائج تحليل عقد العمل.
@@ -201,6 +202,12 @@ class ContractResultScreen extends ConsumerWidget {
             ),
           ),
         ),
+        if (result.contractDurationMonths != null) ...[
+          const SizedBox(height: 16),
+          _ContractExpiryReminderCard(
+            contractDurationMonths: result.contractDurationMonths!,
+          ),
+        ],
         const SizedBox(height: 12),
         GlassSurface(
           borderRadius: 12,
@@ -347,6 +354,136 @@ class _ScoreCard extends StatelessWidget {
                 color: _amberScore,
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContractExpiryReminderCard extends StatefulWidget {
+  const _ContractExpiryReminderCard({
+    required this.contractDurationMonths,
+  });
+
+  final int contractDurationMonths;
+
+  @override
+  State<_ContractExpiryReminderCard> createState() =>
+      _ContractExpiryReminderCardState();
+}
+
+class _ContractExpiryReminderCardState extends State<_ContractExpiryReminderCard> {
+  bool _scheduled = false;
+  bool _loading = false;
+
+  Future<void> _enableReminder() async {
+    setState(() => _loading = true);
+
+    final outcome = await ContractReminderService.scheduleExpiryReminder(
+      widget.contractDurationMonths,
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    final messenger = ScaffoldMessenger.of(context);
+    switch (outcome) {
+      case ContractReminderScheduleResult.scheduled:
+        setState(() => _scheduled = true);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'تم تفعيل التنبيه ✓',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+            ),
+          ),
+        );
+      case ContractReminderScheduleResult.notSupportedOnWeb:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'التنبيهات غير مدعومة على الويب',
+              style: GoogleFonts.cairo(),
+            ),
+          ),
+        );
+      case ContractReminderScheduleResult.dateInPast:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'موعد التنبيه في الماضي — مدة العقد قصيرة جداً',
+              style: GoogleFonts.cairo(),
+            ),
+          ),
+        );
+      case ContractReminderScheduleResult.permissionDenied:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'لم يُمنح إذن الإشعارات',
+              style: GoogleFonts.cairo(),
+            ),
+          ),
+        );
+      case ContractReminderScheduleResult.failed:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'تعذر جدولة التنبيه',
+              style: GoogleFonts.cairo(),
+            ),
+          ),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_scheduled) return const SizedBox.shrink();
+
+    return GlassSurface(
+      borderRadius: 18,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'تنبيه انتهاء العقد',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'هل تريد تذكيراً قبل انتهاء عقدك بـ 30 يوماً؟',
+            style: GoogleFonts.cairo(
+              fontSize: 13,
+              height: 1.45,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 44,
+            child: FilledButton(
+              onPressed: _loading ? null : _enableReminder,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.emerald,
+                foregroundColor: Colors.white,
+              ),
+              child: _loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      'تفعيل التنبيه',
+                      style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+                    ),
+            ),
           ),
         ],
       ),
