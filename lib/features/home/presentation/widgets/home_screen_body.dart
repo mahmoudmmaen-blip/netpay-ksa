@@ -74,8 +74,12 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
         // ── 1. Country selector (top) ──
         GulfCountrySelector(
           selected: country,
-          onSelected: (c) =>
-              ref.read(gulfCountryProvider.notifier).setCountry(c),
+          onSelected: (c) {
+            if (c == country) return;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ref.read(gulfCountryProvider.notifier).setCountry(c);
+            });
+          },
         ),
         const SizedBox(height: HomeScreenBody._sectionSpacing),
 

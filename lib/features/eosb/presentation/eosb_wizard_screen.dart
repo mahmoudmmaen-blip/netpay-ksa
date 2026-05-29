@@ -305,7 +305,9 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
 
     ref.listen(eosbWizardProvider, (previous, next) {
       if (previous != null && previous.stepIndex != next.stepIndex) {
-        ref.read(eosbWizardProvider.notifier).flushAllInputs();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(eosbWizardProvider.notifier).flushAllInputs();
+        });
       }
     });
 
@@ -777,7 +779,10 @@ class _StepContractState extends ConsumerState<_StepContract> {
 
   @override
   void deactivate() {
-    _pushToProvider();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _pushToProvider();
+    });
     super.deactivate();
   }
 
@@ -854,7 +859,11 @@ class _StepContractState extends ConsumerState<_StepContract> {
         const SizedBox(height: 8),
         EosbCountryGrid(
           selected: wizard.country,
-          onSelected: notifier.setCountry,
+          onSelected: (country) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              notifier.setCountry(country);
+            });
+          },
         ),
         const SizedBox(height: 10),
         AnimatedSwitcher(

@@ -15,10 +15,6 @@ class EosbCountryGrid extends StatelessWidget {
   final GulfCountry selected;
   final ValueChanged<GulfCountry> onSelected;
 
-  static const int _crossAxisCount = 2;
-  static const double _spacing = 10;
-  static const double _tileHeight = 130;
-
   @override
   Widget build(BuildContext context) {
     assert(
@@ -32,10 +28,10 @@ class EosbCountryGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: _crossAxisCount,
-        mainAxisSpacing: _spacing,
-        crossAxisSpacing: _spacing,
-        mainAxisExtent: _tileHeight,
+        crossAxisCount: 2,
+        childAspectRatio: 1.4,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
       ),
       itemCount: GulfCountry.values.length,
       itemBuilder: (context, index) {
