@@ -45,6 +45,22 @@ abstract final class ContractAnalysisService {
 لا تكتب أي شيء خارج الـ JSON.
 ''';
 
+  /// يزيل ```json ... ``` ويستخرج كائن JSON من النص.
+  static String _stripMarkdownJsonFences(String raw) {
+    var s = raw.trim();
+    if (s.startsWith('```')) {
+      s = s.replaceFirst(RegExp(r'^```(?:json)?\s*', multiLine: true), '');
+      s = s.replaceFirst(RegExp(r'\s*```\s*$', multiLine: true), '');
+      s = s.trim();
+    }
+    final start = s.indexOf('{');
+    final end = s.lastIndexOf('}');
+    if (start != -1 && end > start) {
+      s = s.substring(start, end + 1);
+    }
+    return s.trim();
+  }
+
   static Future<ContractAnalysisResult> analyze({
     required Uint8List pdfBytes,
     required GulfCountry country,
@@ -126,18 +142,25 @@ abstract final class ContractAnalysisService {
 
     try {
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final content = data['content'] as List<dynamic>? ?? [];
-      final text = content
-          .whereType<Map<String, dynamic>>()
-          .where((b) => b['type'] == 'text')
-          .map((b) => b['text'] as String)
-          .join();
+      // ignore: avoid_print
+      print('API Response: ${data.toString()}');
 
-      final clean = text
-          .replaceAll('```json', '')
-          .replaceAll('```', '')
-          .trim();
+      final content = data['content'] as List<dynamic>?;
+      if (content == null || content.isEmpty) {
+        throw const FormatException('missing content array');
+      }
 
+      final firstBlock = content[0];
+      if (firstBlock is! Map<String, dynamic>) {
+        throw const FormatException('content[0] is not an object');
+      }
+
+      final text = firstBlock['text']?.toString();
+      if (text == null || text.trim().isEmpty) {
+        throw const FormatException('content[0].text is empty');
+      }
+
+      final clean = _stripMarkdownJsonFences(text);
       final parsed = jsonDecode(clean) as Map<String, dynamic>;
       return ContractAnalysisResult.fromJson(parsed, country: country);
     } catch (_) {
