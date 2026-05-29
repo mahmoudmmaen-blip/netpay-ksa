@@ -13,7 +13,8 @@ abstract final class ContractAnalysisService {
 
   static const _model = 'claude-sonnet-4-5';
   static const _anthropicVersion = '2023-06-01';
-  static const _timeout = Duration(seconds: 30);
+  static const _timeout = Duration(seconds: 120);
+  static const _maxPdfBytes = 5 * 1024 * 1024; // 5 MB
   static const _directApiUri = 'https://api.anthropic.com/v1/messages';
 
   /// فقط من `--dart-define=ANTHROPIC_PROXY_URL=...` (بدون fallback محلي).
@@ -100,6 +101,10 @@ $_systemPrompt
       );
     }
 
+    if (pdfBytes.length > _maxPdfBytes) {
+      throw Exception('حجم الملف كبير جداً، الحد الأقصى 5 ميغابايت');
+    }
+
     final base64Pdf = base64Encode(pdfBytes);
     final uri = _useProxy ? Uri.parse(_proxyUrl) : Uri.parse(_directApiUri);
 
@@ -139,16 +144,19 @@ $_systemPrompt
       ],
     });
 
+    final client = http.Client();
     http.Response response;
     try {
-      response = await http
+      response = await client
           .post(uri, headers: headers, body: body)
           .timeout(_timeout);
     } on TimeoutException {
       throw ContractAnalysisException(
-        'انتهت مهلة التحليل (30 ثانية)',
+        'انتهت مهلة التحليل (120 ثانية)',
         code: ContractAnalysisErrorCode.timeout,
       );
+    } finally {
+      client.close();
     }
 
     debugPrint('STATUS: ${response.statusCode}');
