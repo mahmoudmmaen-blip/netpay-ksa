@@ -11,6 +11,7 @@ import 'package:netgulf/features/onboarding/presentation/onboarding_screen.dart'
 import 'package:netgulf/features/settings/presentation/settings_screen.dart';
 import 'package:netgulf/features/comparison/presentation/comparison_screen.dart';
 import 'package:netgulf/features/eosb/presentation/eosb_screen.dart';
+import 'package:netgulf/features/leave_balance/presentation/leave_balance_screen.dart';
 import 'package:netgulf/features/notice_period/presentation/notice_period_screen.dart';
 import 'package:netgulf/features/history/presentation/history_screen.dart';
 import 'package:netgulf/features/salary_calculator/presentation/increase_calculator_screen.dart';
@@ -139,6 +140,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const NoticePeriodScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.leaveBalance,
+        name: AppRoutes.leaveBalanceName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const LeaveBalanceScreen(),
         ),
       ),
       GoRoute(
