@@ -45,6 +45,39 @@ abstract final class ContractAnalysisService {
 لا تكتب أي شيء خارج الـ JSON.
 ''';
 
+  static String _countryCode(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => 'SA',
+        GulfCountry.uae => 'AE',
+        GulfCountry.qatar => 'QA',
+        GulfCountry.kuwait => 'KW',
+        GulfCountry.bahrain => 'BH',
+        GulfCountry.oman => 'OM',
+      };
+
+  static String _referenceLaborLawAr(GulfCountry country) => switch (country) {
+        GulfCountry.saudiArabia => 'نظام العمل السعودي',
+        GulfCountry.uae => 'قانون العمل الإماراتي',
+        GulfCountry.qatar => 'قانون العمل القطري',
+        GulfCountry.kuwait => 'قانون العمل الكويتي',
+        GulfCountry.bahrain => 'قانون العمل البحريني',
+        GulfCountry.oman => 'قانون العمل العُماني',
+      };
+
+  static String _userPromptForCountry(GulfCountry country) {
+    final code = _countryCode(country);
+    final nameAr = country.nameAr;
+    final laborLaw = _referenceLaborLawAr(country);
+
+    return '''
+$_systemPrompt
+
+دولة العمل: $nameAr ($code)
+قانون العمل المرجعي: $laborLaw
+
+حلل العقد المرفق وفق قانون العمل في $nameAr. قارن بنود العقد مع أحكام $laborLaw وأخرج النتيجة بصيغة JSON فقط كما في التعليمات أعلاه.
+''';
+  }
+
   static Future<ContractAnalysisResult> analyze({
     required Uint8List pdfBytes,
     required GulfCountry country,
@@ -80,9 +113,7 @@ abstract final class ContractAnalysisService {
       headers['x-api-key'] = apiKey;
     }
 
-    final userPrompt =
-        '$_systemPrompt\n\n'
-        'حلل عقد العمل وفق قانون العمل في ${country.nameAr}. ${country.eosLawChipAr}';
+    final userPrompt = _userPromptForCountry(country);
 
     final body = jsonEncode({
       'model': _model,
