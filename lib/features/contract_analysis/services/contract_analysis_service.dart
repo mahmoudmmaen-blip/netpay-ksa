@@ -117,6 +117,9 @@ abstract final class ContractAnalysisService {
       );
     }
 
+    debugPrint('STATUS: ${response.statusCode}');
+    debugPrint('BODY: ${response.body}');
+
     if (response.statusCode != 200) {
       throw ContractAnalysisException(
         'فشل التحليل (${response.statusCode})',
