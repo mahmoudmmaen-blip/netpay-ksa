@@ -172,6 +172,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: const PrivacyPolicyScreen(),
         ),
       ),
+      // المساعد القانوني / legal — يوجّه لحاسبة نهاية الخدمة (EOSB).
       GoRoute(
         path: AppRoutes.legal,
         name: AppRoutes.legalName,

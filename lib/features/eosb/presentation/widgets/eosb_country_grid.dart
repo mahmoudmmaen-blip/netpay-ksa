@@ -17,7 +17,7 @@ class EosbCountryGrid extends StatelessWidget {
 
   static const int _crossAxisCount = 2;
   static const double _spacing = 10;
-  static const double _tileHeight = 152;
+  static const double _tileHeight = 130;
 
   @override
   Widget build(BuildContext context) {
@@ -26,38 +26,31 @@ class EosbCountryGrid extends StatelessWidget {
       'EOSB country grid expects exactly 6 GCC enum values',
     );
 
-    final countries = GulfCountry.values;
-    final rowCount = (countries.length / _crossAxisCount).ceil();
-    final gridHeight =
-        rowCount * _tileHeight + (rowCount - 1) * _spacing;
-    final flagSize = MediaQuery.sizeOf(context).width < 360 ? 42.0 : 46.0;
+    final flagSize = MediaQuery.sizeOf(context).width < 360 ? 38.0 : 42.0;
 
-    return SizedBox(
-      height: gridHeight,
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _crossAxisCount,
-          mainAxisSpacing: _spacing,
-          crossAxisSpacing: _spacing,
-          mainAxisExtent: _tileHeight,
-        ),
-        itemCount: GulfCountry.values.length,
-        itemBuilder: (context, index) {
-          final country = GulfCountry.values[index];
-          return _EosbCountryTile(
-            key: ValueKey('eosb_country_${country.name}'),
-            country: country,
-            isSelected: country == selected,
-            flagSize: flagSize,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelected(country);
-            },
-          );
-        },
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: _crossAxisCount,
+        mainAxisSpacing: _spacing,
+        crossAxisSpacing: _spacing,
+        mainAxisExtent: _tileHeight,
       ),
+      itemCount: GulfCountry.values.length,
+      itemBuilder: (context, index) {
+        final country = GulfCountry.values[index];
+        return _EosbCountryTile(
+          key: ValueKey('eosb_country_${country.name}'),
+          country: country,
+          isSelected: country == selected,
+          flagSize: flagSize,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onSelected(country);
+          },
+        );
+      },
     );
   }
 }
@@ -94,7 +87,7 @@ class _EosbCountryTile extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -144,14 +137,14 @@ class _EosbCountryTile extends StatelessWidget {
                       country.flag,
                       style: TextStyle(fontSize: flagSize),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       country.nameAr,
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.cairo(
-                        fontSize: 13.5,
+                        fontSize: 12.5,
                         height: 1.1,
                         fontWeight: FontWeight.w800,
                         color: isSelected
@@ -165,7 +158,7 @@ class _EosbCountryTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.cairo(
-                        fontSize: 10,
+                        fontSize: 9.5,
                         height: 1.1,
                         fontWeight: FontWeight.w500,
                         color: isSelected
@@ -173,10 +166,10 @@ class _EosbCountryTile extends StatelessWidget {
                             : muted,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
+                        horizontal: 4,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
@@ -194,8 +187,8 @@ class _EosbCountryTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.cairo(
-                          fontSize: 8.5,
-                          height: 1.12,
+                          fontSize: 8,
+                          height: 1.1,
                           fontWeight: FontWeight.w700,
                           color: isSelected ? AppColors.emerald : muted,
                         ),
@@ -210,7 +203,7 @@ class _EosbCountryTile extends StatelessWidget {
                     child: Icon(
                       Icons.check_circle_rounded,
                       color: AppColors.emerald,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
               ],

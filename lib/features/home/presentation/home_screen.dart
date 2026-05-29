@@ -23,8 +23,8 @@ import 'package:netgulf/features/salary_calculator/providers/salary_notifier.dar
 import 'package:netgulf/features/share/providers/share_provider.dart';
 import 'package:netgulf/features/share/share_service.dart';
 
-/// الشاشة الرئيسية — حاسبة متعددة الدول (السعودية + الإمارات).
-/// Home screen — multi-country salary calculator (Saudi + UAE).
+/// الشاشة الرئيسية — حاسبة متعددة الدول (٦ دول خليجية).
+/// Home screen — multi-country salary calculator (6 GCC countries).
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -44,11 +44,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSaudi = ref.watch(homeIsSaudiProvider);
+    final country = ref.watch(homeCountryProvider);
+    final isSaudi = country == GulfCountry.saudiArabia;
     final snapshot = ref.watch(homeSalarySnapshotProvider);
     final gosi = ref.watch(gosiModelProvider);
     final isPremium = ref.watch(isPremiumProvider);
-    final country = snapshot.country;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -144,18 +144,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     bool isPremium,
   ) {
     final isSaudi = country == GulfCountry.saudiArabia;
+    final isUae = country == GulfCountry.uae;
 
     final items = <HomeQuickActionItem>[
       HomeQuickActionItem(
-        title: 'المساعد القانوني',
-        icon: Icons.balance_rounded,
-        highlighted: true,
-        onTap: () => context.push(AppRoutes.legal),
-      ),
-      HomeQuickActionItem(
         title: 'نهاية الخدمة',
-        icon: Icons.card_giftcard_outlined,
-        onTap: () => context.push(AppRoutes.legal),
+        icon: Icons.card_giftcard_rounded,
+        highlighted: true,
+        onTap: () => context.push(AppRoutes.eosb),
       ),
       HomeQuickActionItem(
         title: 'مقارنة العروض',
@@ -179,7 +175,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onTap: () => context.push(AppRoutes.increase),
         ),
       );
-    } else {
+    } else if (isUae) {
       items.add(
         HomeQuickActionItem(
           title: 'GPSSA / DEWS',
