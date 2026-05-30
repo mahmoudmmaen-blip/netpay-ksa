@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_quick_actions_row.dart';
 
 /// أقسام أدوات الشاشة الرئيسية.
@@ -9,6 +10,7 @@ class HomeToolsSections extends StatelessWidget {
   const HomeToolsSections({
     super.key,
     required this.country,
+    required this.countryTheme,
     required this.workItems,
     required this.planningItems,
     required this.onContractAnalysis,
@@ -19,6 +21,7 @@ class HomeToolsSections extends StatelessWidget {
   });
 
   final GulfCountry country;
+  final CountryTheme countryTheme;
   final List<HomeQuickActionItem> workItems;
   final List<HomeQuickActionItem> planningItems;
   final VoidCallback onContractAnalysis;
@@ -32,15 +35,19 @@ class HomeToolsSections extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionTitle('أدوات العمل'),
+        _SectionTitle('أدوات العمل', countryTheme: countryTheme),
         const SizedBox(height: 8),
-        HomeQuickActionsRow(country: country, items: workItems),
+        HomeQuickActionsRow(
+          country: country,
+          countryTheme: countryTheme,
+          items: workItems,
+        ),
         const SizedBox(height: 20),
-        _SectionTitle('تحليل العقد'),
+        _SectionTitle('تحليل العقد', countryTheme: countryTheme),
         const SizedBox(height: 8),
         _ContractAnalysisPromoCard(onTap: onContractAnalysis),
         const SizedBox(height: 20),
-        _SectionTitle('الحقوق القانونية'),
+        _SectionTitle('الحقوق القانونية', countryTheme: countryTheme),
         const SizedBox(height: 8),
         _LegalRightsCards(
           onLegalQa: onLegalQa,
@@ -49,29 +56,38 @@ class HomeToolsSections extends StatelessWidget {
           showPremiumBadge: legalQaPremium,
         ),
         const SizedBox(height: 20),
-        _SectionTitle('التخطيط المالي'),
+        _SectionTitle('التخطيط المالي', countryTheme: countryTheme),
         const SizedBox(height: 8),
-        HomeQuickActionsRow(country: country, items: planningItems),
+        HomeQuickActionsRow(
+          country: country,
+          countryTheme: countryTheme,
+          items: planningItems,
+        ),
       ],
     );
   }
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text);
+  const _SectionTitle(this.text, {required this.countryTheme});
   final String text;
+  final CountryTheme countryTheme;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4),
-      child: Text(
-        text,
-        style: GoogleFonts.cairo(
-          fontSize: 16,
-          fontWeight: FontWeight.w800,
-          color: AppColors.emeraldLight,
-        ),
+    return AnimatedDefaultTextStyle(
+      duration: CountryThemes.themeTransition,
+      curve: CountryThemes.themeCurve,
+      style: GoogleFonts.cairo(
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: countryTheme.accent.computeLuminance() > 0.9
+            ? countryTheme.primary
+            : countryTheme.accent,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: Text(text),
       ),
     );
   }

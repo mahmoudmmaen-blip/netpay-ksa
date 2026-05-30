@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
 import 'package:netgulf/core/theme/app_typography.dart';
 import 'package:netgulf/core/widgets/animated_currency_text.dart';
 import 'package:netgulf/core/widgets/app_logo.dart';
@@ -14,6 +15,7 @@ class HomeNetSalaryCard extends StatefulWidget {
   const HomeNetSalaryCard({
     super.key,
     required this.country,
+    required this.countryTheme,
     required this.net,
     required this.gross,
     required this.deduction,
@@ -22,6 +24,7 @@ class HomeNetSalaryCard extends StatefulWidget {
   });
 
   final GulfCountry country;
+  final CountryTheme countryTheme;
   final double net;
   final double gross;
   final double deduction;
@@ -58,6 +61,7 @@ class _HomeNetSalaryCardState extends State<HomeNetSalaryCard>
   void didUpdateWidget(HomeNetSalaryCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.country != widget.country ||
+        oldWidget.countryTheme.primary != widget.countryTheme.primary ||
         oldWidget.net != widget.net) {
       _controller.forward(from: 0);
     }
@@ -79,14 +83,16 @@ class _HomeNetSalaryCardState extends State<HomeNetSalaryCard>
         opacity: _fade.value,
         child: Transform.scale(scale: _scale.value, child: child),
       ),
-      child: Container(
+      child: AnimatedContainer(
+        duration: CountryThemes.themeTransition,
+        curve: CountryThemes.themeCurve,
         constraints: const BoxConstraints(minHeight: 228),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             ...AppColors.premiumCardGlow(isDark: widget.isDark),
             BoxShadow(
-              color: AppColors.emerald.withValues(alpha: 0.2),
+              color: widget.countryTheme.primary.withValues(alpha: 0.35),
               blurRadius: 28,
               spreadRadius: -6,
               offset: const Offset(0, 14),
@@ -96,7 +102,12 @@ class _HomeNetSalaryCardState extends State<HomeNetSalaryCard>
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
-            gradient: AppColors.premiumCardBorder,
+            gradient: LinearGradient(
+              colors: [
+                widget.countryTheme.accent.withValues(alpha: 0.5),
+                widget.countryTheme.primary,
+              ],
+            ),
           ),
           padding: const EdgeInsets.all(2.5),
           child: ClipRRect(
@@ -104,10 +115,14 @@ class _HomeNetSalaryCardState extends State<HomeNetSalaryCard>
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: DecoratedBox(
+                  child: AnimatedContainer(
+                    duration: CountryThemes.themeTransition,
+                    curve: CountryThemes.themeCurve,
                     decoration: BoxDecoration(
-                      gradient: AppColors.heroSalaryGradient(
-                        isDark: widget.isDark,
+                      gradient: LinearGradient(
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
+                        colors: widget.countryTheme.gradient,
                       ),
                     ),
                   ),

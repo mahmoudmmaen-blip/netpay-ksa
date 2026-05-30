@@ -71,6 +71,7 @@ abstract final class AppConstants {
   static const String prefLegalAiQuestionsDate = 'legal_ai_questions_date';
   static const String prefLegalAiQuestionsCount = 'legal_ai_questions_count';
   static const String prefGulfCountry = 'gulf_country';
+  static const String prefSelectedCountry = 'selected_country';
 
   // ── Premium (SharedPreferences — استبدل بـ IAP/RevenueCat لاحقاً) ─────────
 

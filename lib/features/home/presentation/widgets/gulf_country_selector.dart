@@ -1,306 +1,287 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
-import 'package:netgulf/core/theme/app_colors.dart';
-import 'package:netgulf/core/widgets/glass_surface.dart';
+import 'package:netgulf/core/providers/gulf_country_provider.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
 
-/// شبكة اختيار الدولة — ٦ دول خليجية (٣ أعمدة × ٢ صفوف).
-class GulfCountrySelector extends StatelessWidget {
-  const GulfCountrySelector({
+/// شريط دول مضغوط — تمرير أفقي.
+class CompactGulfCountryBar extends StatelessWidget {
+  const CompactGulfCountryBar({
     super.key,
     required this.selected,
+    required this.theme,
     required this.onSelected,
   });
 
   final GulfCountry selected;
+  final CountryTheme theme;
   final ValueChanged<GulfCountry> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 360),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.emerald.withValues(alpha: isDark ? 0.22 : 0.12),
-            AppColors.gold.withValues(alpha: isDark ? 0.14 : 0.08),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.emerald.withValues(alpha: 0.18),
-            blurRadius: 28,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: GlassSurface(
-        borderRadius: 28,
-        padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Choose Country · اختر الدولة',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-                color: AppColors.emeraldLight,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '٦ دول خليجية',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.9,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: GulfCountry.values.length,
-              itemBuilder: (context, index) {
-                final country = GulfCountry.values[index];
-                return _CountryCard(
-                  key: ValueKey('home_country_${country.name}'),
-                  country: country,
-                  isSelected: selected == country,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onSelected(country);
-                  },
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 320),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.92, end: 1).animate(animation),
-                  child: child,
-                ),
-              ),
-              child: _CurrencyChip(
-                key: ValueKey(selected),
-                country: selected,
-              ),
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: homeCountryDisplayOrder.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final country = homeCountryDisplayOrder[index];
+          final countryTheme = CountryThemes.forCountry(country);
+          final isSelected = country == selected;
+          return _CountryChip(
+            country: country,
+            countryTheme: countryTheme,
+            isSelected: isSelected,
+            activePrimary: theme.primary,
+            onTap: () {
+              if (isSelected) return;
+              HapticFeedback.selectionClick();
+              onSelected(country);
+            },
+          );
+        },
       ),
     );
   }
 }
 
-class _CurrencyChip extends StatelessWidget {
-  const _CurrencyChip({super.key, required this.country});
+class _CountryChip extends StatelessWidget {
+  const _CountryChip({
+    required this.country,
+    required this.countryTheme,
+    required this.isSelected,
+    required this.activePrimary,
+    required this.onTap,
+  });
 
   final GulfCountry country;
+  final CountryTheme countryTheme;
+  final bool isSelected;
+  final Color activePrimary;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(country.flag, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              country.currencyLabel,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.cairo(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                color: AppColors.currencyBarText,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
+    return AnimatedContainer(
+      duration: CountryThemes.themeTransition,
+      curve: CountryThemes.themeCurve,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(22),
+          child: AnimatedContainer(
+            duration: CountryThemes.themeTransition,
+            curve: CountryThemes.themeCurve,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.currencyBarText.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: isSelected ? activePrimary : Colors.transparent,
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
-                color: AppColors.currencyBarText.withValues(alpha: 0.35),
+                color: isSelected
+                    ? activePrimary
+                    : onSurface.withValues(alpha: 0.25),
+                width: isSelected ? 1.5 : 1,
               ),
             ),
-            child: Text(
-              country.currencySymbol,
-              style: GoogleFonts.cairo(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                color: AppColors.currencyBarText,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(countryTheme.flag, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Text(
+                  countryTheme.name,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? _chipLabelColor(activePrimary, countryTheme.accent)
+                        : onSurface,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  static Color _chipLabelColor(Color primary, Color accent) {
+    final luminance = primary.computeLuminance();
+    if (luminance < 0.45) return Colors.white;
+    if (accent.computeLuminance() > 0.85) return primary;
+    return accent;
+  }
+}
+
+/// زر العلم في AppBar — يفتح قائمة الدول.
+class HomeCountryFlagButton extends ConsumerWidget {
+  const HomeCountryFlagButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(countryThemeProvider);
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 4),
+      child: Tooltip(
+        message: 'تغيير الدولة',
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: () => showGulfCountryPickerSheet(context, ref),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Text(theme.flag, style: const TextStyle(fontSize: 22)),
+            ),
+          ),
+        ),
       ),
     );
   }
 }
 
-class _CountryCard extends StatefulWidget {
-  const _CountryCard({
-    super.key,
+/// Bottom sheet — بطاقات الدول الست.
+Future<void> showGulfCountryPickerSheet(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) {
+      return Consumer(
+        builder: (context, ref, _) {
+          final current = ref.watch(gulfCountryProvider);
+          return Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'اختر الدولة',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...homeCountryDisplayOrder.map((country) {
+                  final theme = CountryThemes.forCountry(country);
+                  final isSelected = country == current;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _PickerCountryCard(
+                      country: country,
+                      theme: theme,
+                      isSelected: isSelected,
+                      onTap: () async {
+                        HapticFeedback.selectionClick();
+                        await ref
+                            .read(gulfCountryProvider.notifier)
+                            .setCountry(country);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+
+}
+
+class _PickerCountryCard extends StatelessWidget {
+  const _PickerCountryCard({
     required this.country,
+    required this.theme,
     required this.isSelected,
     required this.onTap,
   });
 
   final GulfCountry country;
+  final CountryTheme theme;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
-  State<_CountryCard> createState() => _CountryCardState();
-}
-
-class _CountryCardState extends State<_CountryCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 220),
-      lowerBound: 1,
-      upperBound: 1.05,
-    );
-    if (widget.isSelected) _pulse.value = 1.02;
-  }
-
-  @override
-  void didUpdateWidget(covariant _CountryCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected && !oldWidget.isSelected) {
-      _pulse.forward(from: 1).then((_) => _pulse.reverse());
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isSelected = widget.isSelected;
-    final c = widget.country;
-
-    return ScaleTransition(
-      scale: _pulse,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        decoration: isSelected
-            ? BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.emerald.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              )
-            : null,
-        child: GlassSurface(
-          highlighted: isSelected,
-          borderRadius: 14,
-          onTap: widget.onTap,
-          padding: const EdgeInsets.all(8),
-          child: Stack(
-            clipBehavior: Clip.none,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          duration: CountryThemes.themeTransition,
+          curve: CountryThemes.themeCurve,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSelected ? theme.primary : theme.primary.withValues(alpha: 0.2),
+              width: isSelected ? 2.5 : 1,
+            ),
+            color: isSelected
+                ? theme.primary.withValues(alpha: 0.08)
+                : Theme.of(context).colorScheme.surface,
+          ),
+          child: Row(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(c.flag, style: const TextStyle(fontSize: 32)),
-                  const SizedBox(height: 4),
-                  Text(
-                    c.nameAr,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.cairo(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: isSelected
-                          ? AppColors.emeraldLight
-                          : Theme.of(context).colorScheme.onSurface,
+              Text(theme.flag, style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      theme.name,
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Text(
-                    c.nameEn,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.cairo(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 4),
+                    Text(
+                      country.currencyLabel,
+                      style: GoogleFonts.cairo(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    c.schemeShort,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.cairo(
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected
-                          ? AppColors.goldBright
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    Text(
+                      country.schemeShort,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: theme.primary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (isSelected)
-                const PositionedDirectional(
-                  top: 2,
-                  end: 2,
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: AppColors.emeraldLight,
-                    size: 14,
-                  ),
-                ),
+                Icon(Icons.check_circle_rounded, color: theme.primary),
             ],
           ),
         ),

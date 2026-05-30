@@ -5,9 +5,9 @@ import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
 import 'package:netgulf/core/widgets/premium_gate_sheet.dart';
 import 'package:netgulf/core/widgets/premium_upgrade_button.dart';
-import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_net_salary_card.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_page_transitions.dart';
 import 'package:netgulf/features/home/presentation/widgets/home_screen_header.dart';
@@ -25,12 +25,14 @@ class HomeScreenBody extends ConsumerStatefulWidget {
     super.key,
     required this.scrollController,
     required this.isDark,
+    required this.countryTheme,
     required this.quickActions,
     this.gosiWarnings = const [],
   });
 
   final ScrollController scrollController;
   final bool isDark;
+  final CountryTheme countryTheme;
   final Widget quickActions;
   final List<Widget> gosiWarnings;
 
@@ -71,23 +73,11 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
         HomeScreenBody._bottomPadding,
       ),
       children: [
-        // ── 1. Country selector (top) ──
-        GulfCountrySelector(
-          selected: country,
-          onSelected: (c) {
-            if (c == country) return;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              ref.read(gulfCountryProvider.notifier).setCountry(c);
-            });
-          },
-        ),
-        const SizedBox(height: HomeScreenBody._sectionSpacing),
-
-        // ── 2. Header (title + currency) ──
+        // ── 1. Header (title + currency) ──
         HomeScreenHeader(country: country),
         const SizedBox(height: HomeScreenBody._sectionSpacing),
 
-        // ── 3. Hero salary card ──
+        // ── 2. Hero salary card ──
         AnimatedSwitcher(
           duration: HomePageTransitions.switchDuration,
           switchInCurve: HomePageTransitions.switchCurve,
@@ -96,6 +86,7 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
           child: HomeNetSalaryCard(
             key: ValueKey('hero-${country.nameEn}'),
             country: country,
+            countryTheme: widget.countryTheme,
             net: snapshot.net,
             gross: snapshot.gross,
             deduction: snapshot.deduction,
@@ -136,6 +127,8 @@ class _HomeScreenBodyState extends ConsumerState<HomeScreenBody> {
         _HomeSectionLabel(
           titleAr: country.calculatorTitleAr,
           titleEn: country.schemeShort,
+          accentColor: widget.countryTheme.accent,
+          primaryColor: widget.countryTheme.primary,
         ),
         const SizedBox(height: 12),
         AnimatedSwitcher(
@@ -171,10 +164,14 @@ class _HomeSectionLabel extends StatelessWidget {
   const _HomeSectionLabel({
     required this.titleAr,
     required this.titleEn,
+    required this.accentColor,
+    required this.primaryColor,
   });
 
   final String titleAr;
   final String titleEn;
+  final Color accentColor;
+  final Color primaryColor;
 
   @override
   Widget build(BuildContext context) {
@@ -185,7 +182,7 @@ class _HomeSectionLabel extends StatelessWidget {
           children: [
             Expanded(
               child: Divider(
-                color: AppColors.emerald.withValues(alpha: 0.25),
+                color: primaryColor.withValues(alpha: 0.35),
               ),
             ),
             Padding(
@@ -193,12 +190,12 @@ class _HomeSectionLabel extends StatelessWidget {
               child: Icon(
                 Icons.calculate_outlined,
                 size: 18,
-                color: AppColors.emerald.withValues(alpha: 0.8),
+                color: accentColor,
               ),
             ),
             Expanded(
               child: Divider(
-                color: AppColors.emerald.withValues(alpha: 0.25),
+                color: primaryColor.withValues(alpha: 0.35),
               ),
             ),
           ],

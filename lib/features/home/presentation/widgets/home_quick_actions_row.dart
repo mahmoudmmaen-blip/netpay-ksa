@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
 
 /// زر إجراء سريع أفقي.
 class HomeQuickActionItem {
@@ -25,10 +26,12 @@ class HomeQuickActionsRow extends StatelessWidget {
   const HomeQuickActionsRow({
     super.key,
     required this.country,
+    required this.countryTheme,
     required this.items,
   });
 
   final GulfCountry country;
+  final CountryTheme countryTheme;
   final List<HomeQuickActionItem> items;
 
   @override
@@ -38,13 +41,17 @@ class HomeQuickActionsRow extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(right: 4, bottom: 12),
-          child: Text(
-            'أدوات سريعة',
+          child: AnimatedDefaultTextStyle(
+            duration: CountryThemes.themeTransition,
+            curve: CountryThemes.themeCurve,
             style: GoogleFonts.cairo(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: AppColors.emeraldLight,
+              color: countryTheme.accent.computeLuminance() > 0.9
+                  ? countryTheme.primary
+                  : countryTheme.accent,
             ),
+            child: const Text('أدوات سريعة'),
           ),
         ),
         SizedBox(
@@ -55,7 +62,7 @@ class HomeQuickActionsRow extends StatelessWidget {
             separatorBuilder: (context, index) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final item = items[index];
-              return _ActionChip(item: item);
+              return _ActionChip(item: item, countryTheme: countryTheme);
             },
           ),
         ),
@@ -65,8 +72,9 @@ class HomeQuickActionsRow extends StatelessWidget {
 }
 
 class _ActionChip extends StatelessWidget {
-  const _ActionChip({required this.item});
+  const _ActionChip({required this.item, required this.countryTheme});
   final HomeQuickActionItem item;
+  final CountryTheme countryTheme;
 
   @override
   Widget build(BuildContext context) {
@@ -78,18 +86,19 @@ class _ActionChip extends StatelessWidget {
       child: InkWell(
         onTap: item.onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Ink(
+        child: AnimatedContainer(
+          duration: CountryThemes.themeTransition,
+          curve: CountryThemes.themeCurve,
           width: 118,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: highlighted
-                ? const LinearGradient(
+                ? LinearGradient(
                     begin: Alignment.topRight,
                     end: Alignment.bottomLeft,
                     colors: [
-                      Color(0xFF1E293B),
-                      Color(0xFF064E3B),
-                      AppColors.emeraldDark,
+                      countryTheme.gradient.first,
+                      countryTheme.gradient.last,
                     ],
                   )
                 : null,
@@ -105,14 +114,14 @@ class _ActionChip extends StatelessWidget {
               color: locked
                   ? AppColors.gold.withValues(alpha: 0.4)
                   : highlighted
-                      ? AppColors.gold.withValues(alpha: 0.55)
+                      ? countryTheme.primary
                       : AppColors.glassBorder,
               width: highlighted || locked ? 1.5 : 1,
             ),
             boxShadow: highlighted
                 ? [
                     BoxShadow(
-                      color: AppColors.emerald.withValues(alpha: 0.25),
+                      color: countryTheme.primary.withValues(alpha: 0.35),
                       blurRadius: 14,
                       offset: const Offset(0, 6),
                     ),
@@ -133,8 +142,10 @@ class _ActionChip extends StatelessWidget {
                       color: locked
                           ? AppColors.gold.withValues(alpha: 0.7)
                           : highlighted
-                              ? AppColors.goldBright
-                              : AppColors.emerald,
+                              ? countryTheme.accent.computeLuminance() > 0.85
+                                  ? countryTheme.accent
+                                  : AppColors.goldBright
+                              : countryTheme.primary,
                     ),
                     const SizedBox(height: 10),
                     Text(

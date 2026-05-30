@@ -91,6 +91,7 @@ class AppStateNotifier extends StateNotifier<AppState> {
 
     final hasKnownPrefs = prefs.containsKey(AppConstants.prefThemeMode) ||
         prefs.containsKey(AppConstants.prefGulfCountry) ||
+        prefs.containsKey(AppConstants.prefSelectedCountry) ||
         prefs.containsKey(AppConstants.prefNotificationsEnabled) ||
         prefs.containsKey(AppConstants.prefLegalAiQuestionsDate);
 

@@ -4,9 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/app_constants.dart';
 import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/core/providers/gulf_country_provider.dart';
 import 'package:netgulf/core/providers/theme_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
+import 'package:netgulf/core/theme/country_themes.dart';
+import 'package:netgulf/features/home/presentation/widgets/gulf_country_selector.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
 import 'package:netgulf/core/services/premium_access.dart';
 import 'package:netgulf/core/widgets/premium_badge.dart';
@@ -50,14 +53,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final snapshot = ref.watch(homeSalarySnapshotProvider);
     final gosi = ref.watch(gosiModelProvider);
     final isPremium = ref.watch(isPremiumProvider);
+    final countryTheme = ref.watch(countryThemeProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: _HomeAppBarTitle(isDark: isDark),
+        flexibleSpace: AnimatedContainer(
+          duration: CountryThemes.themeTransition,
+          curve: CountryThemes.themeCurve,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: countryTheme.gradient,
+            ),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+        title: _HomeAppBarTitle(isDark: isDark, useLightForeground: true),
         actions: [
+          const HomeCountryFlagButton(),
           _GlassIconButton(
             tooltip: 'مشاركة النتيجة',
             icon: Icons.share_rounded,
@@ -113,32 +131,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
+          SafeArea(
+            bottom: false,
+            child: CompactGulfCountryBar(
+              selected: country,
+              theme: countryTheme,
+              onSelected: (c) =>
+                  ref.read(gulfCountryProvider.notifier).setCountry(c),
+            ),
+          ),
           Expanded(
             child: PremiumMeshBackground(
               isDark: isDark,
-              child: SafeArea(
-                child: HomeScreenBody(
-                  scrollController: _scrollController,
-                  isDark: isDark,
-                  quickActions: HomeToolsSections(
-                    key: ValueKey('tools-${country.nameEn}'),
-                    country: country,
-                    workItems:
-                        _workActionItems(context, ref, country, isPremium),
-                    planningItems:
-                        _planningActionItems(context, ref, country, isPremium),
-                    onContractAnalysis: () =>
-                        context.push(AppRoutes.contractAnalysis),
-                    onLegalQa: () => _openLegalQa(context, ref, isPremium),
-                    onArticle77: () => context.push(AppRoutes.article77),
-                    onContractExplainer: () =>
-                        context.push(AppRoutes.contractExplainer),
-                    legalQaPremium: !isPremium,
-                  ),
-                  gosiWarnings: isSaudi && gosi != null
-                      ? [HomeGosiWarningBanner(gosi: gosi)]
-                      : const [],
+              child: HomeScreenBody(
+                scrollController: _scrollController,
+                isDark: isDark,
+                countryTheme: countryTheme,
+                quickActions: HomeToolsSections(
+                  key: ValueKey('tools-${country.nameEn}'),
+                  country: country,
+                  countryTheme: countryTheme,
+                  workItems:
+                      _workActionItems(context, ref, country, isPremium),
+                  planningItems:
+                      _planningActionItems(context, ref, country, isPremium),
+                  onContractAnalysis: () =>
+                      context.push(AppRoutes.contractAnalysis),
+                  onLegalQa: () => _openLegalQa(context, ref, isPremium),
+                  onArticle77: () => context.push(AppRoutes.article77),
+                  onContractExplainer: () =>
+                      context.push(AppRoutes.contractExplainer),
+                  legalQaPremium: !isPremium,
                 ),
+                gosiWarnings: isSaudi && gosi != null
+                    ? [HomeGosiWarningBanner(gosi: gosi)]
+                    : const [],
               ),
             ),
           ),
@@ -373,30 +400,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 /// عنوان AppBar — ذهبي في الداكن، زمردي في الفاتح.
 class _HomeAppBarTitle extends StatelessWidget {
-  const _HomeAppBarTitle({required this.isDark});
+  const _HomeAppBarTitle({
+    required this.isDark,
+    this.useLightForeground = false,
+  });
 
   final bool isDark;
+  final bool useLightForeground;
 
   @override
   Widget build(BuildContext context) {
     final style = GoogleFonts.cairo(
       fontWeight: FontWeight.w800,
       fontSize: 20,
-      color: isDark ? Colors.white : AppColors.emeraldDark,
+      color: useLightForeground
+          ? Colors.white
+          : (isDark ? Colors.white : AppColors.emeraldDark),
     );
 
-    if (!isDark) {
+    if (useLightForeground || isDark) {
       return Text(AppConstants.appNameEn, style: style);
     }
 
-    return ShaderMask(
-      blendMode: BlendMode.srcIn,
-      shaderCallback: (b) => AppColors.goldGradient.createShader(b),
-      child: Text(
-        AppConstants.appNameEn,
-        style: style.copyWith(color: Colors.white),
-      ),
-    );
+    return Text(AppConstants.appNameEn, style: style);
   }
 }
 
