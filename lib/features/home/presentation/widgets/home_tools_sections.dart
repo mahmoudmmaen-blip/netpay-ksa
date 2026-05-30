@@ -127,22 +127,10 @@ class _ContractAnalysisPromoCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.goldBright),
-                ),
-                child: Text(
-                  'مدعوم بـ AI',
-                  style: GoogleFonts.cairo(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.goldBright,
-                  ),
-                ),
+              Icon(
+                Icons.chevron_left_rounded,
+                color: Colors.white.withValues(alpha: 0.7),
+                size: 28,
               ),
             ],
           ),

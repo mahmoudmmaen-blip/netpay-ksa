@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:netgulf/core/constants/api_keys.dart';
+import 'package:netgulf/core/providers/premium_provider.dart';
 import 'package:netgulf/core/router/app_routes.dart';
 import 'package:netgulf/core/theme/app_colors.dart';
 import 'package:netgulf/core/widgets/glass_surface.dart';
@@ -128,7 +129,8 @@ class _ContractAnalysisScreenState
     final loading = ref.watch(contractAnalysisLoadingProvider);
     final progress = ref.watch(contractAnalysisProgressProvider);
 
-    final canAnalyze = pdf != null && !loading;
+    final isPremium = ref.watch(isPremiumProvider);
+    final canAnalyze = isPremium && pdf != null && !loading;
 
     final body = ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -193,7 +195,7 @@ class _ContractAnalysisScreenState
           },
         ),
         const SizedBox(height: 24),
-        if (loading) ...[
+        if (isPremium && loading) ...[
           Center(
             child: SizedBox(
               width: 120,
@@ -215,29 +217,33 @@ class _ContractAnalysisScreenState
           ),
           const SizedBox(height: 24),
         ],
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: FilledButton.icon(
-            onPressed: canAnalyze ? _analyze : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.emerald,
-              disabledBackgroundColor: AppColors.emerald.withValues(alpha: 0.35),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+        if (!isPremium)
+          const _ContractAnalysisPaywallCard()
+        else
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: canAnalyze ? _analyze : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.emerald,
+                disabledBackgroundColor:
+                    AppColors.emerald.withValues(alpha: 0.35),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
-            ),
-            icon: const Icon(Icons.document_scanner_rounded),
-            label: Text(
-              'تحليل العقد',
-              style: GoogleFonts.cairo(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
+              icon: const Icon(Icons.document_scanner_rounded),
+              label: Text(
+                'تحليل العقد',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),
-        ),
         const SizedBox(height: 16),
         GlassSurface(
           borderRadius: 12,
@@ -282,7 +288,7 @@ class _ContractAnalysisScreenState
               style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 17),
             ),
             Text(
-              'PDF · مدعوم بـ AI',
+              'PDF',
               style: GoogleFonts.cairo(
                 fontSize: 11,
                 color: Theme.of(context)
@@ -299,6 +305,72 @@ class _ContractAnalysisScreenState
           gradient: AppColors.homeGradient(Theme.of(context).brightness),
         ),
         child: SafeArea(child: body),
+      ),
+    );
+  }
+}
+
+class _ContractAnalysisPaywallCard extends StatelessWidget {
+  const _ContractAnalysisPaywallCard();
+
+  static const _benefits = [
+    '✓ تحليل PDF بالذكاء الاصطناعي',
+    '✓ كشف المخاطر القانونية',
+    '✓ مقارنة بقانون دولتك',
+    '✓ تقييم العقد من 10',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassSurface(
+      borderRadius: 16,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.lock_rounded, color: AppColors.gold, size: 40),
+          const SizedBox(height: 12),
+          Text(
+            'تحليل العقد — حصري للمشتركين',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.cairo(
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ..._benefits.map(
+            (line) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                line,
+                style: GoogleFonts.cairo(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 48,
+            child: FilledButton(
+              onPressed: () => context.push('/premium'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: const Color(0xFF1A1500),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'اشترك الآن',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 15),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
