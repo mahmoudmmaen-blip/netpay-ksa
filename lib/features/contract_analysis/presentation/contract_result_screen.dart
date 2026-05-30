@@ -23,6 +23,12 @@ class ContractResultScreen extends ConsumerWidget {
   final ContractAnalysisResult result;
   final bool embeddedInHub;
 
+  static bool _shouldShowArticle77Link(ContractAnalysisResult result) {
+    return result.risks.any(
+      (r) => r.contains('شرط جزائي') || r.contains('فسخ'),
+    );
+  }
+
   String _currencySymbol(String code) => switch (code.toUpperCase()) {
         'SAR' => 'ر.س',
         'AED' => 'د.إ',
@@ -206,6 +212,12 @@ class ContractResultScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           _ContractExpiryReminderCard(
             contractDurationMonths: result.contractDurationMonths!,
+          ),
+        ],
+        if (_shouldShowArticle77Link(result)) ...[
+          const SizedBox(height: 16),
+          _Article77PromoCard(
+            onTap: () => context.push(AppRoutes.article77),
           ),
         ],
         const SizedBox(height: 12),
@@ -537,6 +549,69 @@ class _Row extends StatelessWidget {
             style: GoogleFonts.cairo(fontWeight: FontWeight.w700, fontSize: 13),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _Article77PromoCard extends StatelessWidget {
+  const _Article77PromoCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                AppColors.emerald.withValues(alpha: 0.15),
+                Colors.amber.withValues(alpha: 0.12),
+              ],
+            ),
+            border: Border.all(
+              color: AppColors.emerald.withValues(alpha: 0.6),
+              width: 1.5,
+            ),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '⚖️ احسب تعويضك في حالة الفسخ التعسفي',
+                style: GoogleFonts.cairo(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: onTap,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.emerald,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'احسب المادة 77',
+                  style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

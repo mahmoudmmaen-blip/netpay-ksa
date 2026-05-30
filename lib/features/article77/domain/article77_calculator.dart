@@ -1,3 +1,8 @@
+import 'package:netgulf/core/domain/gulf_country.dart';
+import 'package:netgulf/features/eosb/domain/logic/eosb_calculator.dart';
+import 'package:netgulf/features/eosb/domain/models/eosb_model.dart';
+import 'package:netgulf/features/notice_period/domain/notice_period_model.dart';
+
 enum Article77TerminatedBy { employee, employer }
 
 enum Article77ContractType { fixedTerm, openEnded }
@@ -23,9 +28,11 @@ class Article77Input {
 }
 
 class Article77BreakdownLine {
-  const Article77BreakdownLine(this.label, this.amount);
+  const Article77BreakdownLine(this.label, this.amount, {this.isTotal = false});
+
   final String label;
   final double amount;
+  final bool isTotal;
 }
 
 class Article77Result {
@@ -35,6 +42,7 @@ class Article77Result {
     required this.legalReference,
     required this.note,
     this.isPenaltyOnly = false,
+    this.showEmployerBreakdown = false,
   });
 
   final double totalAmount;
@@ -42,25 +50,48 @@ class Article77Result {
   final String legalReference;
   final String note;
   final bool isPenaltyOnly;
+  final bool showEmployerBreakdown;
 }
 
 /// حاسبة الفسخ التعسفي — المادة 77 (السعودية).
 abstract final class Article77Calculator {
   Article77Calculator._();
 
-  static double _eosbEstimate(double salary, double years) {
-    if (years < 1) return 0;
-    final firstFive = years.clamp(0.0, 5.0);
-    final afterFive = (years - 5).clamp(0.0, double.infinity);
-    return salary * 0.5 * firstFive + salary * afterFive;
+  static const _eosbCalc = EosbCalculator();
+
+  static EosbModel _eosbModelFor(Article77Input input) {
+    final years = input.yearsOfService.floor();
+    final months =
+        ((input.yearsOfService - years) * 12).round().clamp(0, 11);
+    return EosbModel(
+      country: GulfCountry.saudiArabia,
+      yearsOfService: years,
+      monthsOfService: months,
+      basicSalary: input.basicSalary,
+      contractType: input.contractType == Article77ContractType.fixedTerm
+          ? EosbContractType.fixed
+          : EosbContractType.unlimited,
+      terminationType: EosbTerminationType.employerDismissalUnfair,
+      noticeProvided: false,
+    );
   }
 
-  static double _noticeCompensation(
-    Article77ContractType type,
-    double salary,
-  ) {
-    final days = type == Article77ContractType.fixedTerm ? 30 : 60;
-    return salary * days / 30;
+  static double _noticeCompensation(Article77Input input) {
+    final years = input.yearsOfService.floor();
+    final months =
+        ((input.yearsOfService - years) * 12).round().clamp(0, 11);
+    final noticeModel = NoticePeriodModel(
+      country: GulfCountry.saudiArabia,
+      monthlyBasicSalary: input.basicSalary,
+      serviceYears: years,
+      serviceMonths: months,
+      contractType: input.contractType == Article77ContractType.fixedTerm
+          ? EosbContractType.fixed
+          : EosbContractType.unlimited,
+      noticeWasGiven: false,
+      daysNoticeGiven: 0,
+    );
+    return noticeModel.compensationAmount;
   }
 
   static Article77Result calculate(Article77Input input) {
@@ -113,50 +144,29 @@ abstract final class Article77Calculator {
   }
 
   static Article77Result _employerEnded(Article77Input input, double salary) {
-    final breakdown = <Article77BreakdownLine>[];
-
     double art77Comp;
     if (input.contractType == Article77ContractType.fixedTerm) {
       art77Comp = input.remainingMonths * salary;
-      breakdown.add(
-        Article77BreakdownLine(
-          'تعويض الفسخ التعسفي (${input.remainingMonths.round()} شهر باقٍ)',
-          art77Comp,
-        ),
-      );
     } else {
-      final months =
-          (input.yearsOfService * 12 * 0.5).clamp(0.0, 12.0);
+      final months = (input.yearsOfService * 12 * 0.5).clamp(0.0, 12.0);
       art77Comp = months * salary;
-      breakdown.add(
-        Article77BreakdownLine(
-          'تعويض الفسخ التعسفي (${months.round()} شهر — حد أقصى 12)',
-          art77Comp,
-        ),
-      );
     }
 
-    final eosb = _eosbEstimate(salary, input.yearsOfService);
-    if (eosb > 0) {
-      breakdown.add(
-        Article77BreakdownLine(
-          'مكافأة نهاية الخدمة (تقدير)',
-          eosb,
-        ),
-      );
-    }
-
-    final notice = _noticeCompensation(input.contractType, salary);
-    breakdown.add(
-      Article77BreakdownLine('تعويض عدم الإشعار (تقدير)', notice),
-    );
-
-    final total =
-        breakdown.fold<double>(0, (sum, line) => sum + line.amount);
+    final eosbResult =
+        _eosbCalc.calculateEndOfService(_eosbModelFor(input));
+    final eosbAmount = eosbResult.endOfServiceAmount;
+    final noticeAmount = _noticeCompensation(input);
+    final total = art77Comp + eosbAmount + noticeAmount;
 
     return Article77Result(
       totalAmount: total,
-      breakdown: breakdown,
+      showEmployerBreakdown: true,
+      breakdown: [
+        Article77BreakdownLine('مكافأة نهاية الخدمة', eosbAmount),
+        Article77BreakdownLine('تعويض الفسخ التعسفي', art77Comp),
+        Article77BreakdownLine('بدل الإشعار', noticeAmount),
+        Article77BreakdownLine('الإجمالي المستحق', total, isTotal: true),
+      ],
       legalReference:
           'المادة 77 + 84-85 (نهاية الخدمة) + 75 (الإشعار) — نظام العمل السعودي',
       note: 'هذا تقدير استرشادي — استشر محامياً',

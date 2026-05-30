@@ -19,10 +19,11 @@ class EosbScreen extends StatelessWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
           leading: IconButton(
             icon: const Icon(Icons.arrow_forward_ios_rounded),
             onPressed: () => context.canPop()
@@ -31,6 +32,7 @@ class EosbScreen extends StatelessWidget {
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 'المساعد القانوني',
@@ -48,44 +50,64 @@ class EosbScreen extends StatelessWidget {
               ),
             ],
           ),
-          bottom: TabBar(
-            isScrollable: true,
-            indicatorColor: AppColors.emerald,
-            labelColor: AppColors.emeraldLight,
-            unselectedLabelColor:
-                Theme.of(context).colorScheme.onSurfaceVariant,
-            labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w700),
-            tabs: const [
-              Tab(
-                icon: Icon(Icons.card_giftcard_rounded),
-                text: 'نهاية الخدمة',
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(52),
+            child: TabBar(
+              isScrollable: true,
+              indicatorColor: AppColors.emerald,
+              labelColor: AppColors.emeraldLight,
+              unselectedLabelColor:
+                  Theme.of(context).colorScheme.onSurfaceVariant,
+              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.card_giftcard_rounded),
+                  text: 'نهاية الخدمة',
+                ),
+                Tab(
+                  icon: Icon(Icons.access_time_rounded),
+                  text: 'إشعار الإنهاء',
+                ),
+                Tab(
+                  icon: Icon(Icons.beach_access_rounded),
+                  text: 'رصيد الإجازة',
+                ),
+                Tab(
+                  icon: Icon(Icons.document_scanner_rounded),
+                  text: 'تحليل العقد',
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.homeGradient(Theme.of(context).brightness),
+          ),
+          child: TabBarView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: EosbWizardScreen(
+                  dedicatedEosbBranding: true,
+                  historyEntryId: historyEntryId,
+                  embeddedInHub: true,
+                ),
               ),
-              Tab(
-                icon: Icon(Icons.access_time_rounded),
-                text: 'إشعار الإنهاء',
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: NoticePeriodScreen(embeddedInHub: true),
               ),
-              Tab(
-                icon: Icon(Icons.beach_access_rounded),
-                text: 'رصيد الإجازة',
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: LeaveBalanceScreen(embeddedInHub: true),
               ),
-              Tab(
-                icon: Icon(Icons.document_scanner_rounded),
-                text: 'تحليل العقد',
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: ContractAnalysisScreen(embeddedInHub: true),
               ),
             ],
           ),
-        ),
-        body: TabBarView(
-          children: [
-            EosbWizardScreen(
-              dedicatedEosbBranding: true,
-              historyEntryId: historyEntryId,
-              embeddedInHub: true,
-            ),
-            const NoticePeriodScreen(embeddedInHub: true),
-            const LeaveBalanceScreen(embeddedInHub: true),
-            const ContractAnalysisScreen(embeddedInHub: true),
-          ],
         ),
       ),
     );

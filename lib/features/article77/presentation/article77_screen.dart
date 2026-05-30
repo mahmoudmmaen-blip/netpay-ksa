@@ -176,53 +176,103 @@ class _Article77ScreenState extends ConsumerState<Article77Screen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'المبلغ المستحق',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.w700,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      fmt.format(result.totalAmount),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.cairo(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 32,
-                        color: AppColors.emerald,
-                      ),
-                    ),
-                    if (result.breakdown.isNotEmpty) ...[
-                      const Divider(height: 28),
+                    if (result.showEmployerBreakdown) ...[
                       Text(
                         'التفصيل',
                         style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
                       ),
-                      const SizedBox(height: 8),
-                      ...result.breakdown.map(
-                        (line) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  line.label,
-                                  style: GoogleFonts.cairo(fontSize: 13),
-                                ),
+                      const SizedBox(height: 10),
+                      ...result.breakdown.where((l) => !l.isTotal).map(
+                            (line) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${line.label}:',
+                                      style: GoogleFonts.cairo(fontSize: 14),
+                                    ),
+                                  ),
+                                  Text(
+                                    fmt.format(line.amount),
+                                    style: GoogleFonts.cairo(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                fmt.format(line.amount),
-                                style: GoogleFonts.cairo(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.emerald,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
+                      const Divider(height: 24),
+                      Text(
+                        'الإجمالي المستحق',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        fmt.format(result.totalAmount),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 34,
+                          color: AppColors.emerald,
+                        ),
+                      ),
+                    ] else ...[
+                      Text(
+                        'المبلغ المستحق',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w700,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        fmt.format(result.totalAmount),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.cairo(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 32,
+                          color: AppColors.emerald,
+                        ),
+                      ),
+                      if (result.breakdown.isNotEmpty) ...[
+                        const Divider(height: 28),
+                        Text(
+                          'التفصيل',
+                          style: GoogleFonts.cairo(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                        ...result.breakdown.map(
+                          (line) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    line.label,
+                                    style: GoogleFonts.cairo(fontSize: 13),
+                                  ),
+                                ),
+                                Text(
+                                  fmt.format(line.amount),
+                                  style: GoogleFonts.cairo(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.emerald,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                     const SizedBox(height: 12),
                     Text(
