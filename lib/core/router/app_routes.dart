@@ -33,6 +33,9 @@ abstract final class AppRoutes {
   static const String salaryDistribution = '/salary-distribution';
   static const String privacyPolicy = '/privacy-policy';
   static const String settings = '/settings';
+  static const String legalQa = '/legal-qa';
+  static const String article77 = '/article-77';
+  static const String contractExplainer = '/contract-explainer';
 
   // ── أسماء GoRouter (للتنقل: context.goNamed) ───────────────────────────────
 
@@ -58,6 +61,9 @@ abstract final class AppRoutes {
   static const String salaryDistributionName = 'salaryDistribution';
   static const String privacyPolicyName = 'privacyPolicy';
   static const String settingsName = 'settings';
+  static const String legalQaName = 'legalQa';
+  static const String article77Name = 'article77';
+  static const String contractExplainerName = 'contractExplainer';
 
   /// المسار الابتدائي عند فتح التطبيق.
   static const String initial = splash;

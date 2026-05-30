@@ -12,12 +12,20 @@ class HomeToolsSections extends StatelessWidget {
     required this.workItems,
     required this.planningItems,
     required this.onContractAnalysis,
+    required this.onLegalQa,
+    required this.onArticle77,
+    required this.onContractExplainer,
+    this.legalQaPremium = false,
   });
 
   final GulfCountry country;
   final List<HomeQuickActionItem> workItems;
   final List<HomeQuickActionItem> planningItems;
   final VoidCallback onContractAnalysis;
+  final VoidCallback onLegalQa;
+  final VoidCallback onArticle77;
+  final VoidCallback onContractExplainer;
+  final bool legalQaPremium;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +39,15 @@ class HomeToolsSections extends StatelessWidget {
         _SectionTitle('تحليل العقد'),
         const SizedBox(height: 8),
         _ContractAnalysisPromoCard(onTap: onContractAnalysis),
+        const SizedBox(height: 20),
+        _SectionTitle('الحقوق القانونية'),
+        const SizedBox(height: 8),
+        _LegalRightsCards(
+          onLegalQa: onLegalQa,
+          onArticle77: onArticle77,
+          onContractExplainer: onContractExplainer,
+          showPremiumBadge: legalQaPremium,
+        ),
         const SizedBox(height: 20),
         _SectionTitle('التخطيط المالي'),
         const SizedBox(height: 8),
@@ -132,6 +149,137 @@ class _ContractAnalysisPromoCard extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.7),
                 size: 28,
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalRightsCards extends StatelessWidget {
+  const _LegalRightsCards({
+    required this.onLegalQa,
+    required this.onArticle77,
+    required this.onContractExplainer,
+    required this.showPremiumBadge,
+  });
+
+  final VoidCallback onLegalQa;
+  final VoidCallback onArticle77;
+  final VoidCallback onContractExplainer;
+  final bool showPremiumBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _LegalToolCard(
+          icon: Icons.chat_rounded,
+          title: 'استفسار قانوني',
+          subtitle: 'اسأل عن حقوقك في قانون العمل',
+          onTap: onLegalQa,
+          premiumBadge: showPremiumBadge,
+        ),
+        const SizedBox(height: 10),
+        _LegalToolCard(
+          icon: Icons.gavel_rounded,
+          title: 'فسخ تعسفي — المادة 77',
+          subtitle: 'احسب التعويض المستحق',
+          onTap: onArticle77,
+        ),
+        const SizedBox(height: 10),
+        _LegalToolCard(
+          icon: Icons.menu_book_rounded,
+          title: 'مصطلحات العقد',
+          subtitle: 'فهم بنود عقدك بلغة بسيطة',
+          onTap: onContractExplainer,
+        ),
+      ],
+    );
+  }
+}
+
+class _LegalToolCard extends StatelessWidget {
+  const _LegalToolCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.premiumBadge = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool premiumBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context)
+                .colorScheme
+                .surface
+                .withValues(alpha: 0.55),
+            border: Border.all(color: AppColors.glassBorder),
+          ),
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.emerald, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (premiumBadge)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.goldBright),
+                  ),
+                  child: Text(
+                    'Premium',
+                    style: GoogleFonts.cairo(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.goldBright,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_left_rounded,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
             ],
           ),
         ),

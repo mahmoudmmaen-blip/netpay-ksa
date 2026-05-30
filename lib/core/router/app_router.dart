@@ -25,6 +25,9 @@ import 'package:netgulf/features/salary_calculator/presentation/increase_calcula
 import 'package:netgulf/features/notifications/presentation/notifications_screen.dart';
 import 'package:netgulf/features/uae/presentation/uae_calculator_screen.dart';
 import 'package:netgulf/features/legal/presentation/privacy_policy_screen.dart';
+import 'package:netgulf/features/legal_qa/presentation/legal_qa_screen.dart';
+import 'package:netgulf/features/article77/presentation/article77_screen.dart';
+import 'package:netgulf/features/contract_explainer/presentation/contract_explainer_screen.dart';
 import 'package:netgulf/features/splash/presentation/splash_screen.dart';
 import 'package:netgulf/core/providers/app_state_provider.dart';
 
@@ -260,6 +263,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
           key: state.pageKey,
           child: const EosbScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.legalQa,
+        name: AppRoutes.legalQaName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const LegalQaScreen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.article77,
+        name: AppRoutes.article77Name,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const Article77Screen(),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.contractExplainer,
+        name: AppRoutes.contractExplainerName,
+        pageBuilder: (context, state) => AppPageTransitions.fadeSlide(
+          key: state.pageKey,
+          child: const ContractExplainerScreen(),
         ),
       ),
     ],

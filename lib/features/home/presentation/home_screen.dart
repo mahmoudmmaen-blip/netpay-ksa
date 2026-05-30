@@ -129,6 +129,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         _planningActionItems(context, ref, country, isPremium),
                     onContractAnalysis: () =>
                         context.push(AppRoutes.contractAnalysis),
+                    onLegalQa: () => _openLegalQa(context, ref, isPremium),
+                    onArticle77: () => context.push(AppRoutes.article77),
+                    onContractExplainer: () =>
+                        context.push(AppRoutes.contractExplainer),
+                    legalQaPremium: !isPremium,
                   ),
                   gosiWarnings: isSaudi && gosi != null
                       ? [HomeGosiWarningBanner(gosi: gosi)]
@@ -237,6 +242,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return items;
+  }
+
+  Future<void> _openLegalQa(
+    BuildContext context,
+    WidgetRef ref,
+    bool isPremium,
+  ) async {
+    if (isPremium) {
+      context.push(AppRoutes.legalQa);
+      return;
+    }
+    final upgraded = await PremiumAccess.requirePremium(
+      context,
+      ref,
+      feature: PremiumFeature.legalPriority,
+    );
+    if (!context.mounted) return;
+    if (upgraded || PremiumAccess.isPremium(ref)) {
+      context.push(AppRoutes.legalQa);
+    }
   }
 
   Future<void> _openComparison(
