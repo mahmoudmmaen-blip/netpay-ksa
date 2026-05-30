@@ -23,57 +23,45 @@ class EosbScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           scrolledUnderElevation: 0,
-          toolbarHeight: 72,
+          toolbarHeight: 48,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_forward_ios_rounded),
+            icon: const Icon(Icons.arrow_forward_ios_rounded, size: 20),
             onPressed: () => context.canPop()
                 ? context.pop()
                 : context.go(AppRoutes.home),
           ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'المساعد القانوني',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 17),
-              ),
-              Text(
-                'نهاية الخدمة · إشعار · إجازة · عقد',
-                style: GoogleFonts.cairo(
-                  fontSize: 11,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.65),
-                ),
-              ),
-            ],
+          title: Text(
+            'المساعد القانوني',
+            style: GoogleFonts.cairo(fontWeight: FontWeight.w800, fontSize: 16),
           ),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(52),
+            preferredSize: const Size.fromHeight(36),
             child: TabBar(
               isScrollable: true,
               indicatorColor: AppColors.emerald,
               labelColor: AppColors.emeraldLight,
               unselectedLabelColor:
                   Theme.of(context).colorScheme.onSurfaceVariant,
-              labelStyle: GoogleFonts.cairo(fontWeight: FontWeight.w700),
+              labelStyle: GoogleFonts.cairo(
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+              ),
+              unselectedLabelStyle: GoogleFonts.cairo(fontSize: 11),
               tabs: const [
                 Tab(
-                  icon: Icon(Icons.card_giftcard_rounded),
+                  icon: Icon(Icons.card_giftcard_rounded, size: 16),
                   text: 'نهاية الخدمة',
                 ),
                 Tab(
-                  icon: Icon(Icons.access_time_rounded),
+                  icon: Icon(Icons.access_time_rounded, size: 16),
                   text: 'إشعار الإنهاء',
                 ),
                 Tab(
-                  icon: Icon(Icons.beach_access_rounded),
+                  icon: Icon(Icons.beach_access_rounded, size: 16),
                   text: 'رصيد الإجازة',
                 ),
                 Tab(
-                  icon: Icon(Icons.document_scanner_rounded),
+                  icon: Icon(Icons.document_scanner_rounded, size: 16),
                   text: 'تحليل العقد',
                 ),
               ],
@@ -86,26 +74,14 @@ class EosbScreen extends StatelessWidget {
           ),
           child: TabBarView(
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: EosbWizardScreen(
-                  dedicatedEosbBranding: true,
-                  historyEntryId: historyEntryId,
-                  embeddedInHub: true,
-                ),
+              EosbWizardScreen(
+                dedicatedEosbBranding: true,
+                historyEntryId: historyEntryId,
+                embeddedInHub: true,
               ),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: NoticePeriodScreen(embeddedInHub: true),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: LeaveBalanceScreen(embeddedInHub: true),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: ContractAnalysisScreen(embeddedInHub: true),
-              ),
+              const NoticePeriodScreen(embeddedInHub: true),
+              const LeaveBalanceScreen(embeddedInHub: true),
+              const ContractAnalysisScreen(embeddedInHub: true),
             ],
           ),
         ),

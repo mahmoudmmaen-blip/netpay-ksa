@@ -193,8 +193,10 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
       child: SafeArea(
         top: !widget.embeddedInHub,
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            AnimatedSwitcher(
+            Positioned.fill(
+              child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 380),
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
@@ -227,6 +229,7 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
                       key: const ValueKey('eosb_wizard'),
                       isDark: isDark,
                     ),
+              ),
             ),
             if (widget.embeddedInHub && fab != null)
               PositionedDirectional(
@@ -240,7 +243,7 @@ class _EosbWizardScreenState extends ConsumerState<EosbWizardScreen> {
     );
 
     if (widget.embeddedInHub) {
-      return content;
+      return SizedBox.expand(child: content);
     }
 
     return Scaffold(
@@ -355,11 +358,11 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
           child: _StepProgressDots(current: step),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: const EdgeInsets.all(8),
           child: _WizardStepHeader(
             stepNumber: step + 1,
             title: _stepTitles[step],
@@ -387,7 +390,7 @@ class _WizardStepperState extends ConsumerState<_WizardStepper> {
             child: SingleChildScrollView(
               key: ValueKey<int>(step),
               controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: switch (step) {
                 0 => _StepTermination(key: const ValueKey('s0')),
                 1 => _StepContract(key: const ValueKey('s1')),
@@ -421,14 +424,11 @@ class _WizardStepHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppColors.brandGradient,
-            boxShadow: AppColors.cardShadow(
-              isDark: Theme.of(context).brightness == Brightness.dark,
-            ),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -436,11 +436,11 @@ class _WizardStepHeader extends StatelessWidget {
             style: GoogleFonts.cairo(
               color: Colors.white,
               fontWeight: FontWeight.w800,
-              fontSize: 16,
+              fontSize: 13,
             ),
           ),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,18 +449,20 @@ class _WizardStepHeader extends StatelessWidget {
                 title,
                 style: GoogleFonts.cairo(
                   fontWeight: FontWeight.w800,
-                  fontSize: 17,
+                  fontSize: 14,
                 ),
               ),
               Text(
                 subtitle,
                 style: GoogleFonts.cairo(
-                  fontSize: 12,
+                  fontSize: 10,
                   color: Theme.of(context)
                       .colorScheme
                       .onSurface
-                      .withValues(alpha: 0.6),
+                      .withValues(alpha: 0.55),
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -480,41 +482,73 @@ class _StepProgressDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(3, (i) {
-        final active = i <= current;
-        return Expanded(
-          child: Column(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 280),
-                height: 4,
-                margin: EdgeInsets.only(left: i > 0 ? 4 : 0, right: i < 2 ? 4 : 0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: active
-                      ? AppColors.emerald
-                      : AppColors.emerald.withValues(alpha: 0.2),
+    return SizedBox(
+      height: 24,
+      child: Row(
+        children: List.generate(3, (i) {
+          final active = i <= current;
+          final isCurrent = i == current;
+          return Expanded(
+            child: Row(
+              children: [
+                if (i > 0)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      color: active
+                          ? AppColors.emerald
+                          : AppColors.emerald.withValues(alpha: 0.2),
+                    ),
+                  ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isCurrent
+                            ? AppColors.emerald
+                            : active
+                                ? AppColors.emerald.withValues(alpha: 0.35)
+                                : AppColors.emerald.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _labels[i],
+                      style: GoogleFonts.cairo(
+                        fontSize: 9,
+                        fontWeight:
+                            isCurrent ? FontWeight.w700 : FontWeight.w500,
+                        height: 1,
+                        color: isCurrent
+                            ? AppColors.emerald
+                            : Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _labels[i],
-                style: GoogleFonts.cairo(
-                  fontSize: 10,
-                  fontWeight: i == current ? FontWeight.w700 : FontWeight.w500,
-                  color: i == current
-                      ? AppColors.emerald
-                      : Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.5),
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
+                if (i < 2)
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      color: i < current
+                          ? AppColors.emerald
+                          : AppColors.emerald.withValues(alpha: 0.2),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -541,7 +575,7 @@ class _WizardBottomBar extends ConsumerWidget {
         if (wizard.canShowLivePreview) ...[
           const _LivePreviewBar(),
           const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: _InputsSummaryCard(),
           ),
         ],
@@ -583,7 +617,7 @@ class _WizardBottomBar extends ConsumerWidget {
         GlassSurface(
           borderRadius: 0,
           blur: 8,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
           child: Row(
             children: [
               TextButton.icon(
@@ -668,7 +702,7 @@ class _LivePreviewBar extends ConsumerWidget {
     ref.watch(eosbCalculatorProvider);
     ref.watch(eosbLivePreviewKeyProvider);
     return const Padding(
-      padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: RepaintBoundary(child: _EosbLivePreviewCard()),
     );
   }
@@ -1334,7 +1368,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -1346,19 +1380,12 @@ class _EosbLivePreviewCard extends ConsumerWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.emerald.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.insights_rounded,
-                    color: AppColors.emerald,
-                    size: 22,
-                  ),
+                const Icon(
+                  Icons.insights_rounded,
+                  color: AppColors.emerald,
+                  size: 18,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1367,14 +1394,13 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                         'معاينة المستحقات',
                         style: GoogleFonts.cairo(
                           fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                       Text(
-                        '${model.country.flag} ${model.country.nameAr} · تقدير فوري',
+                        '${model.country.flag} ${model.country.nameAr}',
                         style: GoogleFonts.cairo(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 9,
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
@@ -1389,22 +1415,21 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                   child: Container(
                     key: ValueKey(previewKey),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: 8,
+                      vertical: 4,
                     ),
                     decoration: BoxDecoration(
                       color: totalColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: totalColor.withValues(alpha: 0.45),
-                        width: 1.2,
                       ),
                     ),
                     child: Text(
                       currency.format(total),
                       style: GoogleFonts.cairo(
                         fontWeight: FontWeight.w900,
-                        fontSize: 15,
+                        fontSize: 12,
                         color: totalColor,
                       ),
                     ),
@@ -1414,7 +1439,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -1488,7 +1513,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                   Text(
                     'تفصيل التقدير',
                     style: GoogleFonts.cairo(
-                      fontSize: 11,
+                      fontSize: 10,
                       fontWeight: FontWeight.w800,
                       color: AppColors.emerald,
                     ),
@@ -1523,7 +1548,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                       Text(
                         'الإجمالي المستحق',
                         style: GoogleFonts.cairo(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -1534,7 +1559,7 @@ class _EosbLivePreviewCard extends ConsumerWidget {
                           currency.format(total),
                           key: ValueKey('total_$total'),
                           style: GoogleFonts.cairo(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w900,
                             color: totalColor,
                           ),
@@ -2189,16 +2214,23 @@ class _ResultsSuccessBannerState extends ConsumerState<_ResultsSuccessBanner>
 }
 
 /// ملخص المدخلات — حي في المعالج، مجمّد على شاشة النتائج.
-class _InputsSummaryCard extends ConsumerWidget {
+class _InputsSummaryCard extends ConsumerStatefulWidget {
   const _InputsSummaryCard({this.forResults = false});
 
   /// عند true: يقرأ [eosbFinalizedResultProvider] (نتيجة مجمّدة).
   final bool forResults;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_InputsSummaryCard> createState() => _InputsSummaryCardState();
+}
+
+class _InputsSummaryCardState extends ConsumerState<_InputsSummaryCard> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final wizard = ref.watch(eosbWizardProvider);
-    final EosbCalculationResult result = forResults
+    final EosbCalculationResult result = widget.forResults
         ? ref.watch(eosbFinalizedResultProvider) ??
             ref.watch(eosbCalculatorProvider)
         : ref.watch(eosbCalculatorProvider);
@@ -2206,9 +2238,16 @@ class _InputsSummaryCard extends ConsumerWidget {
     final currency = m.country.currencySymbol;
     final factor = result.resignationFactorApplied;
     final awardPct = result.appliedAwardPercent;
-    final rows = <(String, String)>[
+    final collapsedRows = <(String, String)>[
       ('الدولة', '${m.country.flag} ${m.country.nameAr}'),
       ('نوع الإنهاء', m.terminationSummary),
+      (
+        'المبلغ التقديري',
+        '${result.totalEntitlements.round()} $currency',
+      ),
+    ];
+    final rows = <(String, String)>[
+      ...collapsedRows,
       (
         'مكافأة نهاية الخدمة',
         '${result.endOfServiceAmount.round()} $currency',
@@ -2248,37 +2287,61 @@ class _InputsSummaryCard extends ConsumerWidget {
       ),
     ];
 
+    final showExpanded = widget.forResults || _expanded;
+    final visibleRows = showExpanded ? rows : collapsedRows;
+
     return GlassSurface(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  forResults ? 'ملخص الحساب النهائي' : 'بيانات الحساب',
-                  style: GoogleFonts.cairo(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
+          InkWell(
+            onTap: widget.forResults
+                ? null
+                : () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.forResults
+                          ? 'ملخص الحساب النهائي'
+                          : 'بيانات الحساب',
+                      style: GoogleFonts.cairo(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
+                  if (!widget.forResults && wizard.canProceedStep1)
+                    Text(
+                      'مباشر',
+                      style: GoogleFonts.cairo(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.emerald,
+                      ),
+                    ),
+                  if (!widget.forResults) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 20,
+                      color: AppColors.emerald,
+                    ),
+                  ],
+                ],
               ),
-              if (!forResults && wizard.canProceedStep1)
-                Text(
-                  'مباشر',
-                  style: GoogleFonts.cairo(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.emerald,
-                  ),
-                ),
-            ],
+            ),
           ),
-          const SizedBox(height: 10),
-          ...rows.map(
+          const SizedBox(height: 6),
+          ...visibleRows.map(
             (row) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2287,7 +2350,7 @@ class _InputsSummaryCard extends ConsumerWidget {
                     child: Text(
                       row.$1,
                       style: GoogleFonts.cairo(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
@@ -2301,7 +2364,7 @@ class _InputsSummaryCard extends ConsumerWidget {
                       row.$2,
                       textAlign: TextAlign.end,
                       style: GoogleFonts.cairo(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
